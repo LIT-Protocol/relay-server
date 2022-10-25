@@ -259,6 +259,8 @@ app.post("/verify-authentication", async (req, res) => {
     }
   }
 
+  console.log("dbAuthenticator", dbAuthenticator);
+
   if (!dbAuthenticator) {
     return res
       .status(400)
@@ -288,6 +290,8 @@ app.post("/verify-authentication", async (req, res) => {
     // Update the authenticator's counter in the DB to the newest count in the authentication
     dbAuthenticator.counter = authenticationInfo.newCounter;
   }
+
+  // const { credentialPublicKey, credentialID, counter } = authenticationInfo;
 
   res.send({ verified });
 });
