@@ -40,7 +40,7 @@ import type {
 
 import { LoggedInUser } from "./example-server";
 
-import { mintPKP, packAuthData } from "./lit";
+import { mintPKP, getPubkeyForAuthMethod } from "./lit";
 
 const app = express();
 
@@ -199,14 +199,14 @@ app.post("/verify-registration", async (req, res) => {
       };
       user.devices.push(newDevice);
 
-      const packed = packAuthData({
-        credentialPublicKey,
-        credentialID,
-        counter,
-      });
+      // const packed = packAuthData({
+      // credentialPublicKey,
+      // credentialID,
+      // counter,
+      // });
 
       // mint the PKP with this as an auth method
-      const pkp = await mintPKP(packed);
+      const pkp = await mintPKP({ credentialPublicKey, credentialID });
     }
   }
 
@@ -249,17 +249,30 @@ app.post("/verify-authentication", async (req, res) => {
 
   const expectedChallenge = user.currentChallenge;
 
-  let dbAuthenticator;
+  // let dbAuthenticator;
   const bodyCredIDBuffer = base64url.toBuffer(body.rawId);
-  // "Query the DB" here for an authenticator matching `credentialID`
-  for (const dev of user.devices) {
-    if (dev.credentialID.equals(bodyCredIDBuffer)) {
-      dbAuthenticator = dev;
-      break;
-    }
-  }
+  // // "Query the DB" here for an authenticator matching `credentialID`
+  // for (const dev of user.devices) {
+  //   if (dev.credentialID.equals(bodyCredIDBuffer)) {
+  //     dbAuthenticator = dev;
+  //     break;
+  //   }
+  // }
 
-  console.log("dbAuthenticator", dbAuthenticator);
+  // console.log("dbAuthenticator", dbAuthenticator);
+
+  // try and pull it from chain
+  const pubkey = await getPubkeyForAuthMethod({
+    credentialID: bodyCredIDBuffer,
+  });
+  console.log("got pubkey", pubkey);
+
+  const dbAuthenticator: AuthenticatorDevice = {
+    credentialID: bodyCredIDBuffer,
+    credentialPublicKey: Buffer.from(pubkey.slice(2), "hex"),
+    transports: ["internal"],
+    counter: 0,
+  };
 
   if (!dbAuthenticator) {
     return res
