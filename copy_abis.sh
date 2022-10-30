@@ -15,6 +15,6 @@ cat artifacts/contracts/PKPHelper.sol/PKPHelper.json | jq .abi > $CURRENT_DIR/co
 
 # cat artifacts/contracts/Staking.sol/Staking.json | jq .abi > ../lit_node_rust/abis/Staking.json
 
-# cat artifacts/contracts/AccessControlConditions.sol/AccessControlConditions.json | jq .abi > ../lit_node_rust/abis/AccessControlConditions.json
+cat artifacts/contracts/AccessControlConditions.sol/AccessControlConditions.json | jq .abi > $CURRENT_DIR/contracts/AccessControlConditions.json
 
 # cat artifacts/contracts/RateLimitNFT.sol/RateLimitNFT.json | jq .abi > ../lit_node_rust/abis/RateLimitNFT.json

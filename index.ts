@@ -41,10 +41,11 @@ import type {
 import { LoggedInUser } from "./example-server";
 
 import { mintPKP, getPubkeyForAuthMethod } from "./lit";
+import { storeConditionHandler } from "./routes/storeCondition";
 
 const app = express();
 
-const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost" } = process.env;
+const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost", PORT = "8000" } = process.env;
 
 app.use(express.static("./public/"));
 app.use(express.json());
@@ -309,6 +310,8 @@ app.post("/verify-authentication", async (req, res) => {
   res.send({ verified });
 });
 
+app.post("/store-condition", storeConditionHandler);
+
 if (ENABLE_HTTPS) {
   const host = "0.0.0.0";
   const port = 443;
@@ -330,7 +333,7 @@ if (ENABLE_HTTPS) {
     });
 } else {
   const host = "127.0.0.1";
-  const port = 8000;
+  const port = parseInt(PORT);
   expectedOrigin = `http://localhost:${port}`;
 
   http.createServer(app).listen(port, host, () => {
