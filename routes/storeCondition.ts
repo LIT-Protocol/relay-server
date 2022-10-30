@@ -1,3 +1,4 @@
+import { utils } from 'ethers';
 import { Request } from 'express';
 import { Response } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
@@ -8,18 +9,23 @@ const BYTE_ARRAY_LENGTH = 32;
 
 // TODO: Change into async post (with getter API) to handle more concurrent requests.
 export async function storeConditionHandler(
-    req: Request<{}, any, any, ParsedQs, Record<string, any>>,
+    req: Request<{}, StoreConditionResponse, StoreConditionRequest, ParsedQs, Record<string, any>>,
     res: Response<StoreConditionResponse, Record<string, any>, number>,
 ) {
-    const reqBody: StoreConditionRequest = req.body
-
-    // TODO: Auth - verify PKP / wallet ownership
-    const creatorAddress = "0x4259E44670053491E7b4FE4A120C70be1eAD646b" // TODO: temporary
+    // Verify auth sig
+    const { signedMessage, sig, address } = req.body.authSig;
+    const creatorAddress = utils.verifyMessage(signedMessage, sig);
+    if (creatorAddress != address) {
+        return res.status(401).json({
+            error: "Invalid authSig"
+        });
+    }
+    console.info("Verified creator", { creatorAddress });
 
     // TODO: Rate limit check
 
     // Validate request body
-    let validationError = validateRequest(reqBody);
+    let validationError = validateRequest(req.body);
     if (!!validationError) {
         return res.status(400).json({
             error: validationError.toString()
@@ -28,8 +34,20 @@ export async function storeConditionHandler(
 
     // Call into AccessControlConditions.storeConditionWithSigner()
     try {
+        const {
+            key,
+            value,
+            securityHash,
+            chainId,
+            permanent,
+        } = req.body;
+
         const storeTx = await storeConditionWithSigner({
-            ...reqBody,
+            key,
+            value,
+            securityHash,
+            chainId,
+            permanent,
             creatorAddress,
         });
 
