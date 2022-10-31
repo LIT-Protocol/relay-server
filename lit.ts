@@ -1,6 +1,8 @@
-import { ethers } from "ethers";
+import { ethers, BigNumber, utils } from "ethers";
 import fs from "fs";
+import { StoreConditionRequest, StoreConditionWithSigner } from "./models";
 
+const accessControlConditionsAddress = "0x4bb266678E7116D8A1df7aAe7625f9347b01eE85";
 const pkpHelperAddress = "0x10992C50D6e7Ea273b1AEcAD1bCf7ffb11E53878";
 const pkpPermissionsAddress = "0x2a589078ce1b77f2b932bc4842974e7f995f6a02";
 const WEBAUTHN_AUTH_METHOD_TYPE = 1;
@@ -14,28 +16,54 @@ function getSigner() {
   return signer;
 }
 
-function getPkpHelperContract() {
+function getContract(
+  abiPath: string,
+  deployedContractAddress: string,
+) {
   const signer = getSigner();
   const contractJson = JSON.parse(
-    fs.readFileSync("./contracts/PKPHelper.json", "utf8")
+    fs.readFileSync(abiPath, "utf8")
   );
-  // console.log("contractJson", contractJson);
-  const pkpHelper = new ethers.Contract(pkpHelperAddress, contractJson, signer);
-  return pkpHelper;
+  const ethersContract = new ethers.Contract(deployedContractAddress, contractJson, signer);
+  return ethersContract;
+}
+
+function getAccessControlConditionsContract() {
+  return getContract(
+    './contracts/AccessControlConditions.json',
+    accessControlConditionsAddress,
+  );
+}
+
+function getPkpHelperContract() {
+  return getContract(
+    './contracts/PKPHelper.json',
+    pkpHelperAddress,
+  );
 }
 
 function getPermissionsContract() {
-  const signer = getSigner();
-  const contractJson = JSON.parse(
-    fs.readFileSync("./contracts/PKPPermissions.json", "utf8")
-  );
-  // console.log("contractJson", contractJson);
-  const contract = new ethers.Contract(
+  return getContract(
+    './contracts/PKPPermissions.json',
     pkpPermissionsAddress,
-    contractJson,
-    signer
   );
-  return contract;
+}
+
+export async function storeConditionWithSigner(
+  storeConditionRequest: StoreConditionWithSigner,
+): Promise<ethers.Transaction> {
+  console.log("Storing condition");
+  const accessControlConditions = getAccessControlConditionsContract();
+  const tx = await accessControlConditions.storeConditionWithSigner(
+    BigNumber.from(storeConditionRequest.key).toHexString(),
+    BigNumber.from(storeConditionRequest.value).toHexString(),
+    BigNumber.from(storeConditionRequest.securityHash).toHexString(),
+    storeConditionRequest.chainId,
+    storeConditionRequest.permanent,
+    utils.getAddress(storeConditionRequest.creatorAddress),
+  );
+  console.log("tx", tx);
+  return tx;
 }
 
 export async function mintPKP({
