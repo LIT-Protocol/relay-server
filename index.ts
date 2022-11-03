@@ -42,6 +42,7 @@ import { LoggedInUser } from "./example-server";
 
 import { mintPKP, getPubkeyForAuthMethod } from "./lit";
 import { storeConditionHandler } from "./routes/storeCondition";
+import limiter from "./routes/middlewares/limiter";
 
 const app = express();
 
@@ -310,7 +311,7 @@ app.post("/verify-authentication", async (req, res) => {
   res.send({ verified });
 });
 
-app.post("/store-condition", storeConditionHandler);
+app.post("/store-condition", limiter, storeConditionHandler);
 
 if (ENABLE_HTTPS) {
   const host = "0.0.0.0";

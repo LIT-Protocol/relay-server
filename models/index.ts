@@ -27,3 +27,8 @@ export interface AuthSig {
     signedMessage: string,
     address: string,
 }
+
+export interface Config {
+    redisUrl: string,
+    port: number,
+}
