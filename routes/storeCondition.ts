@@ -22,8 +22,6 @@ export async function storeConditionHandler(
     }
     console.info("Verified creator", { creatorAddress });
 
-    // TODO: Rate limit check
-
     // Validate request body
     let validationError = validateRequest(req.body);
     if (!!validationError) {
