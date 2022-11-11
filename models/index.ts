@@ -1,10 +1,11 @@
 export interface StoreConditionRequest {
-    authSig: AuthSig,
+    sessionSig: SessionSig,
     key: Uint8Array,
     value: Uint8Array,
     securityHash: Uint8Array,
     chainId: number,
     permanent: boolean,
+    capabilityProtocolPrefix: CapabilityProtocolPrefix,
 }
 
 export interface StoreConditionResponse {
@@ -28,7 +29,36 @@ export interface AuthSig {
     address: string,
 }
 
+export interface SessionSig {
+    sig: string,
+    derivedVia: string,
+    signedMessage: string,
+    address: string,
+    algo: string,
+}
+
+export interface SessionSigSignedMessage {
+    sessionKey: string,
+    resources: string[],
+    capabilities: Array<AuthSig>,
+    issuedAt: string,
+    expiration: string,
+}
+
 export interface Config {
     redisUrl: string,
     port: number,
 }
+
+export enum CapabilityProtocolPrefix {
+    LitEncryptionCondition = "litEncryptionCondition",
+    LitSigningCondition = "litSigningCondition",
+}
+
+export interface CapabilityObject {
+    def?: string[],
+    tar?: { [key: string]: string },
+    ext?: { [key: string]: string },
+}
+
+

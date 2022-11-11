@@ -1,9 +1,10 @@
-import { utils } from 'ethers';
+import { BigNumber } from 'ethers';
 import { Request } from 'express';
 import { Response } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
 import { storeConditionWithSigner } from '../lit';
-import { StoreConditionRequest, StoreConditionResponse } from '../models';
+import { CapabilityProtocolPrefix, StoreConditionRequest, StoreConditionResponse } from '../models';
+import { getFullResourceUri, validateSessionSignature } from '../utils/auth';
 
 const BYTE_ARRAY_LENGTH = 32;
 
@@ -12,12 +13,28 @@ export async function storeConditionHandler(
     req: Request<{}, StoreConditionResponse, StoreConditionRequest, ParsedQs, Record<string, any>>,
     res: Response<StoreConditionResponse, Record<string, any>, number>,
 ) {
-    // Verify auth sig
-    const { signedMessage, sig, address } = req.body.authSig;
-    const creatorAddress = utils.verifyMessage(signedMessage, sig);
-    if (creatorAddress != address) {
+    // Validate capability protocol prefix.
+    if (req.body.capabilityProtocolPrefix !== CapabilityProtocolPrefix.LitEncryptionCondition.toString() &&
+        req.body.capabilityProtocolPrefix !== CapabilityProtocolPrefix.LitSigningCondition.toString()) {
+            return res.status(400).json({
+                error: `Only the following capability protocol prefixes are supported: ${[CapabilityProtocolPrefix.LitEncryptionCondition, CapabilityProtocolPrefix.LitSigningCondition]}`
+            });
+        }
+        
+    // Validate session signature.
+    const fullResourceUri = getFullResourceUri(
+        req.body.capabilityProtocolPrefix,
+        BigNumber.from(req.body.key).toHexString().replace("0x", "")
+    );
+    const [creatorAddress, validationErr] = await validateSessionSignature(
+        req.body.sessionSig,
+        fullResourceUri,
+        req.body.capabilityProtocolPrefix,
+    );
+    if (!!validationErr) {
+        console.error("Invalid sessionSig", { error: validationErr });
         return res.status(401).json({
-            error: "Invalid authSig"
+            error: "Invalid sessionSig"
         });
     }
     console.info("Verified creator", { creatorAddress });
