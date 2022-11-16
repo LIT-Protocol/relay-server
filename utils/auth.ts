@@ -138,15 +138,14 @@ async function validateSessionCapability(
         const creatorAddress = verifyRes.data.address;
 
         // Validate resources array.
-        // TODO: uncomment this when frontend is able to generate the correct SIWE Resource URI.
-        // const validateResourcesRes = validateSiweResources(
-        //     verifyRes.data.resources!,
-        //     capabilityProtocolPrefix,
-        //     fullResourceUri,
-        // );
-        // if (!validateResourcesRes) {
-        //     return ["", new Error(`Invalid Resources field in SIWE message: ${validateResourcesRes}`)];
-        // }
+        const validateResourcesErr = validateSiweResources(
+            verifyRes.data.resources!,
+            capabilityProtocolPrefix,
+            fullResourceUri,
+        );
+        if (!!validateResourcesErr) {
+            return ["", new Error(`Invalid Resources field in SIWE message: ${validateResourcesErr}`)];
+        }
 
         // Validate that session pubkey is signed in the wallet-signed SIWE message.
         if (getSiweMessageUri(delegatedSessionPubKey) !== verifyRes.data.uri) {
