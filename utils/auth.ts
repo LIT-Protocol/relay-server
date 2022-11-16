@@ -1,4 +1,3 @@
-import { utils } from 'ethers';
 import { Base64 } from 'js-base64';
 import { SiweMessage, SiweResponse } from 'siwe';
 import nacl from 'tweetnacl';
@@ -8,7 +7,7 @@ import { AuthSig, CapabilityObject, CapabilityProtocolPrefix, SessionSig, Sessio
 function checkEd25519Signature(sessionSig: SessionSig): boolean {
     const sigBytes = fromString(sessionSig.sig, "base16");
     const msgBytes = fromString(sessionSig.signedMessage, "utf8");
-    const pubKeyBytes = utils.arrayify(`0x${sessionSig.address}`);
+    const pubKeyBytes = fromString(sessionSig.address, "base16");
     
     return nacl.sign.detached.verify(msgBytes, sigBytes, pubKeyBytes);
 }
@@ -59,10 +58,9 @@ export async function validateSessionSignature(
     }
 
     // Validate ed25519 signature.
-    // TODO: uncomment this when ed25519 signature verification is working.
-    // if (!checkEd25519Signature(sessionSig)) {
-    //     return ["", new Error(`Invalid signature: ${sessionSig.sig}`)];
-    // }
+    if (!checkEd25519Signature(sessionSig)) {
+        return ["", new Error(`Invalid signature: ${sessionSig.sig}`)];
+    }
 
     // Parse session sig signed message.
     const parseRes = tryParseJson<SessionSigSignedMessage>(sessionSig.signedMessage);
