@@ -1,6 +1,7 @@
 import { Request } from 'express';
 import { Response } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
+import { storeConditionWithSigner } from '../lit';
 import { CapabilityProtocolPrefix, StoreConditionRequest, StoreConditionResponse } from '../models';
 import { getFullResourceUri, validateSessionSignature } from '../utils/auth';
 
