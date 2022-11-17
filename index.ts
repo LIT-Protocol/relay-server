@@ -43,6 +43,7 @@ import { LoggedInUser } from "./example-server";
 import { mintPKP, getPubkeyForAuthMethod } from "./lit";
 import { storeConditionHandler } from "./routes/storeCondition";
 import limiter from "./routes/middlewares/limiter";
+import cors from 'cors';
 
 const app = express();
 
@@ -50,6 +51,7 @@ const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost", PORT = "8000" } =
 
 app.use(express.static("./public/"));
 app.use(express.json());
+app.use(cors());
 
 /**
  * If the words "metadata statements" mean anything to you, you'll want to enable this route. It

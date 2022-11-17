@@ -1,8 +1,8 @@
 export interface StoreConditionRequest {
     sessionSig: SessionSig,
-    key: Uint8Array,
-    value: Uint8Array,
-    securityHash: Uint8Array,
+    key: string,
+    value: string,
+    securityHash: string,
     chainId: number,
     permanent: boolean,
     capabilityProtocolPrefix: CapabilityProtocolPrefix,
@@ -14,9 +14,9 @@ export interface StoreConditionResponse {
 }
 
 export interface StoreConditionWithSigner {
-    key: Uint8Array,
-    value: Uint8Array,
-    securityHash: Uint8Array,
+    key: string,
+    value: string,
+    securityHash: string,
     chainId: number,
     permanent: boolean,
     creatorAddress: string,

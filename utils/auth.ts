@@ -36,6 +36,10 @@ export function getFullResourceUri(protocolPrefix: CapabilityProtocolPrefix, res
     return `${protocolPrefix}://${resourceUri}`;
 }
 
+export function getResourceWildcardUri(protocolPrefix: CapabilityProtocolPrefix): string {
+    return `${protocolPrefix}://*`;
+}
+
 export function getSiweMessageUri(sessionPubKey: string) {
     return `lit:session:${sessionPubKey}`;
 }
@@ -69,8 +73,10 @@ export async function validateSessionSignature(
     }
     const sessionSigSignedMessage = parseRes[0]!;
 
-    // Validate session key signed message contains full resource URI.
-    if (sessionSigSignedMessage.resources.indexOf(fullResourceUri) === -1) {
+    // Validate session key signed message contains full resource URI or the wildcard for the corresponding
+    // capabilityProtocolPrefix.
+    if (sessionSigSignedMessage.resources.indexOf(fullResourceUri) === -1
+        && sessionSigSignedMessage.resources.indexOf(getResourceWildcardUri(capabilityProtocolPrefix)) === -1) {
         return ["", new Error(`Signed message resources does not contain the requested resource URI: ${fullResourceUri}`)];
     }
     
@@ -133,7 +139,7 @@ async function validateSessionCapability(
                 return ["", new Error(`Unable to verify SIWE message: ${verifyRes.error}`)];
             }
         } catch (verifyErr: any) {
-            return ["", new Error(`Unable to verify SIWE message: ${JSON.stringify(verifyErr)}`)];
+            return ["", new Error(`Error verifying SIWE message: ${JSON.stringify(verifyErr)}`)];
         }
         const creatorAddress = verifyRes.data.address;
 

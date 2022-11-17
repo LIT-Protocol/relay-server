@@ -49,15 +49,22 @@ function getPermissionsContract() {
   );
 }
 
+function prependHexPrefixIfNeeded(hexStr: string) {
+  if (hexStr.substring(0, 2) === "0x") {
+    return hexStr;
+  }
+  return `0x${hexStr}`;
+}
+
 export async function storeConditionWithSigner(
   storeConditionRequest: StoreConditionWithSigner,
 ): Promise<ethers.Transaction> {
   console.log("Storing condition");
   const accessControlConditions = getAccessControlConditionsContract();
   const tx = await accessControlConditions.storeConditionWithSigner(
-    BigNumber.from(storeConditionRequest.key).toHexString(),
-    BigNumber.from(storeConditionRequest.value).toHexString(),
-    BigNumber.from(storeConditionRequest.securityHash).toHexString(),
+    prependHexPrefixIfNeeded(storeConditionRequest.key),
+    prependHexPrefixIfNeeded(storeConditionRequest.value),
+    prependHexPrefixIfNeeded(storeConditionRequest.securityHash),
     storeConditionRequest.chainId,
     storeConditionRequest.permanent,
     utils.getAddress(storeConditionRequest.creatorAddress),

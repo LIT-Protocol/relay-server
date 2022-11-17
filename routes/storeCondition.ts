@@ -1,12 +1,10 @@
-import { BigNumber } from 'ethers';
 import { Request } from 'express';
 import { Response } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
-import { storeConditionWithSigner } from '../lit';
 import { CapabilityProtocolPrefix, StoreConditionRequest, StoreConditionResponse } from '../models';
 import { getFullResourceUri, validateSessionSignature } from '../utils/auth';
 
-const BYTE_ARRAY_LENGTH = 32;
+const BYTE_STRING_LENGTH = 64;
 
 // TODO: Change into async post (with getter API) to handle more concurrent requests.
 export async function storeConditionHandler(
@@ -24,7 +22,7 @@ export async function storeConditionHandler(
     // Validate session signature.
     const fullResourceUri = getFullResourceUri(
         req.body.capabilityProtocolPrefix,
-        BigNumber.from(req.body.key).toHexString().replace("0x", "")
+        req.body.key.replace("0x", "")
     );
     const [creatorAddress, validationErr] = await validateSessionSignature(
         req.body.sessionSig,
@@ -77,7 +75,7 @@ export async function storeConditionHandler(
 
 function validateRequest(requestBody: StoreConditionRequest): Error | null {
     const keysToCheckExist: Array<keyof StoreConditionRequest> = ["key", "value", "securityHash", "chainId", "permanent"];
-    const keysToCheckByteArrayLength: Array<keyof Pick<StoreConditionRequest, "key" | "value" | "securityHash">> = ["key", "value", "securityHash"];
+    const keysToCheckByteStringLength: Array<keyof Pick<StoreConditionRequest, "key" | "value" | "securityHash">> = ["key", "value", "securityHash"];
 
     // Check values exist
     const requestBodyKeys = Object.keys(requestBody);
@@ -88,9 +86,9 @@ function validateRequest(requestBody: StoreConditionRequest): Error | null {
     }
 
     // Check 32 bytes long
-    for (const k of keysToCheckByteArrayLength) {
-        if (requestBody[k].length != BYTE_ARRAY_LENGTH) {
-            return new Error(`${k} is not 32 long`);
+    for (const k of keysToCheckByteStringLength) {
+        if (requestBody[k].length != BYTE_STRING_LENGTH) {
+            return new Error(`${k} is not ${BYTE_STRING_LENGTH} long`);
         }
     }
 
