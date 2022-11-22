@@ -1,4 +1,4 @@
-import type { AuthenticatorDevice } from '@simplewebauthn/typescript-types';
+import type { AuthenticatorDevice } from "@simplewebauthn/typescript-types";
 
 /**
  * You'll need a database to store a few things:
@@ -32,8 +32,8 @@ import type { AuthenticatorDevice } from '@simplewebauthn/typescript-types';
  * expected to generate an authentication response.
  */
 interface LoggedInUser {
-  id: string;
-  username: string;
-  devices: AuthenticatorDevice[];
-  currentChallenge?: string;
+	id: string;
+	username: string;
+	devices: AuthenticatorDevice[];
+	currentChallenge?: string;
 }
