@@ -1,3 +1,29 @@
+export interface GoogleOAuthRequest {
+    idToken: string,
+}
+
+export interface GoogleOAuthResponse {
+    requestId?: string,
+    error?: string,
+}
+
+export interface GetAuthStatusRequestParams {
+    requestId: string,
+}
+
+export interface GetAuthStatusResponse {
+    status?: AuthStatus,
+    pkpEthAddress?: string,
+    pkpPublicKey?: string
+    error?: string,
+}
+
+export enum AuthStatus {
+    InProgress = "InProgress",
+    Succeeded = "Succeeded",
+    Failed = "Failed",
+}
+
 export interface StoreConditionRequest {
     sessionSig: SessionSig,
     key: string,
@@ -61,4 +87,11 @@ export interface CapabilityObject {
     ext?: { [key: string]: string },
 }
 
-
+export enum AuthMethodType {
+    EthWallet = 1,
+    LitAction,
+    WebAuthn,
+    Discord,
+    Google,
+    GoogleJwt,
+}
