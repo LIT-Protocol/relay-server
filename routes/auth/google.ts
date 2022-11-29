@@ -3,8 +3,8 @@ import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
-	GoogleOAuthRequest,
-	GoogleOAuthResponse,
+	GoogleOAuthVerifyToMintRequest,
+	AuthMethodVerifyToMintResponse,
 } from "../../models";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { utils } from "ethers";
@@ -24,15 +24,15 @@ async function verifyIDToken(idToken: string): Promise<TokenPayload> {
 	return ticket.getPayload()!;
 }
 
-export async function googleOAuthHandler(
+export async function googleOAuthVerifyToMintHandler(
 	req: Request<
 		{},
-		GoogleOAuthResponse,
-		GoogleOAuthRequest,
+		AuthMethodVerifyToMintResponse,
+		GoogleOAuthVerifyToMintRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
-	res: Response<GoogleOAuthResponse, Record<string, any>, number>,
+	res: Response<AuthMethodVerifyToMintResponse, Record<string, any>, number>,
 ) {
 	// get idToken from body
 	const { idToken } = req.body;
