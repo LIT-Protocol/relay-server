@@ -9,6 +9,8 @@ import {
 	WebAuthnAssertionVerifyToMintRequest,
 } from "../../models";
 import { verifySignature } from "../../utils/webAuthn/verifySignature";
+import { decodeECKeyAndGetPublicKey } from "../../utils/webAuthn/keys";
+import { toUtf8Bytes } from "ethers/lib/utils";
 
 export async function webAuthnAssertionVerifyToMintHandler(
 	req: Request<
@@ -49,7 +51,14 @@ export async function webAuthnAssertionVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const idForAuthMethod = utils.keccak256(credentialPublicKey);
+		const decodedPublicKey = decodeECKeyAndGetPublicKey(
+			Buffer.from(utils.arrayify(credentialPublicKey)),
+		);
+		console.log("Deriving ID for auth method", { decodedPublicKey });
+
+		const idForAuthMethod = utils.keccak256(
+			toUtf8Bytes(`0x${decodedPublicKey}:TODO:`),
+		);
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.WebAuthn,
 			idForAuthMethod,
