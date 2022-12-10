@@ -1,7 +1,7 @@
 {
-  "name": "example",
+  "name": "relay-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "Relay Server for facilitating interactions with Lit Protocol smart contracts.",
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.ts",
