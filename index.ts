@@ -44,6 +44,9 @@ import { mintPKP, getPubkeyForAuthMethod } from "./lit";
 import { storeConditionHandler } from "./routes/storeCondition";
 import limiter from "./routes/middlewares/limiter";
 import cors from 'cors';
+import { googleOAuthHandler } from "./routes/auth/google";
+import { AuthMethodType } from "./models";
+import { getAuthStatusHandler } from "./routes/auth/status";
 
 const app = express();
 
@@ -210,7 +213,12 @@ app.post("/verify-registration", async (req, res) => {
       // });
 
       // mint the PKP with this as an auth method
-      const pkp = await mintPKP({ credentialPublicKey, credentialID });
+      // const pkp = await mintPKP({
+      //   // credentialPublicKey,
+      //   // credentialID,
+      //   authMethodType: AuthMethodType.WebAuthn,
+      //   idForAuthMethod: // TODO:
+      // });
     }
   }
 
@@ -314,6 +322,8 @@ app.post("/verify-authentication", async (req, res) => {
 });
 
 app.post("/store-condition", limiter, storeConditionHandler);
+app.post("/auth/google", googleOAuthHandler);
+app.get("/auth/status/:requestId", getAuthStatusHandler);
 
 if (ENABLE_HTTPS) {
   const host = "0.0.0.0";
