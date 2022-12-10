@@ -42,6 +42,16 @@
         "type": "uint256"
       },
       {
+        "internalType": "bytes[]",
+        "name": "permittedIpfsCIDs",
+        "type": "bytes[]"
+      },
+      {
+        "internalType": "address[]",
+        "name": "permittedAddresses",
+        "type": "address[]"
+      },
+      {
         "internalType": "uint256[]",
         "name": "permittedAuthMethodTypes",
         "type": "uint256[]"
@@ -57,18 +67,8 @@
         "type": "bytes[]"
       },
       {
-        "internalType": "uint256[][]",
-        "name": "permittedAuthMethodScopes",
-        "type": "uint256[][]"
-      },
-      {
         "internalType": "bool",
         "name": "addPkpEthAddressAsPermittedAddress",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "sendPkpToItself",
         "type": "bool"
       }
     ],
@@ -86,92 +86,23 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "keyType",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "permittedIpfsCIDs",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "uint256[][]",
-        "name": "permittedIpfsCIDScopes",
-        "type": "uint256[][]"
-      },
-      {
-        "internalType": "address[]",
-        "name": "permittedAddresses",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256[][]",
-        "name": "permittedAddressScopes",
-        "type": "uint256[][]"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "permittedAuthMethodTypes",
-        "type": "uint256[]"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "permittedAuthMethodIds",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "bytes[]",
-        "name": "permittedAuthMethodPubkeys",
-        "type": "bytes[]"
-      },
-      {
-        "internalType": "uint256[][]",
-        "name": "permittedAuthMethodScopes",
-        "type": "uint256[][]"
-      },
-      {
-        "internalType": "bool",
-        "name": "addPkpEthAddressAsPermittedAddress",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "sendPkpToItself",
-        "type": "bool"
-      }
-    ],
-    "name": "mintNextAndAddAuthMethodsWithTypes",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
-        "name": "",
+        "name": "operator",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "",
+        "name": "from",
         "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "",
+        "name": "tokenId",
         "type": "uint256"
       },
       {
         "internalType": "bytes",
-        "name": "",
+        "name": "data",
         "type": "bytes"
       }
     ],
@@ -183,7 +114,7 @@
         "type": "bytes4"
       }
     ],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

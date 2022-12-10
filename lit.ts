@@ -1,20 +1,16 @@
-import { ethers, utils } from "ethers";
+import { ethers, BigNumber, utils } from "ethers";
 import fs from "fs";
-import { AuthMethodType, StoreConditionWithSigner } from "./models";
+import { StoreConditionRequest, StoreConditionWithSigner } from "./models";
 
-const accessControlConditionsAddress = "0x247B02100dc0929472945E91299c88b8c80b029E";
-const pkpNftAddress = "0x86062B7a01B8b2e22619dBE0C15cbe3F7EBd0E92";
-const pkpHelperAddress = "0xffD53EeAD24a54CA7189596eF1aa3f1369753611";
-const pkpPermissionsAddress = "0x274d0C69fCfC40f71E57f81E8eA5Bd786a96B832";
-
-export function getProvider() {
-  return new ethers.providers.JsonRpcProvider(
-    process.env.LIT_TXSENDER_RPC_URL
-  );
-}
+const accessControlConditionsAddress = "0x4bb266678E7116D8A1df7aAe7625f9347b01eE85";
+const pkpHelperAddress = "0x10992C50D6e7Ea273b1AEcAD1bCf7ffb11E53878";
+const pkpPermissionsAddress = "0x2a589078ce1b77f2b932bc4842974e7f995f6a02";
+const WEBAUTHN_AUTH_METHOD_TYPE = 1;
 
 function getSigner() {
-  const provider = getProvider();
+  const provider = new ethers.providers.JsonRpcProvider(
+    process.env.LIT_TXSENDER_RPC_URL
+  );
   const privateKey = process.env.LIT_TXSENDER_PRIVATE_KEY!;
   const signer = new ethers.Wallet(privateKey, provider);
   return signer;
@@ -53,28 +49,11 @@ function getPermissionsContract() {
   );
 }
 
-function getPkpNftContract() {
-  return getContract(
-    './contracts/PKPNFT.json',
-    pkpNftAddress,
-  );
-}
-
 function prependHexPrefixIfNeeded(hexStr: string) {
   if (hexStr.substring(0, 2) === "0x") {
     return hexStr;
   }
   return `0x${hexStr}`;
-}
-
-export async function getPkpEthAddress(tokenId: string) {
-  const pkpNft = getPkpNftContract();
-  return pkpNft.getEthAddress(tokenId);
-}
-
-export async function getPkpPublicKey(tokenId: string) {
-  const pkpNft = getPkpNftContract();
-  return pkpNft.getPubkey(tokenId);
 }
 
 export async function storeConditionWithSigner(
@@ -95,29 +74,24 @@ export async function storeConditionWithSigner(
 }
 
 export async function mintPKP({
-  authMethodType,
-  idForAuthMethod,
+  credentialPublicKey,
+  credentialID,
 }: {
-  authMethodType: AuthMethodType;
-  idForAuthMethod: string;
+  credentialPublicKey: Buffer;
+  credentialID: Buffer;
 }): Promise<ethers.Transaction> {
   console.log("in mintPKP");
   const pkpHelper = getPkpHelperContract();
-  const pkpNft = getPkpNftContract();
-
-  // first get mint cost
-  const mintCost = await pkpNft.mintCost();
-
-  // then, mint PKP using helper
+  // console.log("authData inside mintPKP", authData);
   const tx = await pkpHelper.mintNextAndAddAuthMethods(
     2,
-    [authMethodType],
-    [idForAuthMethod],
-    ["0x"],
-    [[ethers.BigNumber.from("0")]],
+    [],
+    [],
+    [WEBAUTHN_AUTH_METHOD_TYPE],
+    ["0x" + credentialID.toString("hex")],
+    ["0x" + credentialPublicKey.toString("hex")],
     true,
-    true,
-    { value: mintCost }
+    { value: ethers.utils.parseEther("0.0001") }
   );
   console.log("tx", tx);
   return tx;
@@ -130,7 +104,7 @@ export async function getPubkeyForAuthMethod({
 }): Promise<string> {
   const permissionsContract = getPermissionsContract();
   const pubkey = permissionsContract.getUserPubkeyForAuthMethod(
-    AuthMethodType.WebAuthn,
+    WEBAUTHN_AUTH_METHOD_TYPE,
     "0x" + credentialID.toString("hex")
   );
   return pubkey;
