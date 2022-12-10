@@ -41,10 +41,13 @@ import { LoggedInUser } from "./example-server";
 
 import cors from "cors";
 import { getPubkeyForAuthMethod } from "./lit";
-import { googleOAuthHandler } from "./routes/auth/google";
+import { googleOAuthVerifyToMintHandler } from "./routes/auth/google";
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
+import { webAuthnAssertionVerifyToMintHandler } from "./routes/auth/webAuthn";
+import { toHash } from "./utils/toHash";
+import { utils } from "ethers";
 
 const app = express();
 
@@ -264,32 +267,18 @@ app.post("/verify-authentication", async (req, res) => {
 
 	const expectedChallenge = user.currentChallenge;
 
-	// let dbAuthenticator;
+	let dbAuthenticator: AuthenticatorDevice;
 	const bodyCredIDBuffer = base64url.toBuffer(body.rawId);
-	// // "Query the DB" here for an authenticator matching `credentialID`
-	// for (const dev of user.devices) {
-	//   if (dev.credentialID.equals(bodyCredIDBuffer)) {
-	//     dbAuthenticator = dev;
-	//     break;
-	//   }
-	// }
+	// "Query the DB" here for an authenticator matching `credentialID`
+	for (const dev of user.devices) {
+		if (dev.credentialID.equals(bodyCredIDBuffer)) {
+			dbAuthenticator = dev;
+			break;
+		}
+	}
+	console.log("dbAuthenticator", dbAuthenticator!);
 
-	// console.log("dbAuthenticator", dbAuthenticator);
-
-	// try and pull it from chain
-	const pubkey = await getPubkeyForAuthMethod({
-		credentialID: bodyCredIDBuffer,
-	});
-	console.log("got pubkey", pubkey);
-
-	const dbAuthenticator: AuthenticatorDevice = {
-		credentialID: bodyCredIDBuffer,
-		credentialPublicKey: Buffer.from(pubkey.slice(2), "hex"),
-		transports: ["internal"],
-		counter: 0,
-	};
-
-	if (!dbAuthenticator) {
+	if (!dbAuthenticator!) {
 		return res
 			.status(400)
 			.send({ error: "Authenticator is not registered with this site" });
@@ -325,8 +314,9 @@ app.post("/verify-authentication", async (req, res) => {
 });
 
 app.post("/store-condition", limiter, storeConditionHandler);
-app.post("/auth/google", googleOAuthHandler);
+app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.get("/auth/status/:requestId", getAuthStatusHandler);
+app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
@@ -352,7 +342,7 @@ if (ENABLE_HTTPS) {
 } else {
 	const host = "127.0.0.1";
 	const port = parseInt(PORT);
-	expectedOrigin = `http://localhost:${port}`;
+	expectedOrigin = `http://localhost:3000`;
 
 	http.createServer(app).listen(port, () => {
 		console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
