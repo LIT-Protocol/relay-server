@@ -43,11 +43,16 @@ import { LoggedInUser } from "./example-server";
 import { mintPKP, getPubkeyForAuthMethod } from "./lit";
 import { storeConditionHandler } from "./routes/storeCondition";
 import limiter from "./routes/middlewares/limiter";
-import cors from 'cors';
+import cors from "cors";
 
 const app = express();
 
-const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost", PORT = "8000" } = process.env;
+const {
+  ENABLE_CONFORMANCE,
+  ENABLE_HTTPS,
+  RP_ID = "localhost",
+  PORT = "8000",
+} = process.env;
 
 app.use(express.static("./public/"));
 app.use(express.json());
