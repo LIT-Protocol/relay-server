@@ -1,97 +1,97 @@
 export interface GoogleOAuthRequest {
-    idToken: string,
+	idToken: string;
 }
 
 export interface GoogleOAuthResponse {
-    requestId?: string,
-    error?: string,
+	requestId?: string;
+	error?: string;
 }
 
 export interface GetAuthStatusRequestParams {
-    requestId: string,
+	requestId: string;
 }
 
 export interface GetAuthStatusResponse {
-    status?: AuthStatus,
-    pkpEthAddress?: string,
-    pkpPublicKey?: string
-    error?: string,
+	status?: AuthStatus;
+	pkpEthAddress?: string;
+	pkpPublicKey?: string;
+	error?: string;
 }
 
 export enum AuthStatus {
-    InProgress = "InProgress",
-    Succeeded = "Succeeded",
-    Failed = "Failed",
+	InProgress = "InProgress",
+	Succeeded = "Succeeded",
+	Failed = "Failed",
 }
 
 export interface StoreConditionRequest {
-    sessionSig: SessionSig,
-    key: string,
-    value: string,
-    securityHash: string,
-    chainId: number,
-    permanent: boolean,
-    capabilityProtocolPrefix: CapabilityProtocolPrefix,
+	sessionSig: SessionSig;
+	key: string;
+	value: string;
+	securityHash: string;
+	chainId: number;
+	permanent: boolean;
+	capabilityProtocolPrefix: CapabilityProtocolPrefix;
 }
 
 export interface StoreConditionResponse {
-    txHash?: string,
-    error?: string,
+	txHash?: string;
+	error?: string;
 }
 
 export interface StoreConditionWithSigner {
-    key: string,
-    value: string,
-    securityHash: string,
-    chainId: number,
-    permanent: boolean,
-    creatorAddress: string,
+	key: string;
+	value: string;
+	securityHash: string;
+	chainId: number;
+	permanent: boolean;
+	creatorAddress: string;
 }
 
 export interface AuthSig {
-    sig: string,
-    derivedVia: string,
-    signedMessage: string,
-    address: string,
+	sig: string;
+	derivedVia: string;
+	signedMessage: string;
+	address: string;
 }
 
 export interface SessionSig {
-    sig: string,
-    derivedVia: string,
-    signedMessage: string,
-    address: string,
-    algo: string,
+	sig: string;
+	derivedVia: string;
+	signedMessage: string;
+	address: string;
+	algo: string;
 }
 
 export interface SessionSigSignedMessage {
-    sessionKey: string,
-    resources: string[],
-    capabilities: Array<AuthSig>,
-    issuedAt: string,
-    expiration: string,
+	sessionKey: string;
+	resources: string[];
+	capabilities: Array<AuthSig>;
+	issuedAt: string;
+	expiration: string;
 }
 
 export interface Config {
-    redisUrl: string,
-    port: number,
+	redisUrl: string;
+	port: number;
 }
 
 export enum CapabilityProtocolPrefix {
-    LitEncryptionCondition = "litEncryptionCondition",
-    LitSigningCondition = "litSigningCondition",
+	LitEncryptionCondition = "litEncryptionCondition",
+	LitSigningCondition = "litSigningCondition",
 }
 
 export interface CapabilityObject {
-    def?: string[],
-    tar?: { [key: string]: string },
-    ext?: { [key: string]: string },
+	def?: string[];
+	tar?: { [key: string]: string };
+	ext?: { [key: string]: string };
 }
 
 export enum AuthMethodType {
-    EthWallet = 1,
-    LitAction,
-    WebAuthn,
-    Discord,
-    Google,
-    GoogleJwt,
+	EthWallet = 1,
+	LitAction,
+	WebAuthn,
+	Discord,
+	Google,
+	GoogleJwt,
 }
