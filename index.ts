@@ -45,6 +45,7 @@ import { googleOAuthHandler } from "./routes/auth/google";
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
+import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
 
 const app = express();
 
@@ -58,6 +59,9 @@ const {
 app.use(express.static("./public/"));
 app.use(express.json());
 app.use(cors());
+
+app.use(limiter);
+app.use(apiKeyGateAndTracking);
 
 /**
  * If the words "metadata statements" mean anything to you, you'll want to enable this route. It
@@ -324,7 +328,7 @@ app.post("/verify-authentication", async (req, res) => {
 	res.send({ verified });
 });
 
-app.post("/store-condition", limiter, storeConditionHandler);
+app.post("/store-condition", storeConditionHandler);
 app.post("/auth/google", googleOAuthHandler);
 app.get("/auth/status/:requestId", getAuthStatusHandler);
 
