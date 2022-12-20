@@ -1,6 +1,6 @@
 import { ethers, utils } from "ethers";
 import fs from "fs";
-import { AuthMethodType, StoreConditionWithSigner } from "./models";
+import { AuthMethodType, StoreConditionWithSigner, PKP } from "./models";
 
 const accessControlConditionsAddress =
 	"0x247B02100dc0929472945E91299c88b8c80b029E";
@@ -117,18 +117,59 @@ export async function mintPKP({
 	return tx;
 }
 
-export async function getPubkeyForAuthMethod({
-	credentialID,
+export async function getPKPsForAuthMethod({
+	authMethodType,
+	idForAuthMethod,
 }: {
-	credentialID: Buffer;
-}): Promise<string> {
-	const permissionsContract = getPermissionsContract();
-	const pubkey = permissionsContract.getUserPubkeyForAuthMethod(
-		AuthMethodType.WebAuthn,
-		"0x" + credentialID.toString("hex"),
-	);
-	return pubkey;
+	authMethodType: AuthMethodType;
+	idForAuthMethod: string;
+}) {
+	if (!authMethodType || !idForAuthMethod) {
+		throw new Error(
+			"Auth method type and id are required to fetch PKPs by auth method",
+		);
+	}
+
+	const pkpPermissions = getPermissionsContract();
+	if (pkpPermissions) {
+		try {
+			const tokenIds = await pkpPermissions.getTokenIdsForAuthMethod(
+				authMethodType,
+				idForAuthMethod,
+			);
+			const pkps: PKP[] = [];
+			for (let i = 0; i < tokenIds.length; i++) {
+				const pubkey = await pkpPermissions.getPubkey(tokenIds[i]);
+				if (pubkey) {
+					const ethAddress = ethers.utils.computeAddress(pubkey);
+					pkps.push({
+						tokenId: tokenIds[i],
+						publicKey: pubkey,
+						ethAddress: ethAddress,
+					});
+				}
+			}
+			return pkps;
+		} catch (err) {
+			throw new Error("Unable to get PKPs for auth method");
+		}
+	} else {
+		throw new Error("Unable to connect to PKP Permissions contract");
+	}
 }
+
+// export async function getPubkeyForAuthMethod({
+// 	credentialID,
+// }: {
+// 	credentialID: Buffer;
+// }): Promise<string> {
+// 	const permissionsContract = getPermissionsContract();
+// 	const pubkey = permissionsContract.getUserPubkeyForAuthMethod(
+// 		AuthMethodType.WebAuthn,
+// 		"0x" + credentialID.toString("hex"),
+// 	);
+// 	return pubkey;
+// }
 
 // export function packAuthData({
 //   credentialPublicKey,

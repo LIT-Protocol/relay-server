@@ -40,14 +40,24 @@ import type {
 import { LoggedInUser } from "./example-server";
 
 import cors from "cors";
-import { getPubkeyForAuthMethod } from "./lit";
-import { googleOAuthVerifyToMintHandler } from "./routes/auth/google";
+import {
+	googleOAuthVerifyToFetchPKPsHandler,
+	googleOAuthVerifyToMintHandler,
+} from "./routes/auth/google";
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
 import { webAuthnAssertionVerifyToMintHandler } from "./routes/auth/webAuthn";
 import { toHash } from "./utils/toHash";
 import { utils } from "ethers";
+import {
+	discordOAuthVerifyToFetchHandler,
+	discordOAuthVerifyToMintHandler,
+} from "./routes/auth/discord";
+import {
+	walletVerifyToMintHandler,
+	walletVerifyToFetchHandler,
+} from "./routes/auth/wallet";
 
 const app = express();
 
@@ -313,10 +323,23 @@ app.post("/verify-authentication", async (req, res) => {
 	res.send({ verified });
 });
 
+// --- Store condition route
 app.post("/store-condition", limiter, storeConditionHandler);
-app.post("/auth/google", googleOAuthVerifyToMintHandler);
-app.get("/auth/status/:requestId", getAuthStatusHandler);
+
+// --- Mint PKP routes
+app.post("/mint/google", googleOAuthVerifyToMintHandler);
+app.post("/mint/discord", discordOAuthVerifyToMintHandler);
+app.post("/mint/wallet", walletVerifyToMintHandler);
+
 app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
+
+// --- Fetch PKP routes
+app.post("/auth/google", googleOAuthVerifyToFetchPKPsHandler);
+app.post("/auth/discord", discordOAuthVerifyToFetchHandler);
+app.post("/auth/wallet", walletVerifyToFetchHandler);
+
+// --- Poll routes
+app.get("/auth/status/:requestId", getAuthStatusHandler);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";

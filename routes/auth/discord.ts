@@ -3,63 +3,65 @@ import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
-	GoogleOAuthRequest,
+	DiscordOAuthRequest,
 	AuthMethodVerifyToMintResponse,
 	AuthMethodVerifyToFetchResponse,
 } from "../../models";
-import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 import { mintPKP, getPKPsForAuthMethod } from "../../lit";
 
-const CLIENT_ID =
-	process.env.GOOGLE_CLIENT_ID ||
-	"1071348522014-3qq1ln33ful535dnd8r4f6f9vtjrv2nu.apps.googleusercontent.com";
+const APP_ID = process.env.DISCORD_CLIENT_ID || "105287423965869266";
 
-const client = new OAuth2Client(CLIENT_ID);
-
-async function verifyIDToken(idToken: string): Promise<TokenPayload> {
-	const ticket = await client.verifyIdToken({
-		idToken,
-		audience: CLIENT_ID,
+async function verifyAndFetchUserId(accessToken: string): Promise<string> {
+	const meResponse = await fetch("https://discord.com/api/users/@me", {
+		method: "GET",
+		headers: {
+			authorization: `Bearer ${accessToken}`,
+		},
 	});
-	return ticket.getPayload()!;
+	if (meResponse.ok) {
+		const user = await meResponse.json();
+		return user.id;
+	} else {
+		console.error("Unable to verify Discord access token", {
+			status: meResponse.status,
+			statusText: meResponse.statusText,
+		});
+		throw new Error("Unable to verify Discord access token");
+	}
 }
 
-export async function googleOAuthVerifyToMintHandler(
+export async function discordOAuthVerifyToMintHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToMintResponse,
-		GoogleOAuthRequest,
+		DiscordOAuthRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
 	res: Response<AuthMethodVerifyToMintResponse, Record<string, any>, number>,
 ) {
-	// get idToken from body
-	const { idToken } = req.body;
+	// get Discord access token from body
+	const { accessToken } = req.body;
 
-	// verify idToken
-	let tokenPayload: TokenPayload | null = null;
+	// verify access token by fetching user info
+	let userId: string;
 	try {
-		tokenPayload = await verifyIDToken(idToken);
-		console.info("Successfully verified user", {
-			userId: tokenPayload.sub,
-		});
+		userId = await verifyAndFetchUserId(accessToken);
 	} catch (err) {
-		console.error("Unable to verify Google idToken", { err });
 		return res.status(400).json({
-			error: "Unable to verify Google idToken",
+			error: "Unable to verify Discord access token",
 		});
 	}
 
 	// mint PKP for user
 	try {
 		const idForAuthMethod = utils.keccak256(
-			toUtf8Bytes(`${tokenPayload.sub}:${tokenPayload.aud}`),
+			toUtf8Bytes(`${userId}:${APP_ID}`),
 		);
 		const mintTx = await mintPKP({
-			authMethodType: AuthMethodType.GoogleJwt,
+			authMethodType: AuthMethodType.Discord,
 			idForAuthMethod,
 		});
 		return res.status(200).json({
@@ -73,40 +75,36 @@ export async function googleOAuthVerifyToMintHandler(
 	}
 }
 
-export async function googleOAuthVerifyToFetchPKPsHandler(
+export async function discordOAuthVerifyToFetchHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
-		GoogleOAuthRequest,
+		DiscordOAuthRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
 	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
 ) {
-	// get idToken from body
-	const { idToken } = req.body;
+	// get Discord access token from body
+	const { accessToken } = req.body;
 
-	// verify idToken
-	let tokenPayload: TokenPayload | null = null;
+	// verify access token by fetching user info
+	let userId: string;
 	try {
-		tokenPayload = await verifyIDToken(idToken);
-		console.info("Successfully verified user", {
-			userId: tokenPayload.sub,
-		});
+		userId = await verifyAndFetchUserId(accessToken);
 	} catch (err) {
-		console.error("Unable to verify Google idToken", { err });
 		return res.status(400).json({
-			error: "Unable to verify Google idToken",
+			error: "Unable to verify Discord access token",
 		});
 	}
 
-	// fetch PKPs for user
+	// fetch PKP for user
 	try {
 		const idForAuthMethod = utils.keccak256(
-			toUtf8Bytes(`${tokenPayload.sub}:${tokenPayload.aud}`),
+			toUtf8Bytes(`${userId}:${APP_ID}`),
 		);
 		const pkps = await getPKPsForAuthMethod({
-			authMethodType: AuthMethodType.GoogleJwt,
+			authMethodType: AuthMethodType.Discord,
 			idForAuthMethod,
 		});
 		return res.status(200).json({
