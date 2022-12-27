@@ -1,22 +1,6 @@
-import config from "../../config";
-
-import * as redis from "redis";
 import rateLimit from "express-rate-limit";
 import RedisStore from "rate-limit-redis";
-
-let redisClient: any;
-
-(async () => {
-	redisClient = redis.createClient({
-		url: config.redisUrl,
-	});
-
-	redisClient.on("error", (error: Error) =>
-		console.error(`Error : ${error}`),
-	);
-
-	await redisClient.connect();
-})();
+import redisClient from "../../lib/redisClient";
 
 const limiter = rateLimit({
 	// Redis store configuration

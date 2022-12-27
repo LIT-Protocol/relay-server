@@ -58,6 +58,7 @@ import {
 	walletVerifyToMintHandler,
 	walletVerifyToFetchHandler,
 } from "./routes/auth/wallet";
+import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
 
 const app = express();
 
@@ -71,6 +72,9 @@ const {
 app.use(express.static("./public/"));
 app.use(express.json());
 app.use(cors());
+
+app.use(limiter);
+app.use(apiKeyGateAndTracking);
 
 /**
  * If the words "metadata statements" mean anything to you, you'll want to enable this route. It
@@ -324,19 +328,19 @@ app.post("/verify-authentication", async (req, res) => {
 });
 
 // --- Store condition route
-app.post("/store-condition", limiter, storeConditionHandler);
-
-// --- Mint PKP routes
-app.post("/mint/google", googleOAuthVerifyToMintHandler);
-app.post("/mint/discord", discordOAuthVerifyToMintHandler);
-app.post("/mint/wallet", walletVerifyToMintHandler);
-
-app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
+app.post("/store-condition", storeConditionHandler);
 
 // --- Fetch PKP routes
 app.post("/auth/google", googleOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/discord", discordOAuthVerifyToFetchHandler);
 app.post("/auth/wallet", walletVerifyToFetchHandler);
+
+app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
+
+// --- Mint PKP routes
+app.post("/mint/google", googleOAuthVerifyToMintHandler);
+app.post("/mint/discord", discordOAuthVerifyToMintHandler);
+app.post("/mint/wallet", walletVerifyToMintHandler);
 
 // --- Poll routes
 app.get("/auth/status/:requestId", getAuthStatusHandler);
