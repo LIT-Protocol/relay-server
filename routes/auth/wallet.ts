@@ -10,6 +10,7 @@ import {
 import { utils } from "ethers";
 import { mintPKP, getPKPsForAuthMethod } from "../../lit";
 
+// Check that the message has been signed by the given address
 function verifyAuthSig(authSig: AuthSig): boolean {
 	const recoveredAddr = utils.verifyMessage(
 		authSig.signedMessage,
@@ -19,6 +20,7 @@ function verifyAuthSig(authSig: AuthSig): boolean {
 	return recoveredAddr.toLowerCase() === authSig.address.toLowerCase();
 }
 
+// Mint PKP for verified Eth wallet
 export async function walletVerifyToMintHandler(
 	req: Request<
 		{},
@@ -32,11 +34,18 @@ export async function walletVerifyToMintHandler(
 	// get wallet auth sig from body
 	const authSig = req.body;
 
-	// verify access token by fetching user info
+	// verify auth sig
 	const verified: boolean = verifyAuthSig(authSig);
-	if (!verified) {
+	if (verified) {
+		console.info("Successfully verified authentication signature", {
+			address: authSig.address,
+		});
+	} else {
+		console.error("Unable to verify authentication signature", {
+			address: authSig.address,
+		});
 		return res.status(400).json({
-			error: "Unable to verify auth sig",
+			error: "Unable to verify authentication signature",
 		});
 	}
 
@@ -47,18 +56,22 @@ export async function walletVerifyToMintHandler(
 			authMethodType: AuthMethodType.EthWallet,
 			idForAuthMethod,
 		});
+		console.info("Minting PKP with Eth wallet", {
+			requestId: mintTx.hash,
+		});
 		return res.status(200).json({
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for user", { err });
+		console.error("Unable to mint PKP for given Eth wallet", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for user",
+			error: "Unable to mint PKP for given Eth wallet",
 		});
 	}
 }
 
-export async function walletVerifyToFetchHandler(
+// Fetch PKPs for verified Eth wallet
+export async function walletVerifyToFetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
@@ -71,11 +84,18 @@ export async function walletVerifyToFetchHandler(
 	// get auth sig from body
 	const authSig = req.body;
 
-	// verify access token by fetching user info
+	// verify auth sig
 	const verified: boolean = verifyAuthSig(authSig);
-	if (!verified) {
+	if (verified) {
+		console.info("Successfully verified authentication signature", {
+			address: authSig.address,
+		});
+	} else {
+		console.error("Unable to verify authentication signature", {
+			address: authSig.address,
+		});
 		return res.status(400).json({
-			error: "Unable to verify auth sig",
+			error: "Unable to verify authentication signature",
 		});
 	}
 
@@ -86,13 +106,16 @@ export async function walletVerifyToFetchHandler(
 			authMethodType: AuthMethodType.EthWallet,
 			idForAuthMethod,
 		});
+		console.info("Fetched PKPs with Eth wallet", {
+			pkps: pkps,
+		});
 		return res.status(200).json({
 			pkps: pkps,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for user", { err });
+		console.error("Unable to fetch PKPs for given Eth wallet", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for user",
+			error: "Unable to fetch PKPs for given Eth wallet",
 		});
 	}
 }

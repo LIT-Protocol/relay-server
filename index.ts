@@ -48,15 +48,13 @@ import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
 import { webAuthnAssertionVerifyToMintHandler } from "./routes/auth/webAuthn";
-import { toHash } from "./utils/toHash";
-import { utils } from "ethers";
 import {
-	discordOAuthVerifyToFetchHandler,
+	discordOAuthVerifyToFetchPKPsHandler,
 	discordOAuthVerifyToMintHandler,
 } from "./routes/auth/discord";
 import {
 	walletVerifyToMintHandler,
-	walletVerifyToFetchHandler,
+	walletVerifyToFetchPKPsHandler,
 } from "./routes/auth/wallet";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
 
@@ -327,22 +325,23 @@ app.post("/verify-authentication", async (req, res) => {
 	res.send({ verified });
 });
 
-// --- Store condition route
+// --- Store condition
 app.post("/store-condition", storeConditionHandler);
 
-// --- Fetch PKP routes
-app.post("/auth/google", googleOAuthVerifyToFetchPKPsHandler);
-app.post("/auth/discord", discordOAuthVerifyToFetchHandler);
-app.post("/auth/wallet", walletVerifyToFetchHandler);
+// --- Mint PKP for authorized account
+app.post("/auth/google", googleOAuthVerifyToMintHandler);
+app.post("/auth/discord", discordOAuthVerifyToMintHandler);
+app.post("/auth/wallet", walletVerifyToMintHandler);
 
+// TODO: Implement safe version of WebAuthn
 app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
 
-// --- Mint PKP routes
-app.post("/mint/google", googleOAuthVerifyToMintHandler);
-app.post("/mint/discord", discordOAuthVerifyToMintHandler);
-app.post("/mint/wallet", walletVerifyToMintHandler);
+// --- Fetch PKPs tied to authorized account
+app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
+app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
+app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 
-// --- Poll routes
+// --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
 
 if (ENABLE_HTTPS) {

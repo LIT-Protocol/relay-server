@@ -13,7 +13,10 @@ import { mintPKP, getPKPsForAuthMethod } from "../../lit";
 
 const APP_ID = process.env.DISCORD_CLIENT_ID || "105287423965869266";
 
-async function verifyAndFetchUserId(accessToken: string): Promise<string> {
+// Verify Discord access token by fetching current user info
+async function verifyAndFetchDiscordUserId(
+	accessToken: string,
+): Promise<string> {
 	const meResponse = await fetch("https://discord.com/api/users/@me", {
 		method: "GET",
 		headers: {
@@ -24,14 +27,11 @@ async function verifyAndFetchUserId(accessToken: string): Promise<string> {
 		const user = await meResponse.json();
 		return user.id;
 	} else {
-		console.error("Unable to verify Discord access token", {
-			status: meResponse.status,
-			statusText: meResponse.statusText,
-		});
-		throw new Error("Unable to verify Discord access token");
+		throw new Error("Unable to verify Discord account");
 	}
 }
 
+// Mint PKP for verified Discord account
 export async function discordOAuthVerifyToMintHandler(
 	req: Request<
 		{},
@@ -48,10 +48,13 @@ export async function discordOAuthVerifyToMintHandler(
 	// verify access token by fetching user info
 	let userId: string;
 	try {
-		userId = await verifyAndFetchUserId(accessToken);
+		userId = await verifyAndFetchDiscordUserId(accessToken);
+		console.info("Successfully verified Discord account", {
+			userId: userId,
+		});
 	} catch (err) {
 		return res.status(400).json({
-			error: "Unable to verify Discord access token",
+			error: "Unable to verify Discord account",
 		});
 	}
 
@@ -64,18 +67,22 @@ export async function discordOAuthVerifyToMintHandler(
 			authMethodType: AuthMethodType.Discord,
 			idForAuthMethod,
 		});
+		console.info("Minting PKP with Discord auth", {
+			requestId: mintTx.hash,
+		});
 		return res.status(200).json({
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for user", { err });
+		console.error("Unable to mint PKP for given Discord account", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for user",
+			error: "Unable to mint PKP for given Discord account",
 		});
 	}
 }
 
-export async function discordOAuthVerifyToFetchHandler(
+// Fetch PKPs for verified Discord account
+export async function discordOAuthVerifyToFetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
@@ -91,10 +98,13 @@ export async function discordOAuthVerifyToFetchHandler(
 	// verify access token by fetching user info
 	let userId: string;
 	try {
-		userId = await verifyAndFetchUserId(accessToken);
+		userId = await verifyAndFetchDiscordUserId(accessToken);
+		console.info("Successfully verified Discord account", {
+			userId: userId,
+		});
 	} catch (err) {
 		return res.status(400).json({
-			error: "Unable to verify Discord access token",
+			error: "Unable to verify Discord account",
 		});
 	}
 
@@ -107,13 +117,18 @@ export async function discordOAuthVerifyToFetchHandler(
 			authMethodType: AuthMethodType.Discord,
 			idForAuthMethod,
 		});
+		console.info("Fetched PKPs with Discord auth", {
+			pkps: pkps,
+		});
 		return res.status(200).json({
 			pkps: pkps,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for user", { err });
+		console.error("Unable to fetch PKPs for given Discord account", {
+			err,
+		});
 		return res.status(500).json({
-			error: "Unable to mint PKP for user",
+			error: "Unable to fetch PKPs for given Discord account",
 		});
 	}
 }
