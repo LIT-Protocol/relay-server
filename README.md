@@ -66,7 +66,7 @@ Note: WebAuthn implementation is still a work in progress and will likely change
 | HTTP Verb | Path                             | Description                                                        |
 | --------- | -------------------------------- | ------------------------------------------------------------------ |
 | GET       | /generate-registration-options   | Register (i.e., create an account) via supported authenticator     |
-| POST      | /generate-authentication-options | Authenticate (i.e., login) via previously-registered authenticator |
+| GET       | /generate-authentication-options | Authenticate (i.e., login) via previously-registered authenticator |
 | POST      | /verify-registration             | Verify the authenticator's response                                |
 
 </br>
