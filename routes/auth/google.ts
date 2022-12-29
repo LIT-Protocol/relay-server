@@ -3,13 +3,14 @@ import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
-	GoogleOAuthVerifyToMintRequest,
+	GoogleOAuthRequest,
 	AuthMethodVerifyToMintResponse,
+	AuthMethodVerifyToFetchResponse,
 } from "../../models";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
-import { mintPKP } from "../../lit";
+import { mintPKP, getPKPsForAuthMethod } from "../../lit";
 
 const CLIENT_ID =
 	process.env.GOOGLE_CLIENT_ID ||
@@ -17,6 +18,7 @@ const CLIENT_ID =
 
 const client = new OAuth2Client(CLIENT_ID);
 
+// Validate given Google ID token
 async function verifyIDToken(idToken: string): Promise<TokenPayload> {
 	const ticket = await client.verifyIdToken({
 		idToken,
@@ -25,11 +27,12 @@ async function verifyIDToken(idToken: string): Promise<TokenPayload> {
 	return ticket.getPayload()!;
 }
 
+// Mint PKP for verified Google account
 export async function googleOAuthVerifyToMintHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToMintResponse,
-		GoogleOAuthVerifyToMintRequest,
+		GoogleOAuthRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
@@ -38,17 +41,17 @@ export async function googleOAuthVerifyToMintHandler(
 	// get idToken from body
 	const { idToken } = req.body;
 
-	// verify idToken
+	// verify Google ID token
 	let tokenPayload: TokenPayload | null = null;
 	try {
 		tokenPayload = await verifyIDToken(idToken);
-		console.info("Successfully verified user", {
+		console.info("Successfully verified Google account", {
 			userId: tokenPayload.sub,
 		});
 	} catch (err) {
-		console.error("Unable to verify Google idToken", { err });
+		console.error("Unable to verify Google account", { err });
 		return res.status(400).json({
-			error: "Unable to verify Google idToken",
+			error: "Unable to verify Google account",
 		});
 	}
 
@@ -61,13 +64,67 @@ export async function googleOAuthVerifyToMintHandler(
 			authMethodType: AuthMethodType.GoogleJwt,
 			idForAuthMethod,
 		});
+		console.info("Minting PKP with Google auth", {
+			requestId: mintTx.hash,
+		});
 		return res.status(200).json({
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for user", { err });
+		console.error("Unable to mint PKP for given Google account", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for user",
+			error: "Unable to mint PKP for given Google account",
+		});
+	}
+}
+
+// Fetch PKPs for verified Google account
+export async function googleOAuthVerifyToFetchPKPsHandler(
+	req: Request<
+		{},
+		AuthMethodVerifyToFetchResponse,
+		GoogleOAuthRequest,
+		ParsedQs,
+		Record<string, any>
+	>,
+	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
+) {
+	// get idToken from body
+	const { idToken } = req.body;
+
+	// verify idToken
+	let tokenPayload: TokenPayload | null = null;
+	try {
+		tokenPayload = await verifyIDToken(idToken);
+		console.info("Successfully verified Google account", {
+			userId: tokenPayload.sub,
+		});
+	} catch (err) {
+		console.error("Unable to verify Google account", { err });
+		return res.status(400).json({
+			error: "Unable to verify Google account",
+		});
+	}
+
+	// fetch PKPs for user
+	try {
+		const idForAuthMethod = utils.keccak256(
+			toUtf8Bytes(`${tokenPayload.sub}:${tokenPayload.aud}`),
+		);
+		const pkps = await getPKPsForAuthMethod({
+			authMethodType: AuthMethodType.GoogleJwt,
+			idForAuthMethod,
+		});
+		console.info("Fetched PKPs with Google auth", {
+			pkps: pkps,
+		});
+		return res.status(200).json({
+			pkps: pkps,
+		});
+	} catch (err) {
+		console.error("Unable to fetch PKPs for given Google account", { err });
+		return res.status(500).json({
+			error: "Unable to fetch PKPs for given Google account",
 		});
 	}
 }

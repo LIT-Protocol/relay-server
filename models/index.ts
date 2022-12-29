@@ -1,9 +1,18 @@
-export interface GoogleOAuthVerifyToMintRequest {
+export interface GoogleOAuthRequest {
 	idToken: string;
+}
+
+export interface DiscordOAuthRequest {
+	accessToken: string;
 }
 
 export interface AuthMethodVerifyToMintResponse {
 	requestId?: string;
+	error?: string;
+}
+
+export interface AuthMethodVerifyToFetchResponse {
+	pkps?: PKP[];
 	error?: string;
 }
 
@@ -19,6 +28,7 @@ export interface GetAuthStatusRequestParams {
 
 export interface GetAuthStatusResponse {
 	status?: AuthStatus;
+	pkpTokenId?: string;
 	pkpEthAddress?: string;
 	pkpPublicKey?: string;
 	error?: string;
@@ -100,4 +110,10 @@ export enum AuthMethodType {
 	Discord,
 	Google,
 	GoogleJwt,
+}
+
+export interface PKP {
+	tokenId: string;
+	publicKey: string;
+	ethAddress: string;
 }
