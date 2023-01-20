@@ -13,7 +13,7 @@ import { mintPKP } from "../../lit";
 
 const CLIENT_ID =
 	process.env.GOOGLE_CLIENT_ID ||
-	"1071348522014-3qq1ln33ful535dnd8r4f6f9vtjrv2nu.apps.googleusercontent.com";
+	"355007986731-llbjq5kbsg8ieb705mo64nfnh88dhlmn.apps.googleusercontent.com";
 
 const client = new OAuth2Client(CLIENT_ID);
 
