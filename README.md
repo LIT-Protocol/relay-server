@@ -27,6 +27,7 @@ Create a `.env` file at the root of the repo and populate the corresponding envi
 -   `LIT_TXSENDER_RPC_URL`
 -   `LIT_TXSENDER_PRIVATE_KEY`
 -   `GOOGLE_CLIENT_ID=355007986731-llbjq5kbsg8ieb705mo64nfnh88dhlmn.apps.googleusercontent.com`
+-   `DISCORD_CLIENT_ID=1052874239658692668`
 
 Make sure to start your Redis server if you plan to host one locally.
 
