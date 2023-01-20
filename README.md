@@ -26,6 +26,7 @@ Create a `.env` file at the root of the repo and populate the corresponding envi
 -   `PORT`
 -   `LIT_TXSENDER_RPC_URL`
 -   `LIT_TXSENDER_PRIVATE_KEY`
+-   `GOOGLE_CLIENT_ID=355007986731-llbjq5kbsg8ieb705mo64nfnh88dhlmn.apps.googleusercontent.com`
 
 Make sure to start your Redis server if you plan to host one locally.
 
@@ -37,7 +38,9 @@ Run `yarn start` to start the server.
 
 ## Available Endpoints
 
-Note: WebAuthn implementation is still a work in progress and will likely change.
+Staging instance of the relay server is live at https://relay-server-staging.herokuapp.com.
+
+**If you are using this relay server, please note that your app's OAuth client ids must match the ones used in the relay server. The environment variables are listed above.**
 
 ### Minting PKPs
 
@@ -61,13 +64,15 @@ Note: WebAuthn implementation is still a work in progress and will likely change
 
 </br>
 
-### Handling WebAuthn
+### Handling WebAuthn\*
 
 | HTTP Verb | Path                             | Description                                                        |
 | --------- | -------------------------------- | ------------------------------------------------------------------ |
 | GET       | /generate-registration-options   | Register (i.e., create an account) via supported authenticator     |
 | GET       | /generate-authentication-options | Authenticate (i.e., login) via previously-registered authenticator |
 | POST      | /verify-registration             | Verify the authenticator's response                                |
+
+\*Note: WebAuthn implementation is still a work in progress and will likely change.
 
 </br>
 
