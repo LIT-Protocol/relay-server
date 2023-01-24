@@ -2,20 +2,17 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.googleOAuthVerifyToFetchPKPsHandler = exports.googleOAuthVerifyToMintHandler = void 0;
 const models_1 = require("../../models");
-const google_auth_library_1 = require("google-auth-library");
 const ethers_1 = require("ethers");
 const utils_1 = require("ethers/lib/utils");
 const lit_1 = require("../../lit");
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID ||
-    "1071348522014-3qq1ln33ful535dnd8r4f6f9vtjrv2nu.apps.googleusercontent.com";
-const client = new google_auth_library_1.OAuth2Client(CLIENT_ID);
+    "355007986731-llbjq5kbsg8ieb705mo64nfnh88dhlmn.apps.googleusercontent.com";
 // Validate given Google ID token
 async function verifyIDToken(idToken) {
-    const ticket = await client.verifyIdToken({
-        idToken,
-        audience: CLIENT_ID,
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`, {
+        method: "GET",
     });
-    return ticket.getPayload();
+    return response.json();
 }
 // Mint PKP for verified Google account
 async function googleOAuthVerifyToMintHandler(req, res) {
