@@ -6,23 +6,19 @@ import {
 	GoogleOAuthRequest,
 	GoogleOAuthResponse,
 } from "../../models";
-import { OAuth2Client, TokenPayload } from "google-auth-library";
+import { TokenPayload } from "google-auth-library";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 import { mintPKP } from "../../lit";
 
-const CLIENT_ID =
-	process.env.GOOGLE_CLIENT_ID ||
-	"355007986731-llbjq5kbsg8ieb705mo64nfnh88dhlmn.apps.googleusercontent.com";
-
-const client = new OAuth2Client(CLIENT_ID);
-
 async function verifyIDToken(idToken: string): Promise<TokenPayload> {
-	const ticket = await client.verifyIdToken({
-		idToken,
-		audience: CLIENT_ID,
-	});
-	return ticket.getPayload()!;
+	const response = await fetch(
+		`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`,
+		{
+			method: "GET",
+		},
+	);
+	return response.json();
 }
 
 export async function googleOAuthHandler(
