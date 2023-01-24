@@ -20,7 +20,6 @@ const client = new OAuth2Client(CLIENT_ID);
 async function verifyIDToken(idToken: string): Promise<TokenPayload> {
 	const ticket = await client.verifyIdToken({
 		idToken,
-		audience: CLIENT_ID,
 	});
 	return ticket.getPayload()!;
 }
