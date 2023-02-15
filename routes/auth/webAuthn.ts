@@ -1,73 +1,152 @@
-import { utils } from "ethers";
+import {
+	generateRegistrationOptions,
+	GenerateRegistrationOptionsOpts,
+} from "@simplewebauthn/server";
 import { Request } from "express";
 import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
-import { mintPKP } from "../../lit";
 import {
 	AuthMethodType,
-	AuthMethodVerifyToMintResponse,
-	WebAuthnAssertionVerifyToMintRequest,
+	AuthMethodVerifyRegistrationResponse,
+	WebAuthnVerifyRegistrationRequest,
 } from "../../models";
-import { verifySignature } from "../../utils/webAuthn/verifySignature";
-import { decodeECKeyAndGetPublicKey } from "../../utils/webAuthn/keys";
-import { toUtf8Bytes } from "ethers/lib/utils";
 
-export async function webAuthnAssertionVerifyToMintHandler(
+import type {
+	VerifiedRegistrationResponse,
+	VerifyRegistrationResponseOpts,
+} from "@simplewebauthn/server";
+import { verifyRegistrationResponse } from "@simplewebauthn/server";
+
+import { ethers, utils } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
+import config from "../../config";
+import { getPubkeyForAuthMethod, mintPKP } from "../../lit";
+import { decodeECKeyAndGetPublicKey } from "../../utils/webAuthn/keys";
+
+function generateUserIDFromUserName(username: string): string {
+	// TODO: use hash to avoid leaking username
+	return username;
+}
+
+/**
+ * Generates WebAuthn registration options for a given username.
+ */
+export function webAuthnGenerateRegistrationOptionsHandler(
+	req: Request<{}, {}, {}, ParsedQs, Record<string, any>>,
+	res: Response<{}, Record<string, any>, number>,
+) {
+	// Get username from query string
+	const username = req.query.username as string;
+
+	const opts: GenerateRegistrationOptionsOpts = {
+		rpName: "Lit Protocol",
+		rpID: config.rpID,
+		userID: generateUserIDFromUserName(username),
+		userName: username,
+		timeout: 60000,
+		attestationType: "direct", // TODO: change to none
+		authenticatorSelection: {
+			userVerification: "required",
+			residentKey: "required",
+		},
+		supportedAlgorithmIDs: [-7, -257], // ES256 and RS256
+	};
+
+	const options = generateRegistrationOptions(opts);
+
+	return res.json(options);
+}
+
+function generateAuthMethodId(username: string): string {
+	return utils.keccak256(toUtf8Bytes(`${username}:lit`));
+}
+
+export async function webAuthnVerifyRegistrationHandler(
 	req: Request<
 		{},
-		AuthMethodVerifyToMintResponse,
-		WebAuthnAssertionVerifyToMintRequest,
+		AuthMethodVerifyRegistrationResponse,
+		WebAuthnVerifyRegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
-	res: Response<AuthMethodVerifyToMintResponse, Record<string, any>, number>,
+	res: Response<
+		AuthMethodVerifyRegistrationResponse,
+		Record<string, any>,
+		number
+	>,
 ) {
-	// get parameters from body
-	const { signature, signatureBase, credentialPublicKey } = req.body;
+	// Get username from request body.
+	const username = req.body.username;
 
-	// verify WebAuthn signature
+	// Check if PKP already exists for this username.
+	const authMethodId = generateAuthMethodId(username);
 	try {
-		const signatureValid = await verifySignature({
-			signature: Buffer.from(utils.arrayify(signature)),
-			signatureBase: Buffer.from(utils.arrayify(signatureBase)),
-			credentialPublicKey: Buffer.from(
-				utils.arrayify(credentialPublicKey),
-			),
+		const pubKey = await getPubkeyForAuthMethod({
+			authMethodType: AuthMethodType.WebAuthn,
+			authMethodId,
 		});
 
-		if (!signatureValid) {
-			return res.status(400).json({
-				error: "Invalid signature",
+		if (!ethers.BigNumber.from(pubKey).isZero()) {
+			console.info("PKP already exists for this username");
+			return res.status(400).send({
+				error: "Invalid username, please try another one",
 			});
 		}
-
-		console.info("Signature valid", { credentialPublicKey });
-	} catch (err) {
-		console.error("Unable to verify signature", { err });
-		return res.status(500).json({
-			error: "Unable to verify signature",
+	} catch (error) {
+		const _error = error as Error;
+		console.error(_error);
+		return res.status(500).send({
+			error: "Unable to verify if PKP already exists",
 		});
 	}
 
-	// mint PKP for user
+	// WebAuthn verification.
+	let verification: VerifiedRegistrationResponse;
+	try {
+		const opts: VerifyRegistrationResponseOpts = {
+			credential: req.body.credential,
+			expectedChallenge: () => true, // we don't work with challenges in registration
+			expectedOrigin: config.origin,
+			expectedRPID: config.rpID,
+			requireUserVerification: true,
+		};
+		verification = await verifyRegistrationResponse(opts);
+	} catch (error) {
+		const _error = error as Error;
+		console.error(_error);
+		return res.status(400).send({ error: _error.message });
+	}
+
+	const { verified, registrationInfo } = verification;
+
+	// Mint PKP for user.
+	if (!verified || !registrationInfo) {
+		console.error("Unable to verify registration", { verification });
+		return res.status(400).json({
+			error: "Unable to verify registration",
+		});
+	}
+
+	const { credentialPublicKey } = registrationInfo;
+	console.log("registrationInfo", { registrationInfo });
+
 	try {
 		const decodedPublicKey = decodeECKeyAndGetPublicKey(
 			Buffer.from(utils.arrayify(credentialPublicKey)),
 		);
-		console.log("Deriving ID for auth method", { decodedPublicKey });
 
-		const idForAuthMethod = utils.keccak256(
-			toUtf8Bytes(`0x${decodedPublicKey}:TODO:`),
-		);
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.WebAuthn,
-			idForAuthMethod,
+			authMethodId,
+			authMethodPubkey: decodedPublicKey,
 		});
+
 		return res.status(200).json({
 			requestId: mintTx.hash,
 		});
-	} catch (err) {
-		console.error("Unable to mint PKP for user", { err });
+	} catch (error) {
+		const _error = error as Error;
+		console.error("Unable to mint PKP for user", { _error });
 		return res.status(500).json({
 			error: "Unable to mint PKP for user",
 		});
