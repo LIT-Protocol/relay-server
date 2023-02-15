@@ -3,8 +3,8 @@ import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
-	GoogleOAuthVerifyToMintRequest,
-	AuthMethodVerifyToMintResponse,
+	GoogleOAuthVerifyRegistrationRequest,
+	AuthMethodVerifyRegistrationResponse,
 } from "../../models";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { utils } from "ethers";
@@ -27,12 +27,16 @@ async function verifyIDToken(idToken: string): Promise<TokenPayload> {
 export async function googleOAuthVerifyToMintHandler(
 	req: Request<
 		{},
-		AuthMethodVerifyToMintResponse,
-		GoogleOAuthVerifyToMintRequest,
+		AuthMethodVerifyRegistrationResponse,
+		GoogleOAuthVerifyRegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
-	res: Response<AuthMethodVerifyToMintResponse, Record<string, any>, number>,
+	res: Response<
+		AuthMethodVerifyRegistrationResponse,
+		Record<string, any>,
+		number
+	>,
 ) {
 	// get idToken from body
 	const { idToken } = req.body;
@@ -53,12 +57,13 @@ export async function googleOAuthVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const idForAuthMethod = utils.keccak256(
+		const authMethodId = utils.keccak256(
 			toUtf8Bytes(`${tokenPayload.sub}:${tokenPayload.aud}`),
 		);
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.GoogleJwt,
-			idForAuthMethod,
+			authMethodId,
+			authMethodPubkey: "0x",
 		});
 		return res.status(200).json({
 			requestId: mintTx.hash,

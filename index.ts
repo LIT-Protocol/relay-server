@@ -46,7 +46,10 @@ import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
-import { webAuthnAssertionVerifyToMintHandler } from "./routes/auth/webAuthn";
+import {
+	webAuthnVerifyRegistrationHandler,
+	webAuthnGenerateRegistrationOptionsHandler,
+} from "./routes/auth/webAuthn";
 import { toHash } from "./utils/toHash";
 import { utils } from "ethers";
 
@@ -320,7 +323,14 @@ app.post("/verify-authentication", async (req, res) => {
 app.post("/store-condition", limiter, storeConditionHandler);
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.get("/auth/status/:requestId", getAuthStatusHandler);
-app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
+app.post(
+	"/auth/webauthn/verify-registration",
+	webAuthnVerifyRegistrationHandler,
+);
+app.get(
+	"/auth/webauthn/generate-registration-options",
+	webAuthnGenerateRegistrationOptionsHandler,
+);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
