@@ -37,5 +37,5 @@ export default {
 	...baseConfig,
 	origin: baseConfig.enableHttps
 		? `https://${baseConfig.rpID}`
-		: `http://${baseConfig.rpID}`,
+		: `http://localhost:3000`,
 } as Config;

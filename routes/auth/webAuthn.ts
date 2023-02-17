@@ -86,7 +86,12 @@ export async function webAuthnVerifyRegistrationHandler(
 			authMethodId,
 		});
 
-		if (!ethers.BigNumber.from(pubKey).isZero()) {
+		console.log("pubKey", pubKey);
+
+		if (
+			ethers.utils.isAddress(pubKey) &&
+			!ethers.BigNumber.from(pubKey).isZero()
+		) {
 			console.info("PKP already exists for this username");
 			return res.status(400).send({
 				error: "Invalid username, please try another one",
@@ -132,13 +137,17 @@ export async function webAuthnVerifyRegistrationHandler(
 
 	try {
 		const decodedPublicKey = decodeECKeyAndGetPublicKey(
-			Buffer.from(utils.arrayify(credentialPublicKey)),
+			Buffer.from(credentialPublicKey),
+		);
+
+		const publicKey = ethers.utils.hexlify(
+			Uint8Array.from(Buffer.from(decodedPublicKey, "hex")),
 		);
 
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.WebAuthn,
 			authMethodId,
-			authMethodPubkey: decodedPublicKey,
+			authMethodPubkey: publicKey,
 		});
 
 		return res.status(200).json({

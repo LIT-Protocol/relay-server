@@ -356,7 +356,7 @@ if (ENABLE_HTTPS) {
 } else {
 	const host = "127.0.0.1";
 	const port = parseInt(PORT);
-	expectedOrigin = `http://localhost:3000`;
+	expectedOrigin = `http://localhost:3001`;
 
 	http.createServer(app).listen(port, () => {
 		console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
