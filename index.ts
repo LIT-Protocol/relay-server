@@ -47,16 +47,18 @@ import {
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
-import { webAuthnAssertionVerifyToMintHandler } from "./routes/auth/webAuthn";
 import {
 	discordOAuthVerifyToFetchPKPsHandler,
 	discordOAuthVerifyToMintHandler,
 } from "./routes/auth/discord";
+import { webAuthnAssertionVerifyToMintHandler } from "./routes/auth/webAuthn";
 import {
 	walletVerifyToMintHandler,
 	walletVerifyToFetchPKPsHandler,
 } from "./routes/auth/wallet";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
+import { toHash } from "./utils/toHash";
+import { utils } from "ethers";
 
 const app = express();
 
@@ -343,6 +345,7 @@ app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 
 // --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
+app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
