@@ -1,10 +1,16 @@
-export interface GoogleOAuthRequest {
+export interface GoogleOAuthVerifyToMintRequest {
 	idToken: string;
 }
 
-export interface GoogleOAuthResponse {
+export interface AuthMethodVerifyToMintResponse {
 	requestId?: string;
 	error?: string;
+}
+
+export interface WebAuthnAssertionVerifyToMintRequest {
+	signature: string;
+	signatureBase: string;
+	credentialPublicKey: string;
 }
 
 export interface GetAuthStatusRequestParams {
