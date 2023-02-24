@@ -83,7 +83,7 @@ export interface Config {
 	port: number;
 	rpID: string;
 	enableHttps: boolean;
-	origin: string;
+	expectedOrigin: string;
 	accessControlConditionsAddress: string;
 	pkpHelperAddress: string;
 	pkpPermissionsAddress: string;

@@ -106,7 +106,7 @@ export async function webAuthnVerifyRegistrationHandler(
 		const opts: VerifyRegistrationResponseOpts = {
 			credential: req.body.credential,
 			expectedChallenge: () => true, // we don't work with challenges in registration
-			expectedOrigin: config.origin,
+			expectedOrigin: config.expectedOrigin,
 			expectedRPID: config.rpID,
 			requireUserVerification: true,
 		};

@@ -35,7 +35,7 @@ const baseConfig = {
 
 export default {
 	...baseConfig,
-	origin: baseConfig.enableHttps
+	expectedOrigin: baseConfig.enableHttps
 		? `https://${baseConfig.rpID}`
-		: `http://localhost:3000`,
+		: `http://localhost:3001`, // NOT the same port as this server locally.
 } as Config;
