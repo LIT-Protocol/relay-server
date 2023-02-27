@@ -68,6 +68,7 @@ const {
 	ENABLE_HTTPS,
 	RP_ID = "localhost",
 	PORT = "8000",
+	CLIENT_ORIGIN,
 	COOKIE_SECRET,
 } = process.env;
 
@@ -75,7 +76,7 @@ app.use(cookieParser(COOKIE_SECRET));
 
 app.use(express.static("./public/"));
 app.use(express.json());
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 
 app.use(limiter);
 app.use(apiKeyGateAndTracking);
