@@ -13,8 +13,10 @@
   "license": "ISC",
   "dependencies": {
     "@simplewebauthn/server": "6.2.1",
+    "@types/cookie-parser": "^1.4.3",
     "base64url": "^3.0.1",
     "cbor": "^8.1.0",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "elliptic": "^6.5.4",
@@ -23,6 +25,7 @@
     "express-rate-limit": "^6.6.0",
     "google-auth-library": "^8.7.0",
     "js-base64": "^3.7.2",
+    "nanoid": "3.3.4",
     "node-fetch": "^2.6.0",
     "rate-limit-redis": "^3.0.1",
     "redis": "^4.4.0",

@@ -57,8 +57,9 @@ import {
 	walletVerifyToFetchPKPsHandler,
 } from "./routes/auth/wallet";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
-import { toHash } from "./utils/toHash";
-import { utils } from "ethers";
+import { nanoid } from "nanoid";
+import cookieParser from "cookie-parser";
+import redisClient from "./lib/redisClient";
 
 const app = express();
 
@@ -67,11 +68,14 @@ const {
 	ENABLE_HTTPS,
 	RP_ID = "localhost",
 	PORT = "8000",
+	COOKIE_SECRET,
 } = process.env;
+
+app.use(cookieParser(COOKIE_SECRET));
 
 app.use(express.static("./public/"));
 app.use(express.json());
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 
 app.use(limiter);
 app.use(apiKeyGateAndTracking);
@@ -108,41 +112,40 @@ export let expectedOrigin = "";
  *
  * Here, the example server assumes the following user has completed login:
  */
-const loggedInUserId = "internalUserId";
+// const loggedInUserId = "internalUserId";
 
 const inMemoryUserDeviceDB: { [loggedInUserId: string]: LoggedInUser } = {
-	[loggedInUserId]: {
-		id: loggedInUserId,
-		username: `user@${rpID}`,
-		devices: [],
-		/**
-		 * A simple way of storing a user's current challenge being signed by registration or authentication.
-		 * It should be expired after `timeout` milliseconds (optional argument for `generate` methods,
-		 * defaults to 60000ms)
-		 */
-		currentChallenge: undefined,
-	},
+	// [loggedInUserId]: {
+	// 	id: loggedInUserId,
+	// 	username: `user@${rpID}`,
+	// 	devices: [],
+	// 	/**
+	// 	 * A simple way of storing a user's current challenge being signed by registration or authentication.
+	// 	 * It should be expired after `timeout` milliseconds (optional argument for `generate` methods,
+	// 	 * defaults to 60000ms)
+	// 	 */
+	// 	currentChallenge: undefined,
+	// },
 };
 
 /**
  * Registration (a.k.a. "Registration")
  */
-app.get("/generate-registration-options", (req, res) => {
-	const user = inMemoryUserDeviceDB[loggedInUserId];
+app.get("/generate-registration-options", async (req, res) => {
+	const username = (req.query.username as string) || "lituser";
 
-	const {
-		/**
-		 * The username can be a human-readable name, email, etc... as it is intended only for display.
-		 */
-		username,
-		devices,
-	} = user;
+	const user = {
+		id: nanoid(15),
+		username: username,
+		devices: [],
+		currentChallenge: "",
+	};
 
 	const opts: GenerateRegistrationOptionsOpts = {
-		rpName: "SimpleWebAuthn Example",
+		rpName: "Lit Protocol Demo",
 		rpID,
-		userID: loggedInUserId,
-		userName: username,
+		userID: user.id,
+		userName: user.username,
 		timeout: 60000,
 		attestationType: "none",
 		/**
@@ -151,11 +154,13 @@ app.get("/generate-registration-options", (req, res) => {
 		 * the browser if it's asked to perform registration when one of these ID's already resides
 		 * on it.
 		 */
-		excludeCredentials: devices.map((dev) => ({
-			id: dev.credentialID,
-			type: "public-key",
-			transports: dev.transports,
-		})),
+		// excludeCredentials: devices.map((dev) => ({
+		// 	id: dev.credentialID,
+		// 	type: "public-key",
+		// 	transports: dev.transports,
+		// })),
+		// Let user register multiple times
+		excludeCredentials: [],
 		/**
 		 * The optional authenticatorSelection property allows for specifying more constraints around
 		 * the types of authenticators that users to can use for registration
@@ -176,7 +181,18 @@ app.get("/generate-registration-options", (req, res) => {
 	 * The server needs to temporarily remember this value for verification, so don't lose it until
 	 * after you verify an authenticator response.
 	 */
-	inMemoryUserDeviceDB[loggedInUserId].currentChallenge = options.challenge;
+	user.currentChallenge = options.challenge;
+	inMemoryUserDeviceDB[user.id] = user;
+
+	// console.log(`Registration options for ${username}`, user);
+
+	// Set cookie
+	const session = nanoid(15);
+	res.cookie("session", session, {
+		maxAge: 1000 * 60 * 60 * 24 * 7,
+		signed: true,
+	});
+	await redisClient.set(session, user.id);
 
 	res.send(options);
 });
@@ -184,7 +200,19 @@ app.get("/generate-registration-options", (req, res) => {
 app.post("/verify-registration", async (req, res) => {
 	const body: RegistrationCredentialJSON = req.body;
 
-	const user = inMemoryUserDeviceDB[loggedInUserId];
+	// Get session from cookie
+	const session = req.signedCookies.session;
+	if (!session) {
+		return res.status(422).send({ error: "Invalid session" });
+	}
+
+	// Find user in redis
+	const userId = await redisClient.get(session);
+	if (!userId) {
+		return res.status(422).send({ error: "Invalid session" });
+	}
+
+	const user = inMemoryUserDeviceDB[userId];
 
 	const expectedChallenge = user.currentChallenge;
 
@@ -207,7 +235,7 @@ app.post("/verify-registration", async (req, res) => {
 	const { verified, registrationInfo } = verification;
 
 	if (verified && registrationInfo) {
-		console.log("registrationInfo", registrationInfo);
+		// console.log("registrationInfo", registrationInfo);
 		const { credentialPublicKey, credentialID, counter } = registrationInfo;
 
 		const existingDevice = user.devices.find((device) =>
@@ -242,15 +270,33 @@ app.post("/verify-registration", async (req, res) => {
 		}
 	}
 
+	// Clear challenge
+	user.currentChallenge = undefined;
+	inMemoryUserDeviceDB[userId] = user;
+
+	// console.log(`Verified registration for ${user.username}`, user);
+
 	res.send({ verified });
 });
 
 /**
  * Login (a.k.a. "Authentication")
  */
-app.get("/generate-authentication-options", (req, res) => {
+app.get("/generate-authentication-options", async (req, res) => {
 	// You need to know the user by this point
-	const user = inMemoryUserDeviceDB[loggedInUserId];
+	// Get session from cookie
+	const session = req.signedCookies.session;
+	if (!session) {
+		return res.status(422).send({ error: "Invalid session" });
+	}
+
+	// Find user in redis
+	const userId = await redisClient.get(session);
+	if (!userId) {
+		return res.status(422).send({ error: "Invalid session" });
+	}
+
+	const user = inMemoryUserDeviceDB[userId];
 
 	const opts: GenerateAuthenticationOptionsOpts = {
 		timeout: 60000,
@@ -269,7 +315,10 @@ app.get("/generate-authentication-options", (req, res) => {
 	 * The server needs to temporarily remember this value for verification, so don't lose it until
 	 * after you verify an authenticator response.
 	 */
-	inMemoryUserDeviceDB[loggedInUserId].currentChallenge = options.challenge;
+	user.currentChallenge = options.challenge;
+	inMemoryUserDeviceDB[userId] = user;
+
+	// console.log(`Authentication options for ${user.username}`, user);
 
 	res.send(options);
 });
@@ -277,7 +326,19 @@ app.get("/generate-authentication-options", (req, res) => {
 app.post("/verify-authentication", async (req, res) => {
 	const body: AuthenticationCredentialJSON = req.body;
 
-	const user = inMemoryUserDeviceDB[loggedInUserId];
+	// Get session from cookie
+	const session = req.signedCookies.session;
+	if (!session) {
+		return res.status(422).send({ error: "Invalid session" });
+	}
+
+	// Find user in redis
+	const userId = await redisClient.get(session);
+	if (!userId) {
+		return res.status(422).send({ error: "Invalid session" });
+	}
+
+	const user = inMemoryUserDeviceDB[userId];
 
 	const expectedChallenge = user.currentChallenge;
 
@@ -290,7 +351,7 @@ app.post("/verify-authentication", async (req, res) => {
 			break;
 		}
 	}
-	console.log("dbAuthenticator", dbAuthenticator!);
+	// console.log("dbAuthenticator", dbAuthenticator!);
 
 	if (!dbAuthenticator!) {
 		return res
@@ -323,6 +384,11 @@ app.post("/verify-authentication", async (req, res) => {
 	}
 
 	// const { credentialPublicKey, credentialID, counter } = authenticationInfo;
+
+	user.currentChallenge = undefined;
+	inMemoryUserDeviceDB[userId] = user;
+
+	// console.log(`Verified authentication for ${user.username}`, user);
 
 	res.send({ verified });
 });
