@@ -72,6 +72,8 @@ const {
 	COOKIE_SECRET,
 } = process.env;
 
+app.enable("trust proxy");
+
 app.use(cookieParser(COOKIE_SECRET));
 
 app.use(express.static("./public/"));
@@ -103,7 +105,7 @@ export const rpID = RP_ID;
 // This value is set at the bottom of page as part of server initialization (the empty string is
 // to appease TypeScript until we determine the expected origin based on whether or not HTTPS
 // support is enabled)
-export let expectedOrigin = "";
+export let expectedOrigin = CLIENT_ORIGIN;
 
 /**
  * 2FA and Passwordless WebAuthn flows expect you to be able to uniquely identify the user that
@@ -190,11 +192,11 @@ app.get("/generate-registration-options", async (req, res) => {
 	// Set cookie
 	const session = nanoid(15);
 	res.cookie("session", session, {
-		maxAge: 1000 * 60 * 60 * 24 * 7,
+		maxAge: 1000 * 60 * 60 * 24 * 14, // 2 weeks
 		signed: true,
-		secure: process.env.NODE_ENV === "production" ? true : false,
 		httpOnly: process.env.NODE_ENV === "production" ? true : false,
 		sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+		secure: process.env.NODE_ENV === "production" ? true : false,
 	});
 	await redisClient.set(session, user.id);
 
@@ -225,7 +227,7 @@ app.post("/verify-registration", async (req, res) => {
 		const opts: VerifyRegistrationResponseOpts = {
 			credential: body,
 			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin: `https://${rpID}`,
+			expectedOrigin: `${expectedOrigin}`,
 			expectedRPID: rpID,
 			requireUserVerification: true,
 		};
@@ -368,7 +370,7 @@ app.post("/verify-authentication", async (req, res) => {
 		const opts: VerifyAuthenticationResponseOpts = {
 			credential: body,
 			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin: `https://${rpID}`,
+			expectedOrigin: `${expectedOrigin}`,
 			expectedRPID: rpID,
 			authenticator: dbAuthenticator,
 			requireUserVerification: true,
@@ -417,33 +419,38 @@ app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 app.get("/auth/status/:requestId", getAuthStatusHandler);
 app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
 
-if (ENABLE_HTTPS) {
-	const host = "0.0.0.0";
-	const port = parseInt(PORT);
-	expectedOrigin = `https://${rpID}`;
+// if (ENABLE_HTTPS) {
+// 	const host = "0.0.0.0";
+// 	const port = parseInt(PORT);
+// 	expectedOrigin = `https://${rpID}`;
 
-	https
-		.createServer(
-			// {
-			// 	/**
-			// 	 * See the README on how to generate this SSL cert and key pair using mkcert
-			// 	 */
-			// 	key: fs.readFileSync(`./${rpID}.key`),
-			// 	cert: fs.readFileSync(`./${rpID}.crt`),
-			// },
-			app,
-		)
-		.listen(port, () => {
-			console.log(
-				`🚀 Server ready at ${expectedOrigin} (${host}:${port})`,
-			);
-		});
-} else {
-	const host = "127.0.0.1";
-	const port = parseInt(PORT);
-	expectedOrigin = `http://localhost:3000`;
+// 	https
+// 		.createServer(
+// 			// {
+// 			// 	/**
+// 			// 	 * See the README on how to generate this SSL cert and key pair using mkcert
+// 			// 	 */
+// 			// 	key: fs.readFileSync(`./${rpID}.key`),
+// 			// 	cert: fs.readFileSync(`./${rpID}.crt`),
+// 			// },
+// 			app,
+// 		)
+// 		.listen(port, () => {
+// 			console.log(
+// 				`🚀 Server ready at ${expectedOrigin} (${host}:${port})`,
+// 			);
+// 		});
+// } else {
+// 	const host = "127.0.0.1";
+// 	const port = parseInt(PORT);
+// 	expectedOrigin = `http://localhost:3000`;
 
-	http.createServer(app).listen(port, () => {
-		console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
-	});
-}
+// 	http.createServer(app).listen(port, () => {
+// 		console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
+// 	});
+// }
+
+const port = parseInt(PORT);
+app.listen(port, () => {
+	console.log(`🚀 Server ready at ${port}`);
+});
