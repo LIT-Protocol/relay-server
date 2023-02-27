@@ -30,6 +30,7 @@ import {
 	verifyAuthenticationResponse,
 	verifyRegistrationResponse,
 } from "@simplewebauthn/server";
+import { verifySignature } from "./utils/webAuthn/verifySignature";
 
 import type {
 	AuthenticationCredentialJSON,
@@ -59,7 +60,8 @@ import {
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
 import { nanoid } from "nanoid";
 import cookieParser from "cookie-parser";
-import redisClient from "./lib/redisClient";
+
+import { ethers } from "ethers";
 
 const app = express();
 
@@ -72,13 +74,14 @@ const {
 	COOKIE_SECRET,
 } = process.env;
 
-app.enable("trust proxy");
+// app.enable("trust proxy");
 
-app.use(cookieParser(COOKIE_SECRET));
+// app.use(cookieParser(COOKIE_SECRET));
 
 app.use(express.static("./public/"));
 app.use(express.json());
-app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+// app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+app.use(cors());
 
 app.use(limiter);
 app.use(apiKeyGateAndTracking);
@@ -184,21 +187,21 @@ app.get("/generate-registration-options", async (req, res) => {
 	 * The server needs to temporarily remember this value for verification, so don't lose it until
 	 * after you verify an authenticator response.
 	 */
-	user.currentChallenge = options.challenge;
-	inMemoryUserDeviceDB[user.id] = user;
+	// user.currentChallenge = options.challenge;
+	// inMemoryUserDeviceDB[user.id] = user;
 
 	// console.log(`Registration options for ${username}`, user);
 
 	// Set cookie
-	const session = nanoid(15);
-	res.cookie("session", session, {
-		maxAge: 1000 * 60 * 60 * 24 * 14, // 2 weeks
-		signed: true,
-		httpOnly: process.env.NODE_ENV === "production" ? true : false,
-		sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-		secure: process.env.NODE_ENV === "production" ? true : false,
-	});
-	await redisClient.set(session, user.id);
+	// const session = nanoid(15);
+	// res.cookie("session", session, {
+	// 	maxAge: 1000 * 60 * 60 * 24 * 14, // 2 weeks
+	// 	signed: true,
+	// 	httpOnly: process.env.NODE_ENV === "production" ? true : false,
+	// 	sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+	// 	secure: process.env.NODE_ENV === "production" ? true : false,
+	// });
+	// await redisClient.set(session, user.id);
 
 	res.send(options);
 });
@@ -207,26 +210,27 @@ app.post("/verify-registration", async (req, res) => {
 	const body: RegistrationCredentialJSON = req.body;
 
 	// Get session from cookie
-	const session = req.signedCookies.session;
-	if (!session) {
-		return res.status(422).send({ error: "Invalid session" });
-	}
+	// const session = req.signedCookies.session;
+	// if (!session) {
+	// 	return res.status(422).send({ error: "Invalid session" });
+	// }
 
-	// Find user in redis
-	const userId = await redisClient.get(session);
-	if (!userId) {
-		return res.status(422).send({ error: "Invalid session" });
-	}
+	// // Find user in redis
+	// const userId = await redisClient.get(session);
+	// if (!userId) {
+	// 	return res.status(422).send({ error: "Invalid session" });
+	// }
 
-	const user = inMemoryUserDeviceDB[userId];
+	// const user = inMemoryUserDeviceDB[userId];
 
-	const expectedChallenge = user.currentChallenge;
+	// const expectedChallenge = user.currentChallenge;
 
 	let verification: VerifiedRegistrationResponse;
 	try {
 		const opts: VerifyRegistrationResponseOpts = {
 			credential: body,
-			expectedChallenge: `${expectedChallenge}`,
+			// expectedChallenge: `${expectedChallenge}`,
+			expectedChallenge: () => true,
 			expectedOrigin: `${expectedOrigin}`,
 			expectedRPID: rpID,
 			requireUserVerification: true,
@@ -240,45 +244,45 @@ app.post("/verify-registration", async (req, res) => {
 
 	const { verified, registrationInfo } = verification;
 
-	if (verified && registrationInfo) {
-		// console.log("registrationInfo", registrationInfo);
-		const { credentialPublicKey, credentialID, counter } = registrationInfo;
+	// if (verified && registrationInfo) {
+	// 	// console.log("registrationInfo", registrationInfo);
+	// 	const { credentialPublicKey, credentialID, counter } = registrationInfo;
 
-		const existingDevice = user.devices.find((device) =>
-			device.credentialID.equals(credentialID),
-		);
+	// 	const existingDevice = user.devices.find((device) =>
+	// 		device.credentialID.equals(credentialID),
+	// 	);
 
-		if (!existingDevice) {
-			/**
-			 * Add the returned device to the user's list of devices
-			 */
-			const newDevice: AuthenticatorDevice = {
-				credentialPublicKey,
-				credentialID,
-				counter,
-				transports: body.transports,
-			};
-			user.devices.push(newDevice);
+	// 	if (!existingDevice) {
+	// 		/**
+	// 		 * Add the returned device to the user's list of devices
+	// 		 */
+	// 		const newDevice: AuthenticatorDevice = {
+	// 			credentialPublicKey,
+	// 			credentialID,
+	// 			counter,
+	// 			transports: body.transports,
+	// 		};
+	// 		user.devices.push(newDevice);
 
-			// const packed = packAuthData({
-			// credentialPublicKey,
-			// credentialID,
-			// counter,
-			// });
+	// 		// const packed = packAuthData({
+	// 		// credentialPublicKey,
+	// 		// credentialID,
+	// 		// counter,
+	// 		// });
 
-			// mint the PKP with this as an auth method
-			// const pkp = await mintPKP({
-			//   // credentialPublicKey,
-			//   // credentialID,
-			//   authMethodType: AuthMethodType.WebAuthn,
-			//   idForAuthMethod: // TODO:
-			// });
-		}
-	}
+	// 		// mint the PKP with this as an auth method
+	// 		// const pkp = await mintPKP({
+	// 		//   // credentialPublicKey,
+	// 		//   // credentialID,
+	// 		//   authMethodType: AuthMethodType.WebAuthn,
+	// 		//   idForAuthMethod: // TODO:
+	// 		// });
+	// 	}
+	// }
 
 	// Clear challenge
-	user.currentChallenge = undefined;
-	inMemoryUserDeviceDB[userId] = user;
+	// user.currentChallenge = undefined;
+	// inMemoryUserDeviceDB[userId] = user;
 
 	// console.log(`Verified registration for ${user.username}`, user);
 
@@ -291,26 +295,26 @@ app.post("/verify-registration", async (req, res) => {
 app.get("/generate-authentication-options", async (req, res) => {
 	// You need to know the user by this point
 	// Get session from cookie
-	const session = req.signedCookies.session;
-	if (!session) {
-		return res.status(422).send({ error: "Invalid session" });
-	}
+	// const session = req.signedCookies.session;
+	// if (!session) {
+	// 	return res.status(422).send({ error: "Invalid session" });
+	// }
 
-	// Find user in redis
-	const userId = await redisClient.get(session);
-	if (!userId) {
-		return res.status(422).send({ error: "Invalid session" });
-	}
+	// // Find user in redis
+	// const userId = await redisClient.get(session);
+	// if (!userId) {
+	// 	return res.status(422).send({ error: "Invalid session" });
+	// }
 
-	const user = inMemoryUserDeviceDB[userId];
+	// const user = inMemoryUserDeviceDB[userId];
 
 	const opts: GenerateAuthenticationOptionsOpts = {
 		timeout: 60000,
-		allowCredentials: user.devices.map((dev) => ({
-			id: dev.credentialID,
-			type: "public-key",
-			transports: dev.transports,
-		})),
+		// allowCredentials: user.devices.map((dev) => ({
+		// 	id: dev.credentialID,
+		// 	type: "public-key",
+		// 	transports: dev.transports,
+		// })),
 		userVerification: "required",
 		rpID,
 	};
@@ -321,8 +325,8 @@ app.get("/generate-authentication-options", async (req, res) => {
 	 * The server needs to temporarily remember this value for verification, so don't lose it until
 	 * after you verify an authenticator response.
 	 */
-	user.currentChallenge = options.challenge;
-	inMemoryUserDeviceDB[userId] = user;
+	// user.currentChallenge = options.challenge;
+	// inMemoryUserDeviceDB[userId] = user;
 
 	// console.log(`Authentication options for ${user.username}`, user);
 
@@ -330,73 +334,84 @@ app.get("/generate-authentication-options", async (req, res) => {
 });
 
 app.post("/verify-authentication", async (req, res) => {
-	const body: AuthenticationCredentialJSON = req.body;
+	const body: any = req.body;
 
 	// Get session from cookie
-	const session = req.signedCookies.session;
-	if (!session) {
-		return res.status(422).send({ error: "Invalid session" });
-	}
+	// const session = req.signedCookies.session;
+	// if (!session) {
+	// 	return res.status(422).send({ error: "Invalid session" });
+	// }
 
 	// Find user in redis
-	const userId = await redisClient.get(session);
-	if (!userId) {
-		return res.status(422).send({ error: "Invalid session" });
-	}
+	// const userId = await redisClient.get(session);
+	// if (!userId) {
+	// 	return res.status(422).send({ error: "Invalid session" });
+	// }
 
-	const user = inMemoryUserDeviceDB[userId];
+	// const user = inMemoryUserDeviceDB[userId];
 
-	const expectedChallenge = user.currentChallenge;
+	// const expectedChallenge = user.currentChallenge;
 
-	let dbAuthenticator: AuthenticatorDevice;
-	const bodyCredIDBuffer = base64url.toBuffer(body.rawId);
-	// "Query the DB" here for an authenticator matching `credentialID`
-	for (const dev of user.devices) {
-		if (dev.credentialID.equals(bodyCredIDBuffer)) {
-			dbAuthenticator = dev;
-			break;
-		}
-	}
-	// console.log("dbAuthenticator", dbAuthenticator!);
+	// let dbAuthenticator: AuthenticatorDevice;
+	// const bodyCredIDBuffer = base64url.toBuffer(body.rawId);
+	// // "Query the DB" here for an authenticator matching `credentialID`
+	// for (const dev of user.devices) {
+	// 	if (dev.credentialID.equals(bodyCredIDBuffer)) {
+	// 		dbAuthenticator = dev;
+	// 		break;
+	// 	}
+	// }
+	// // console.log("dbAuthenticator", dbAuthenticator!);
 
-	if (!dbAuthenticator!) {
-		return res
-			.status(400)
-			.send({ error: "Authenticator is not registered with this site" });
-	}
+	// if (!dbAuthenticator!) {
+	// 	return res
+	// 		.status(400)
+	// 		.send({ error: "Authenticator is not registered with this site" });
+	// }
 
-	let verification: VerifiedAuthenticationResponse;
-	try {
-		const opts: VerifyAuthenticationResponseOpts = {
-			credential: body,
-			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin: `${expectedOrigin}`,
-			expectedRPID: rpID,
-			authenticator: dbAuthenticator,
-			requireUserVerification: true,
-		};
-		verification = await verifyAuthenticationResponse(opts);
-	} catch (error) {
-		const _error = error as Error;
-		console.error(_error);
-		return res.status(400).send({ error: _error.message });
-	}
+	// let verification: VerifiedAuthenticationResponse;
+	// try {
+	// 	const opts: VerifyAuthenticationResponseOpts = {
+	// 		credential: body,
+	// 		// expectedChallenge: `${expectedChallenge}`,
+	// 		expectedChallenge: () => true,
+	// 		expectedOrigin: `${expectedOrigin}`,
+	// 		expectedRPID: rpID,
+	// 		authenticator: dbAuthenticator,
+	// 		requireUserVerification: true,
+	// 	};
+	// 	verification = await verifyAuthenticationResponse(opts);
+	// } catch (error) {
+	// 	const _error = error as Error;
+	// 	console.error(_error);
+	// 	return res.status(400).send({ error: _error.message });
+	// }
 
-	const { verified, authenticationInfo } = verification;
+	// const { verified, authenticationInfo } = verification;
 
-	if (verified) {
-		// Update the authenticator's counter in the DB to the newest count in the authentication
-		dbAuthenticator.counter = authenticationInfo.newCounter;
-	}
+	const { signature, signatureBase, credentialPublicKey } = req.body;
+
+	const signatureValid = await verifySignature({
+		signature: Buffer.from(ethers.utils.arrayify(signature)),
+		signatureBase: Buffer.from(ethers.utils.arrayify(signatureBase)),
+		credentialPublicKey: Buffer.from(
+			ethers.utils.arrayify(credentialPublicKey),
+		),
+	});
+
+	// if (verified) {
+	// 	// Update the authenticator's counter in the DB to the newest count in the authentication
+	// 	dbAuthenticator.counter = authenticationInfo.newCounter;
+	// }
 
 	// const { credentialPublicKey, credentialID, counter } = authenticationInfo;
 
-	user.currentChallenge = undefined;
-	inMemoryUserDeviceDB[userId] = user;
+	// user.currentChallenge = undefined;
+	// inMemoryUserDeviceDB[userId] = user;
 
 	// console.log(`Verified authentication for ${user.username}`, user);
 
-	res.send({ verified });
+	res.send({ verified: signatureValid });
 });
 
 // --- Store condition
@@ -417,7 +432,7 @@ app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 
 // --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
-app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
+// app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
 
 // if (ENABLE_HTTPS) {
 // 	const host = "0.0.0.0";
