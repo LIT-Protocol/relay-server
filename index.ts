@@ -192,6 +192,9 @@ app.get("/generate-registration-options", async (req, res) => {
 	res.cookie("session", session, {
 		maxAge: 1000 * 60 * 60 * 24 * 7,
 		signed: true,
+		secure: process.env.NODE_ENV === "production" ? true : false,
+		httpOnly: process.env.NODE_ENV === "production" ? true : false,
+		sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
 	});
 	await redisClient.set(session, user.id);
 
