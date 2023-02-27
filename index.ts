@@ -419,21 +419,21 @@ app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
-	const port = 443;
+	const port = parseInt(PORT);
 	expectedOrigin = `https://${rpID}`;
 
 	https
 		.createServer(
-			{
-				/**
-				 * See the README on how to generate this SSL cert and key pair using mkcert
-				 */
-				key: fs.readFileSync(`./${rpID}.key`),
-				cert: fs.readFileSync(`./${rpID}.crt`),
-			},
+			// {
+			// 	/**
+			// 	 * See the README on how to generate this SSL cert and key pair using mkcert
+			// 	 */
+			// 	key: fs.readFileSync(`./${rpID}.key`),
+			// 	cert: fs.readFileSync(`./${rpID}.crt`),
+			// },
 			app,
 		)
-		.listen(port, host, () => {
+		.listen(port, () => {
 			console.log(
 				`🚀 Server ready at ${expectedOrigin} (${host}:${port})`,
 			);
