@@ -30,7 +30,6 @@ import {
 	verifyAuthenticationResponse,
 	verifyRegistrationResponse,
 } from "@simplewebauthn/server";
-import { verifySignature } from "./utils/webAuthn/verifySignature";
 
 import type {
 	AuthenticationCredentialJSON,
@@ -38,9 +37,9 @@ import type {
 	RegistrationCredentialJSON,
 } from "@simplewebauthn/typescript-types";
 
-import { LoggedInUser } from "./example-server";
-
 import cors from "cors";
+import { nanoid } from "nanoid";
+
 import {
 	googleOAuthVerifyToFetchPKPsHandler,
 	googleOAuthVerifyToMintHandler,
@@ -58,10 +57,6 @@ import {
 	walletVerifyToFetchPKPsHandler,
 } from "./routes/auth/wallet";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
-import { nanoid } from "nanoid";
-import cookieParser from "cookie-parser";
-
-import { ethers } from "ethers";
 
 const app = express();
 
@@ -70,17 +65,10 @@ const {
 	ENABLE_HTTPS,
 	RP_ID = "localhost",
 	PORT = "8000",
-	CLIENT_ORIGIN,
-	COOKIE_SECRET,
 } = process.env;
-
-// app.enable("trust proxy");
-
-// app.use(cookieParser(COOKIE_SECRET));
 
 app.use(express.static("./public/"));
 app.use(express.json());
-// app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 app.use(cors());
 
 app.use(limiter);
@@ -120,19 +108,26 @@ export let expectedOrigin = "";
  */
 // const loggedInUserId = "internalUserId";
 
-const inMemoryUserDeviceDB: { [loggedInUserId: string]: LoggedInUser } = {
-	// [loggedInUserId]: {
-	// 	id: loggedInUserId,
-	// 	username: `user@${rpID}`,
-	// 	devices: [],
-	// 	/**
-	// 	 * A simple way of storing a user's current challenge being signed by registration or authentication.
-	// 	 * It should be expired after `timeout` milliseconds (optional argument for `generate` methods,
-	// 	 * defaults to 60000ms)
-	// 	 */
-	// 	currentChallenge: undefined,
-	// },
-};
+// const inMemoryUserDeviceDB: { [loggedInUserId: string]: LoggedInUser } = {
+// 	[loggedInUserId]: {
+// 		id: loggedInUserId,
+// 		username: `user@${rpID}`,
+// 		devices: [],
+// 		/**
+// 		 * A simple way of storing a user's current challenge being signed by registration or authentication.
+// 		 * It should be expired after `timeout` milliseconds (optional argument for `generate` methods,
+// 		 * defaults to 60000ms)
+// 		 */
+// 		currentChallenge: undefined,
+// 	},
+// };
+
+/**
+ * This is a simple in-memory database of credentials.
+ *
+ * rawId: base64url encoded credential ID
+ */
+const inMemoryCredentialDB: { [rawId: string]: AuthenticatorDevice } = {};
 
 /**
  * Registration (a.k.a. "Registration")
@@ -190,36 +185,11 @@ app.get("/generate-registration-options", async (req, res) => {
 	// user.currentChallenge = options.challenge;
 	// inMemoryUserDeviceDB[user.id] = user;
 
-	// console.log(`Registration options for ${username}`, user);
-
-	// Set cookie
-	// const session = nanoid(15);
-	// res.cookie("session", session, {
-	// 	maxAge: 1000 * 60 * 60 * 24 * 14, // 2 weeks
-	// 	signed: true,
-	// 	httpOnly: process.env.NODE_ENV === "production" ? true : false,
-	// 	sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-	// 	secure: process.env.NODE_ENV === "production" ? true : false,
-	// });
-	// await redisClient.set(session, user.id);
-
 	res.send(options);
 });
 
 app.post("/verify-registration", async (req, res) => {
 	const body: RegistrationCredentialJSON = req.body;
-
-	// Get session from cookie
-	// const session = req.signedCookies.session;
-	// if (!session) {
-	// 	return res.status(422).send({ error: "Invalid session" });
-	// }
-
-	// // Find user in redis
-	// const userId = await redisClient.get(session);
-	// if (!userId) {
-	// 	return res.status(422).send({ error: "Invalid session" });
-	// }
 
 	// const user = inMemoryUserDeviceDB[userId];
 
@@ -244,41 +214,52 @@ app.post("/verify-registration", async (req, res) => {
 
 	const { verified, registrationInfo } = verification;
 
-	// if (verified && registrationInfo) {
-	// 	// console.log("registrationInfo", registrationInfo);
-	// 	const { credentialPublicKey, credentialID, counter } = registrationInfo;
+	if (verified && registrationInfo) {
+		// console.log("registrationInfo", registrationInfo);
+		const { credentialPublicKey, credentialID, counter } = registrationInfo;
 
-	// 	const existingDevice = user.devices.find((device) =>
-	// 		device.credentialID.equals(credentialID),
-	// 	);
+		// const existingDevice = user.devices.find((device) =>
+		// 	device.credentialID.equals(credentialID),
+		// );
 
-	// 	if (!existingDevice) {
-	// 		/**
-	// 		 * Add the returned device to the user's list of devices
-	// 		 */
-	// 		const newDevice: AuthenticatorDevice = {
-	// 			credentialPublicKey,
-	// 			credentialID,
-	// 			counter,
-	// 			transports: body.transports,
-	// 		};
-	// 		user.devices.push(newDevice);
+		const rawId = base64url.encode(credentialID);
+		console.log("/verify-registration rawId", rawId);
+		const existingDevice = inMemoryCredentialDB[rawId];
+		console.log("/verify-registration existingDevice -", existingDevice);
 
-	// 		// const packed = packAuthData({
-	// 		// credentialPublicKey,
-	// 		// credentialID,
-	// 		// counter,
-	// 		// });
+		if (!existingDevice) {
+			/**
+			 * Add the returned device to the user's list of devices
+			 */
+			const newDevice: AuthenticatorDevice = {
+				credentialPublicKey,
+				credentialID,
+				counter,
+				transports: body.transports,
+			};
+			// user.devices.push(newDevice);
 
-	// 		// mint the PKP with this as an auth method
-	// 		// const pkp = await mintPKP({
-	// 		//   // credentialPublicKey,
-	// 		//   // credentialID,
-	// 		//   authMethodType: AuthMethodType.WebAuthn,
-	// 		//   idForAuthMethod: // TODO:
-	// 		// });
-	// 	}
-	// }
+			/**
+			 * Track the device in the in-memory database
+			 */
+			inMemoryCredentialDB[rawId] = newDevice;
+			console.log("/verify-registration stored new device");
+
+			// const packed = packAuthData({
+			// credentialPublicKey,
+			// credentialID,
+			// counter,
+			// });
+
+			// mint the PKP with this as an auth method
+			// const pkp = await mintPKP({
+			//   // credentialPublicKey,
+			//   // credentialID,
+			//   authMethodType: AuthMethodType.WebAuthn,
+			//   idForAuthMethod: // TODO:
+			// });
+		}
+	}
 
 	// Clear challenge
 	// user.currentChallenge = undefined;
@@ -294,18 +275,6 @@ app.post("/verify-registration", async (req, res) => {
  */
 app.get("/generate-authentication-options", async (req, res) => {
 	// You need to know the user by this point
-	// Get session from cookie
-	// const session = req.signedCookies.session;
-	// if (!session) {
-	// 	return res.status(422).send({ error: "Invalid session" });
-	// }
-
-	// // Find user in redis
-	// const userId = await redisClient.get(session);
-	// if (!userId) {
-	// 	return res.status(422).send({ error: "Invalid session" });
-	// }
-
 	// const user = inMemoryUserDeviceDB[userId];
 
 	const opts: GenerateAuthenticationOptionsOpts = {
@@ -334,26 +303,22 @@ app.get("/generate-authentication-options", async (req, res) => {
 });
 
 app.post("/verify-authentication", async (req, res) => {
-	const body: any = req.body;
-
-	// Get session from cookie
-	// const session = req.signedCookies.session;
-	// if (!session) {
-	// 	return res.status(422).send({ error: "Invalid session" });
-	// }
-
-	// Find user in redis
-	// const userId = await redisClient.get(session);
-	// if (!userId) {
-	// 	return res.status(422).send({ error: "Invalid session" });
-	// }
+	const body: AuthenticationCredentialJSON = req.body;
 
 	// const user = inMemoryUserDeviceDB[userId];
 
 	// const expectedChallenge = user.currentChallenge;
 
-	// let dbAuthenticator: AuthenticatorDevice;
-	// const bodyCredIDBuffer = base64url.toBuffer(body.rawId);
+	const rawId = body.rawId;
+	console.log("/verify-authentication rawId", rawId);
+	const existingDevice = inMemoryCredentialDB[rawId];
+	console.log(
+		"/verify-authentication existingDevice exists?",
+		!!existingDevice,
+	);
+
+	let dbAuthenticator: AuthenticatorDevice;
+	const bodyCredIDBuffer = base64url.toBuffer(body.rawId);
 	// // "Query the DB" here for an authenticator matching `credentialID`
 	// for (const dev of user.devices) {
 	// 	if (dev.credentialID.equals(bodyCredIDBuffer)) {
@@ -362,47 +327,40 @@ app.post("/verify-authentication", async (req, res) => {
 	// 	}
 	// }
 	// // console.log("dbAuthenticator", dbAuthenticator!);
+	if (existingDevice.credentialID.equals(bodyCredIDBuffer)) {
+		dbAuthenticator = existingDevice;
+	}
 
-	// if (!dbAuthenticator!) {
-	// 	return res
-	// 		.status(400)
-	// 		.send({ error: "Authenticator is not registered with this site" });
-	// }
+	if (!dbAuthenticator!) {
+		return res
+			.status(400)
+			.send({ error: "Authenticator is not registered with this site" });
+	}
 
-	// let verification: VerifiedAuthenticationResponse;
-	// try {
-	// 	const opts: VerifyAuthenticationResponseOpts = {
-	// 		credential: body,
-	// 		// expectedChallenge: `${expectedChallenge}`,
-	// 		expectedChallenge: () => true,
-	// 		expectedOrigin: `${expectedOrigin}`,
-	// 		expectedRPID: rpID,
-	// 		authenticator: dbAuthenticator,
-	// 		requireUserVerification: true,
-	// 	};
-	// 	verification = await verifyAuthenticationResponse(opts);
-	// } catch (error) {
-	// 	const _error = error as Error;
-	// 	console.error(_error);
-	// 	return res.status(400).send({ error: _error.message });
-	// }
+	let verification: VerifiedAuthenticationResponse;
+	try {
+		const opts: VerifyAuthenticationResponseOpts = {
+			credential: body,
+			// expectedChallenge: `${expectedChallenge}`,
+			expectedChallenge: () => true,
+			expectedOrigin: `${expectedOrigin}`,
+			expectedRPID: rpID,
+			authenticator: dbAuthenticator,
+			requireUserVerification: true,
+		};
+		verification = await verifyAuthenticationResponse(opts);
+	} catch (error) {
+		const _error = error as Error;
+		console.error(_error);
+		return res.status(400).send({ error: _error.message });
+	}
 
-	// const { verified, authenticationInfo } = verification;
+	const { verified, authenticationInfo } = verification;
 
-	const { signature, signatureBase, credentialPublicKey } = req.body;
-
-	const signatureValid = await verifySignature({
-		signature: Buffer.from(ethers.utils.arrayify(signature)),
-		signatureBase: Buffer.from(ethers.utils.arrayify(signatureBase)),
-		credentialPublicKey: Buffer.from(
-			ethers.utils.arrayify(credentialPublicKey),
-		),
-	});
-
-	// if (verified) {
-	// 	// Update the authenticator's counter in the DB to the newest count in the authentication
-	// 	dbAuthenticator.counter = authenticationInfo.newCounter;
-	// }
+	if (verified) {
+		// Update the authenticator's counter in the DB to the newest count in the authentication
+		dbAuthenticator.counter = authenticationInfo.newCounter;
+	}
 
 	// const { credentialPublicKey, credentialID, counter } = authenticationInfo;
 
@@ -411,7 +369,7 @@ app.post("/verify-authentication", async (req, res) => {
 
 	// console.log(`Verified authentication for ${user.username}`, user);
 
-	res.send({ verified: signatureValid });
+	res.send({ verified });
 });
 
 // --- Store condition
@@ -432,7 +390,6 @@ app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 
 // --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
-// app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
 
 // if (ENABLE_HTTPS) {
 // 	const host = "0.0.0.0";
