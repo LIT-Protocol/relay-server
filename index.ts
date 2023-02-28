@@ -223,9 +223,7 @@ app.post("/verify-registration", async (req, res) => {
 		// );
 
 		const rawId = base64url.encode(credentialID);
-		console.log("/verify-registration rawId", rawId);
 		const existingDevice = inMemoryCredentialDB[rawId];
-		console.log("/verify-registration existingDevice -", existingDevice);
 
 		if (!existingDevice) {
 			/**
@@ -243,7 +241,6 @@ app.post("/verify-registration", async (req, res) => {
 			 * Track the device in the in-memory database
 			 */
 			inMemoryCredentialDB[rawId] = newDevice;
-			console.log("/verify-registration stored new device");
 
 			// const packed = packAuthData({
 			// credentialPublicKey,
@@ -310,12 +307,7 @@ app.post("/verify-authentication", async (req, res) => {
 	// const expectedChallenge = user.currentChallenge;
 
 	const rawId = body.rawId;
-	console.log("/verify-authentication rawId", rawId);
 	const existingDevice = inMemoryCredentialDB[rawId];
-	console.log(
-		"/verify-authentication existingDevice exists?",
-		!!existingDevice,
-	);
 
 	let dbAuthenticator: AuthenticatorDevice;
 	const bodyCredIDBuffer = base64url.toBuffer(body.rawId);
