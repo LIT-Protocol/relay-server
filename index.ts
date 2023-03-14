@@ -133,6 +133,12 @@ const inMemoryCredentialDB: { [rawId: string]: AuthenticatorDevice } = {};
  * Registration (a.k.a. "Registration")
  */
 app.get("/generate-registration-options", async (req, res) => {
+	let rpID = req.get("origin") || "localhost";
+	// remove protocol with regex
+	rpID = rpID.replace(/(^\w+:|^)\/\//, "");
+	// remove port with regex
+	rpID = rpID.replace(/:\d+$/, "");
+
 	const username = (req.query.username as string) || "lituser";
 
 	const user = {
@@ -189,6 +195,14 @@ app.get("/generate-registration-options", async (req, res) => {
 });
 
 app.post("/verify-registration", async (req, res) => {
+	let rpID = req.get("origin") || "localhost";
+	// remove protocol with regex
+	rpID = rpID.replace(/(^\w+:|^)\/\//, "");
+	// remove port with regex
+	rpID = rpID.replace(/:\d+$/, "");
+
+	const expectedOrigin = req.get("origin")!;
+
 	const body: RegistrationCredentialJSON = req.body;
 
 	// const user = inMemoryUserDeviceDB[userId];
@@ -271,6 +285,12 @@ app.post("/verify-registration", async (req, res) => {
  * Login (a.k.a. "Authentication")
  */
 app.get("/generate-authentication-options", async (req, res) => {
+	let rpID = req.get("origin") || "localhost";
+	// remove protocol with regex
+	rpID = rpID.replace(/(^\w+:|^)\/\//, "");
+	// remove port with regex
+	rpID = rpID.replace(/:\d+$/, "");
+
 	// You need to know the user by this point
 	// const user = inMemoryUserDeviceDB[userId];
 
@@ -300,6 +320,14 @@ app.get("/generate-authentication-options", async (req, res) => {
 });
 
 app.post("/verify-authentication", async (req, res) => {
+	let rpID = req.get("origin") || "localhost";
+	// remove protocol with regex
+	rpID = rpID.replace(/(^\w+:|^)\/\//, "");
+	// remove port with regex
+	rpID = rpID.replace(/:\d+$/, "");
+
+	const expectedOrigin = req.get("origin")!;
+
 	const body: AuthenticationCredentialJSON = req.body;
 
 	// const user = inMemoryUserDeviceDB[userId];
