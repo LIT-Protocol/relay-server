@@ -21,7 +21,6 @@ import { ethers, utils } from "ethers";
 import { hexlify, toUtf8Bytes } from "ethers/lib/utils";
 import config from "../../config";
 import { getPubkeyForAuthMethod, mintPKP } from "../../lit";
-import { decodeECKeyAndGetPublicKey } from "../../utils/webAuthn/keys";
 
 function generateUserIDFromUserName(username: string): string {
 	// TODO: use hash to avoid leaking username

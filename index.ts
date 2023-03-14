@@ -40,7 +40,6 @@ import type {
 import { LoggedInUser } from "./example-server";
 
 import cors from "cors";
-import { getPubkeyForAuthMethod } from "./lit";
 import { googleOAuthVerifyToMintHandler } from "./routes/auth/google";
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
@@ -50,8 +49,6 @@ import {
 	webAuthnVerifyRegistrationHandler,
 	webAuthnGenerateRegistrationOptionsHandler,
 } from "./routes/auth/webAuthn";
-import { toHash } from "./utils/toHash";
-import { utils } from "ethers";
 import config from "./config";
 
 const app = express();

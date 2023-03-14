@@ -1,6 +1,8 @@
 import { ethers, utils } from "ethers";
 import fs from "fs";
+import { RedisClientType } from "redis";
 import config from "./config";
+import redisClient from "./lib/redisClient";
 import { AuthMethodType, StoreConditionWithSigner } from "./models";
 
 export function getProvider() {
@@ -121,9 +123,8 @@ export async function mintPKP({
 			authMethodPubkey,
 		});
 
-		// TODO: this needs to be dynamic.
-		const pkpPubkeyForPkpNft =
-			"0x047ce7c741bbc2c4f946f878cabc4a076260ac6899ffb1ee78f268eaac8178959af85c9805ca22cf11f6cbe9c7fd785fd47d9dc05a061e057dec0caf883da993a0";
+		// Get next unminted PKP pubkey.
+		const pkpPubkeyForPkpNft = await getNextAvailablePkpPubkey(redisClient);
 
 		const tx = await pkpHelper.mintAndAddAuthMethods(
 			pkpPubkeyForPkpNft, // In SoloNet, we choose which PKP pubkey we would like to attach to the minted PKP.
@@ -190,3 +191,41 @@ export async function getPubkeyForAuthMethod({
 //   console.log("packed", packed);
 //   return packed;
 // }
+
+/**
+ * This function returns the next available PKP that can be minted. Specifically,
+ *
+ * 1. Gets 1 unminted PKP from the data store - eg. ZRANGEBYSCORE myzset 0 0 LIMIT 0 1
+ *    (assuming all unminted PKPs have a score of 0)
+ * 2. Sets the score of the PKP to 1 to mark it as "used", optimistically - eg. ZADD myzset 1 0x1234
+ * 3. Returns the PKP public key.
+ */
+export async function getNextAvailablePkpPubkey(redisClient: RedisClientType) {
+	// 1. Get 1 unminted PKP from the data store
+	const unmintedPkpPubkey = await redisClient.zRangeByScore(
+		"pkp_public_keys",
+		0,
+		0,
+		{
+			LIMIT: {
+				offset: 0,
+				count: 1,
+			},
+		},
+	);
+
+	if (unmintedPkpPubkey.length === 0) {
+		throw new Error("No more PKPs available");
+	}
+
+	const unmintedPkpPubkeyToUse = unmintedPkpPubkey[0];
+
+	// 2. Set the score of the PKP to 1 to mark it as "used", optimistically
+	await redisClient.zAdd("pkp_public_keys", {
+		score: 1,
+		value: unmintedPkpPubkeyToUse,
+	});
+
+	// 3. Return the PKP public key
+	return unmintedPkpPubkeyToUse;
+}
