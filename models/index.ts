@@ -83,11 +83,12 @@ export interface Config {
 	port: number;
 	rpID: string;
 	enableHttps: boolean;
-	expectedOrigin: string;
+	expectedOrigins: string[];
 	accessControlConditionsAddress: string;
 	pkpHelperAddress: string;
 	pkpPermissionsAddress: string;
 	pkpNftAddress: string;
+	useSoloNet: boolean;
 }
 
 export enum CapabilityProtocolPrefix {

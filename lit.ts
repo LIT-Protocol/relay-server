@@ -34,8 +34,22 @@ function getAccessControlConditionsContract() {
 	);
 }
 
+function getPkpHelperContractAbiPath() {
+	if (config.useSoloNet) {
+		return "./contracts/SoloNetPKPHelper.json";
+	}
+	return "./contracts/PKPHelper.json";
+}
+
+function getPkpNftContractAbiPath() {
+	if (config.useSoloNet) {
+		return "./contracts/SoloNetPKP.json";
+	}
+	return "./contracts/PKPNFT.json";
+}
+
 function getPkpHelperContract() {
-	return getContract("./contracts/PKPHelper.json", config.pkpHelperAddress);
+	return getContract(getPkpHelperContractAbiPath(), config.pkpHelperAddress);
 }
 
 function getPermissionsContract() {
@@ -46,7 +60,7 @@ function getPermissionsContract() {
 }
 
 function getPkpNftContract() {
-	return getContract("./contracts/PKPNFT.json", config.pkpNftAddress);
+	return getContract(getPkpNftContractAbiPath(), config.pkpNftAddress);
 }
 
 function prependHexPrefixIfNeeded(hexStr: string) {
@@ -100,18 +114,44 @@ export async function mintPKP({
 	const mintCost = await pkpNft.mintCost();
 
 	// then, mint PKP using helper
-	const tx = await pkpHelper.mintNextAndAddAuthMethods(
-		2,
-		[authMethodType],
-		[authMethodId],
-		[authMethodPubkey],
-		[[ethers.BigNumber.from("0")]],
-		true,
-		true,
-		{ value: mintCost },
-	);
-	console.log("tx", tx);
-	return tx;
+	if (config.useSoloNet) {
+		console.info("Minting PKP against SoloNet PKPHelper contract", {
+			authMethodType,
+			authMethodId,
+			authMethodPubkey,
+		});
+
+		// TODO: this needs to be dynamic.
+		const pkpPubkeyForPkpNft =
+			"0x047ce7c741bbc2c4f946f878cabc4a076260ac6899ffb1ee78f268eaac8178959af85c9805ca22cf11f6cbe9c7fd785fd47d9dc05a061e057dec0caf883da993a0";
+
+		const tx = await pkpHelper.mintAndAddAuthMethods(
+			pkpPubkeyForPkpNft, // In SoloNet, we choose which PKP pubkey we would like to attach to the minted PKP.
+			[authMethodType],
+			[authMethodId],
+			[authMethodPubkey],
+			[[ethers.BigNumber.from("0")]],
+			true,
+			false,
+			{ value: mintCost },
+		);
+		console.log("tx", tx);
+		return tx;
+	} else {
+		console.info("Minting PKP against PKPHelper contract");
+		const tx = await pkpHelper.mintNextAndAddAuthMethods(
+			2,
+			[authMethodType],
+			[authMethodId],
+			[authMethodPubkey],
+			[[ethers.BigNumber.from("0")]],
+			true,
+			true,
+			{ value: mintCost },
+		);
+		console.log("tx", tx);
+		return tx;
+	}
 }
 
 export async function getPubkeyForAuthMethod({

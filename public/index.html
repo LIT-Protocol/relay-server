@@ -162,7 +162,7 @@
           elemError.innerHTML = '';
           elemDebug.innerHTML = '';
 
-          const resp = await fetch('/generate-registration-options');
+          const resp = await fetch('/auth/webauthn/generate-registration-options?username=test-user');
 
           let attResp;
           try {
@@ -191,12 +191,15 @@
             throw error;
           }
 
-          const verificationResp = await fetch('/verify-registration', {
+          const verificationResp = await fetch('/auth/webauthn/verify-registration', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(attResp),
+            body: JSON.stringify({
+              credential: attResp,
+              username: "test-user"
+            }),
           });
 
           const verificationJSON = await verificationResp.json();

@@ -11,11 +11,13 @@ const {
 	PKP_NFT_ADDRESS,
 	PKP_HELPER_ADDRESS,
 	PKP_PERMISSIONS_ADDRESS,
+	USE_SOLO_NET,
+	EXPECTED_ORIGINS,
 } = process.env;
 
 const baseConfig = {
 	redisUrl: REDIS_URL || "dummy-url",
-	port: parseInt(PORT === "" ? PORT : "3000"),
+	port: parseInt(PORT !== "" ? PORT! : "3001"),
 	/**
 	 * RP ID (WebAuthn) represents the "scope" of websites on which a authenticator should be usable. The Origin
 	 * represents the expected URL from which registration or authentication occurs.
@@ -31,11 +33,10 @@ const baseConfig = {
 		PKP_HELPER_ADDRESS || "0xffD53EeAD24a54CA7189596eF1aa3f1369753611",
 	pkpPermissionsAddress:
 		PKP_PERMISSIONS_ADDRESS || "0x274d0C69fCfC40f71E57f81E8eA5Bd786a96B832",
+	useSoloNet: USE_SOLO_NET === "true",
+	expectedOrigins: EXPECTED_ORIGINS?.split(",") || ["http://localhost:3000"],
 };
 
 export default {
 	...baseConfig,
-	expectedOrigin: baseConfig.enableHttps
-		? `https://${baseConfig.rpID}`
-		: `http://localhost:3001`, // NOT the same port as this server locally.
 } as Config;

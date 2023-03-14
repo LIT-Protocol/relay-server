@@ -18,7 +18,7 @@ import type {
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 
 import { ethers, utils } from "ethers";
-import { toUtf8Bytes } from "ethers/lib/utils";
+import { hexlify, toUtf8Bytes } from "ethers/lib/utils";
 import config from "../../config";
 import { getPubkeyForAuthMethod, mintPKP } from "../../lit";
 import { decodeECKeyAndGetPublicKey } from "../../utils/webAuthn/keys";
@@ -106,7 +106,7 @@ export async function webAuthnVerifyRegistrationHandler(
 		const opts: VerifyRegistrationResponseOpts = {
 			credential: req.body.credential,
 			expectedChallenge: () => true, // we don't work with challenges in registration
-			expectedOrigin: config.expectedOrigin,
+			expectedOrigin: config.expectedOrigins,
 			expectedRPID: config.rpID,
 			requireUserVerification: true,
 		};
@@ -131,14 +131,19 @@ export async function webAuthnVerifyRegistrationHandler(
 	console.log("registrationInfo", { registrationInfo });
 
 	try {
-		const decodedPublicKey = decodeECKeyAndGetPublicKey(
-			Buffer.from(utils.arrayify(credentialPublicKey)),
+		const cborEncodedCredentialPublicKey = hexlify(
+			utils.arrayify(credentialPublicKey),
 		);
+		console.log("cborEncodedCredentialPublicKey", {
+			cborEncodedCredentialPublicKey,
+		});
 
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.WebAuthn,
 			authMethodId,
-			authMethodPubkey: `0x${decodedPublicKey}`,
+			// We want to use the CBOR encoding here to retain as much information as possible
+			// about the COSE (public) key.
+			authMethodPubkey: cborEncodedCredentialPublicKey,
 		});
 
 		return res.status(200).json({
