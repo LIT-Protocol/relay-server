@@ -5,7 +5,6 @@ import { Config } from "../models";
 const {
 	REDIS_URL,
 	PORT,
-	RP_ID,
 	ENABLE_HTTPS,
 	ACCESS_CONTROL_CONDITIONS_ADDRESS,
 	PKP_NFT_ADDRESS,
@@ -18,11 +17,6 @@ const {
 const baseConfig = {
 	redisUrl: REDIS_URL || "dummy-url",
 	port: parseInt(PORT !== "" ? PORT! : "3001"),
-	/**
-	 * RP ID (WebAuthn) represents the "scope" of websites on which a authenticator should be usable. The Origin
-	 * represents the expected URL from which registration or authentication occurs.
-	 */
-	rpID: RP_ID || "localhost",
 	enableHttps: ENABLE_HTTPS === "true",
 	accessControlConditionsAddress:
 		ACCESS_CONTROL_CONDITIONS_ADDRESS ||

@@ -21,6 +21,7 @@ import { ethers, utils } from "ethers";
 import { hexlify, toUtf8Bytes } from "ethers/lib/utils";
 import config from "../../config";
 import { getPubkeyForAuthMethod, mintPKP } from "../../lit";
+import { getDomainFromUrl } from "../../utils/string";
 
 function generateUserIDFromUserName(username: string): string {
 	// TODO: use hash to avoid leaking username
@@ -37,9 +38,12 @@ export function webAuthnGenerateRegistrationOptionsHandler(
 	// Get username from query string
 	const username = req.query.username as string;
 
+	// Get RP_ID from request Origin.
+	const rpID = getDomainFromUrl(req.get("Origin") || "localhost");
+
 	const opts: GenerateRegistrationOptionsOpts = {
 		rpName: "Lit Protocol",
-		rpID: config.rpID,
+		rpID,
 		userID: generateUserIDFromUserName(username),
 		userName: username,
 		timeout: 60000,
@@ -77,6 +81,9 @@ export async function webAuthnVerifyRegistrationHandler(
 	// Get username from request body.
 	const username = req.body.username;
 
+	// Get RP_ID from request Origin.
+	const rpID = getDomainFromUrl(req.get("Origin") || "localhost");
+
 	// Check if PKP already exists for this username.
 	const authMethodId = generateAuthMethodId(username);
 	try {
@@ -106,7 +113,7 @@ export async function webAuthnVerifyRegistrationHandler(
 			credential: req.body.credential,
 			expectedChallenge: () => true, // we don't work with challenges in registration
 			expectedOrigin: config.expectedOrigins,
-			expectedRPID: config.rpID,
+			expectedRPID: rpID,
 			requireUserVerification: true,
 		};
 		verification = await verifyRegistrationResponse(opts);

@@ -81,7 +81,6 @@ export interface SessionSigSignedMessage {
 export interface Config {
 	redisUrl: string;
 	port: number;
-	rpID: string;
 	enableHttps: boolean;
 	expectedOrigins: string[];
 	accessControlConditionsAddress: string;
