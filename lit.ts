@@ -139,7 +139,11 @@ export async function mintPKP({
 		console.log("tx", tx);
 		return tx;
 	} else {
-		console.info("Minting PKP against PKPHelper contract");
+		console.info("Minting PKP against PKPHelper contract", {
+			authMethodType,
+			authMethodId,
+			authMethodPubkey,
+		});
 		const tx = await pkpHelper.mintNextAndAddAuthMethods(
 			2,
 			[authMethodType],

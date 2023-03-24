@@ -23,11 +23,6 @@ import config from "../../config";
 import { getPubkeyForAuthMethod, mintPKP } from "../../lit";
 import { getDomainFromUrl } from "../../utils/string";
 
-function generateUserIDFromUserName(username: string): string {
-	// TODO: use hash to avoid leaking username
-	return username;
-}
-
 /**
  * Generates WebAuthn registration options for a given username.
  */
@@ -36,7 +31,7 @@ export function webAuthnGenerateRegistrationOptionsHandler(
 	res: Response<{}, Record<string, any>, number>,
 ) {
 	// Get username from query string
-	const username = req.query.username as string;
+	const username = req.query.username as string | undefined;
 
 	// Get RP_ID from request Origin.
 	const rpID = getDomainFromUrl(req.get("Origin") || "localhost");
@@ -44,8 +39,8 @@ export function webAuthnGenerateRegistrationOptionsHandler(
 	const opts: GenerateRegistrationOptionsOpts = {
 		rpName: "Lit Protocol",
 		rpID,
-		userID: generateUserIDFromUserName(username),
-		userName: username,
+		userID: generateUsernameForOptions(username),
+		userName: generateUsernameForOptions(username),
 		timeout: 60000,
 		attestationType: "direct", // TODO: change to none
 		authenticatorSelection: {
@@ -58,10 +53,6 @@ export function webAuthnGenerateRegistrationOptionsHandler(
 	const options = generateRegistrationOptions(opts);
 
 	return res.json(options);
-}
-
-function generateAuthMethodId(username: string): string {
-	return utils.keccak256(toUtf8Bytes(`${username}:lit`));
 }
 
 export async function webAuthnVerifyRegistrationHandler(
@@ -78,14 +69,12 @@ export async function webAuthnVerifyRegistrationHandler(
 		number
 	>,
 ) {
-	// Get username from request body.
-	const username = req.body.username;
-
 	// Get RP_ID from request Origin.
 	const rpID = getDomainFromUrl(req.get("Origin") || "localhost");
 
-	// Check if PKP already exists for this username.
-	const authMethodId = generateAuthMethodId(username);
+	// Check if PKP already exists for this credentialRawId.
+	console.log("credentialRawId", req.body.credential.rawId);
+	const authMethodId = generateAuthMethodId(req.body.credential.rawId);
 	try {
 		const pubKey = await getPubkeyForAuthMethod({
 			authMethodType: AuthMethodType.WebAuthn,
@@ -93,9 +82,9 @@ export async function webAuthnVerifyRegistrationHandler(
 		});
 
 		if (pubKey !== "0x" && !ethers.BigNumber.from(pubKey).isZero()) {
-			console.info("PKP already exists for this username");
+			console.info("PKP already exists for this credential raw ID");
 			return res.status(400).send({
-				error: "Invalid username, please try another one",
+				error: "PKP already exists for this credential raw ID, please try another one",
 			});
 		}
 	} catch (error) {
@@ -162,4 +151,32 @@ export async function webAuthnVerifyRegistrationHandler(
 			error: "Unable to mint PKP for user",
 		});
 	}
+}
+
+function generateAuthMethodId(credentialRawId: string): string {
+	return utils.keccak256(toUtf8Bytes(`${credentialRawId}:lit`));
+}
+
+function generateUserIDFromUserName(username: string): string {
+	// TODO: use hash to avoid leaking username
+	return username;
+}
+
+// Generate default username given timestamp, using timestamp format YYYY-MM-DD HH:MM:SS)
+function generateDefaultUsername(): string {
+	const date = new Date();
+	const year = date.getFullYear();
+	const month = date.getMonth() + 1;
+	const day = date.getDate();
+	const hours = date.getHours();
+	const minutes = date.getMinutes();
+	const seconds = date.getSeconds();
+
+	return `Usernameless user (${year}-${month}-${day} ${hours}:${minutes}:${seconds})`;
+}
+
+function generateUsernameForOptions(username?: string): string {
+	return !!username
+		? generateUserIDFromUserName(username)
+		: generateDefaultUsername();
 }

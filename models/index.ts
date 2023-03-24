@@ -11,7 +11,6 @@ export interface AuthMethodVerifyRegistrationResponse {
 
 export interface WebAuthnVerifyRegistrationRequest {
 	credential: RegistrationCredentialJSON;
-	username: string;
 }
 
 export interface GetAuthStatusRequestParams {
