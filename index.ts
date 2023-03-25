@@ -57,6 +57,8 @@ import {
 	walletVerifyToFetchPKPsHandler,
 } from "./routes/auth/wallet";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
+import { toHash } from "./utils/toHash";
+import { utils } from "ethers";
 
 const app = express();
 
@@ -343,6 +345,7 @@ app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 
 // --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
+app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
