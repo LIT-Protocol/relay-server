@@ -162,7 +162,7 @@
           elemError.innerHTML = '';
           elemDebug.innerHTML = '';
 
-          const resp = await fetch('/auth/webauthn/generate-registration-options?username=test-user');
+          const resp = await fetch('/auth/webauthn/generate-registration-options');
 
           let attResp;
           try {
@@ -198,7 +198,6 @@
             },
             body: JSON.stringify({
               credential: attResp,
-              username: "test-user"
             }),
           });
 
