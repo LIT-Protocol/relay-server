@@ -18,7 +18,7 @@ import type {
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 
 import { ethers, utils } from "ethers";
-import { hexlify, toUtf8Bytes } from "ethers/lib/utils";
+import { hexlify, keccak256, toUtf8Bytes } from "ethers/lib/utils";
 import config from "../../config";
 import { getPubkeyForAuthMethod, mintPKP } from "../../lit";
 import { getDomainFromUrl } from "../../utils/string";
@@ -36,11 +36,12 @@ export function webAuthnGenerateRegistrationOptionsHandler(
 	// Get RP_ID from request Origin.
 	const rpID = getDomainFromUrl(req.get("Origin") || "localhost");
 
+	const authenticatorUsername = generateUsernameForOptions(username);
 	const opts: GenerateRegistrationOptionsOpts = {
 		rpName: "Lit Protocol",
 		rpID,
-		userID: generateUsernameForOptions(username),
-		userName: generateUsernameForOptions(username),
+		userID: keccak256(toUtf8Bytes(authenticatorUsername)).slice(2),
+		userName: authenticatorUsername,
 		timeout: 60000,
 		attestationType: "direct", // TODO: change to none
 		authenticatorSelection: {
@@ -157,11 +158,6 @@ function generateAuthMethodId(credentialRawId: string): string {
 	return utils.keccak256(toUtf8Bytes(`${credentialRawId}:lit`));
 }
 
-function generateUserIDFromUserName(username: string): string {
-	// TODO: use hash to avoid leaking username
-	return username;
-}
-
 // Generate default username given timestamp, using timestamp format YYYY-MM-DD HH:MM:SS)
 function generateDefaultUsername(): string {
 	const date = new Date();
@@ -176,7 +172,5 @@ function generateDefaultUsername(): string {
 }
 
 function generateUsernameForOptions(username?: string): string {
-	return !!username
-		? generateUserIDFromUserName(username)
-		: generateDefaultUsername();
+	return !!username ? username : generateDefaultUsername();
 }
