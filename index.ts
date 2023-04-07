@@ -40,24 +40,20 @@ import type {
 import { LoggedInUser } from "./example-server";
 
 import cors from "cors";
-import { getPubkeyForAuthMethod } from "./lit";
 import { googleOAuthVerifyToMintHandler } from "./routes/auth/google";
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
-import { webAuthnAssertionVerifyToMintHandler } from "./routes/auth/webAuthn";
-import { toHash } from "./utils/toHash";
-import { utils } from "ethers";
+import {
+	webAuthnVerifyRegistrationHandler,
+	webAuthnGenerateRegistrationOptionsHandler,
+} from "./routes/auth/webAuthn";
+import config from "./config";
 
 const app = express();
 
-const {
-	ENABLE_CONFORMANCE,
-	ENABLE_HTTPS,
-	RP_ID = "localhost",
-	PORT = "8000",
-} = process.env;
+const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost" } = process.env;
 
 app.use(express.static("./public/"));
 app.use(express.json());
@@ -85,10 +81,6 @@ if (ENABLE_CONFORMANCE === "true") {
  * represents the expected URL from which registration or authentication occurs.
  */
 export const rpID = RP_ID;
-// This value is set at the bottom of page as part of server initialization (the empty string is
-// to appease TypeScript until we determine the expected origin based on whether or not HTTPS
-// support is enabled)
-export let expectedOrigin = "";
 
 /**
  * 2FA and Passwordless WebAuthn flows expect you to be able to uniquely identify the user that
@@ -183,7 +175,7 @@ app.post("/verify-registration", async (req, res) => {
 		const opts: VerifyRegistrationResponseOpts = {
 			credential: body,
 			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin,
+			expectedOrigin: config.expectedOrigins,
 			expectedRPID: rpID,
 			requireUserVerification: true,
 		};
@@ -293,7 +285,7 @@ app.post("/verify-authentication", async (req, res) => {
 		const opts: VerifyAuthenticationResponseOpts = {
 			credential: body,
 			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin,
+			expectedOrigin: config.expectedOrigins,
 			expectedRPID: rpID,
 			authenticator: dbAuthenticator,
 			requireUserVerification: true,
@@ -320,12 +312,18 @@ app.post("/verify-authentication", async (req, res) => {
 app.post("/store-condition", limiter, storeConditionHandler);
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.get("/auth/status/:requestId", getAuthStatusHandler);
-app.post("/auth/webauthn", webAuthnAssertionVerifyToMintHandler);
+app.post(
+	"/auth/webauthn/verify-registration",
+	webAuthnVerifyRegistrationHandler,
+);
+app.get(
+	"/auth/webauthn/generate-registration-options",
+	webAuthnGenerateRegistrationOptionsHandler,
+);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
 	const port = 443;
-	expectedOrigin = `https://${rpID}`;
 
 	https
 		.createServer(
@@ -339,16 +337,13 @@ if (ENABLE_HTTPS) {
 			app,
 		)
 		.listen(port, host, () => {
-			console.log(
-				`🚀 Server ready at ${expectedOrigin} (${host}:${port})`,
-			);
+			console.log(`🚀 Server ready at ${host}:${port}`);
 		});
 } else {
 	const host = "127.0.0.1";
-	const port = parseInt(PORT);
-	expectedOrigin = `http://localhost:3000`;
+	const port = config.port;
 
 	http.createServer(app).listen(port, () => {
-		console.log(`🚀 Server ready at ${expectedOrigin} (${host}:${port})`);
+		console.log(`🚀 Server ready at ${host}:${port}`);
 	});
 }
