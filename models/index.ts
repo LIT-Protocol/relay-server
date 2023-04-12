@@ -1,12 +1,14 @@
-export interface GoogleOAuthRequest {
+import type { RegistrationCredentialJSON } from "@simplewebauthn/typescript-types";
+
+export interface GoogleOAuthVerifyRegistrationRequest {
 	idToken: string;
 }
 
-export interface DiscordOAuthRequest {
+export interface DiscordOAuthVerifyRegistrationRequest {
 	accessToken: string;
 }
 
-export interface AuthMethodVerifyToMintResponse {
+export interface AuthMethodVerifyRegistrationResponse {
 	requestId?: string;
 	error?: string;
 }
@@ -16,10 +18,8 @@ export interface AuthMethodVerifyToFetchResponse {
 	error?: string;
 }
 
-export interface WebAuthnAssertionVerifyToMintRequest {
-	signature: string;
-	signatureBase: string;
-	credentialPublicKey: string;
+export interface WebAuthnVerifyRegistrationRequest {
+	credential: RegistrationCredentialJSON;
 }
 
 export interface GetAuthStatusRequestParams {
@@ -90,6 +90,13 @@ export interface SessionSigSignedMessage {
 export interface Config {
 	redisUrl: string;
 	port: number;
+	enableHttps: boolean;
+	expectedOrigins: string[];
+	accessControlConditionsAddress: string;
+	pkpHelperAddress: string;
+	pkpPermissionsAddress: string;
+	pkpNftAddress: string;
+	useSoloNet: boolean;
 }
 
 export enum CapabilityProtocolPrefix {

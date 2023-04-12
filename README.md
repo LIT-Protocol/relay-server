@@ -46,7 +46,6 @@ Staging instance of the relay server is live at https://relay-server-staging.her
 | POST      | /auth/google            | Mint PKP for authorized Google account   |
 | POST      | /auth/discord           | Mint PKP for authorized Discord account  |
 | POST      | /auth/wallet            | Mint PKP for verified Eth wallet account |
-| POST      | /auth/webauthn          | Mint PKP for verified WebAuthn signature |
 | GET       | /auth/status/:requestId | Poll status of minting PKP transaction   |
 
 </br>
@@ -63,13 +62,12 @@ Staging instance of the relay server is live at https://relay-server-staging.her
 
 ### Handling WebAuthn\*
 
-| HTTP Verb | Path                             | Description                                                        |
-| --------- | -------------------------------- | ------------------------------------------------------------------ |
-| GET       | /generate-registration-options   | Register (i.e., create an account) via supported authenticator     |
-| GET       | /generate-authentication-options | Authenticate (i.e., login) via previously-registered authenticator |
-| POST      | /verify-registration             | Verify the authenticator's response                                |
+| HTTP Verb | Path                                         | Description                                                    |
+| --------- | -------------------------------------------- | -------------------------------------------------------------- |
+| GET       | /auth/webauthn/generate-registration-options | Register (i.e., create an account) via supported authenticator |
+| POST      | /auth/webauthn/verify-registration           | Verify the authenticator's response                            |
 
-\*Note: WebAuthn implementation is still a work in progress and will likely change.
+\*Note: WebAuthn implementation is still a work in progress.
 
 </br>
 

@@ -3,8 +3,8 @@ import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
-	DiscordOAuthRequest,
-	AuthMethodVerifyToMintResponse,
+	DiscordOAuthVerifyRegistrationRequest,
+	AuthMethodVerifyRegistrationResponse,
 	AuthMethodVerifyToFetchResponse,
 } from "../../models";
 import { utils } from "ethers";
@@ -35,12 +35,16 @@ async function verifyAndFetchDiscordUserId(
 export async function discordOAuthVerifyToMintHandler(
 	req: Request<
 		{},
-		AuthMethodVerifyToMintResponse,
-		DiscordOAuthRequest,
+		AuthMethodVerifyRegistrationResponse,
+		DiscordOAuthVerifyRegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
-	res: Response<AuthMethodVerifyToMintResponse, Record<string, any>, number>,
+	res: Response<
+		AuthMethodVerifyRegistrationResponse,
+		Record<string, any>,
+		number
+	>,
 ) {
 	// get Discord access token from body
 	const { accessToken } = req.body;
@@ -60,12 +64,13 @@ export async function discordOAuthVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const idForAuthMethod = utils.keccak256(
+		const authMethodId = utils.keccak256(
 			toUtf8Bytes(`${userId}:${APP_ID}`),
 		);
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.Discord,
-			idForAuthMethod,
+			authMethodId,
+			authMethodPubkey: "0x",
 		});
 		console.info("Minting PKP with Discord auth", {
 			requestId: mintTx.hash,
@@ -86,7 +91,7 @@ export async function discordOAuthVerifyToFetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
-		DiscordOAuthRequest,
+		DiscordOAuthVerifyRegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,

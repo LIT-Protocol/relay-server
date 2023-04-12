@@ -4,7 +4,7 @@ import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
 	AuthSig,
-	AuthMethodVerifyToMintResponse,
+	AuthMethodVerifyRegistrationResponse,
 	AuthMethodVerifyToFetchResponse,
 } from "../../models";
 import { utils } from "ethers";
@@ -24,12 +24,16 @@ function verifyAuthSig(authSig: AuthSig): boolean {
 export async function walletVerifyToMintHandler(
 	req: Request<
 		{},
-		AuthMethodVerifyToMintResponse,
+		AuthMethodVerifyRegistrationResponse,
 		AuthSig,
 		ParsedQs,
 		Record<string, any>
 	>,
-	res: Response<AuthMethodVerifyToMintResponse, Record<string, any>, number>,
+	res: Response<
+		AuthMethodVerifyRegistrationResponse,
+		Record<string, any>,
+		number
+	>,
 ) {
 	// get wallet auth sig from body
 	const authSig = req.body;
@@ -51,10 +55,11 @@ export async function walletVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const idForAuthMethod = authSig.address;
+		const authMethodId = authSig.address;
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.EthWallet,
-			idForAuthMethod,
+			authMethodId,
+			authMethodPubkey: "0x",
 		});
 		console.info("Minting PKP with Eth wallet", {
 			requestId: mintTx.hash,

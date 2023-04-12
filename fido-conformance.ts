@@ -18,8 +18,9 @@ import {
 	RegistrationCredentialJSON,
 } from "@simplewebauthn/typescript-types";
 
-import { rpID, expectedOrigin } from "./index";
+import { rpID } from "./index";
 import { LoggedInUser } from "./example-server";
+import config from "./config";
 
 interface LoggedInFIDOUser extends LoggedInUser {
 	currentAuthenticationUserVerification?: UserVerificationRequirement;
@@ -64,7 +65,9 @@ try {
  */
 fetch("https://mds3.certinfra.fidoalliance.org/getEndpoints", {
 	method: "POST",
-	body: JSON.stringify({ endpoint: `${expectedOrigin}${fidoRouteSuffix}` }),
+	body: JSON.stringify({
+		endpoint: `${config.expectedOrigins[0]}${fidoRouteSuffix}`, // TODO: this is a hack using the first in the array.
+	}),
 	headers: { "Content-Type": "application/json" },
 })
 	.then((resp) => resp.json())
@@ -176,7 +179,7 @@ fidoConformanceRouter.post("/attestation/result", async (req, res) => {
 		verification = await verifyRegistrationResponse({
 			credential: body,
 			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin,
+			expectedOrigin: config.expectedOrigins,
 			supportedAlgorithmIDs,
 		});
 	} catch (error) {
@@ -277,7 +280,7 @@ fidoConformanceRouter.post("/assertion/result", async (req, res) => {
 		verification = await verifyAuthenticationResponse({
 			credential: body,
 			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin,
+			expectedOrigin: config.expectedOrigins,
 			expectedRPID: rpID,
 			authenticator: existingDevice,
 			advancedFIDOConfig: { userVerification },
