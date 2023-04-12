@@ -9,7 +9,9 @@ import {
 	GetAuthStatusResponse,
 } from "../../models";
 
-const SAFE_BLOCK_CONFIRMATIONS = 8;
+const safeBlockConfirmations = parseInt(
+	process.env.SAFE_BLOCK_CONFIRMATIONS || "8",
+);
 
 export async function getAuthStatusHandler(
 	req: Request<
@@ -31,7 +33,7 @@ export async function getAuthStatusHandler(
 	try {
 		mintReceipt = await provider.waitForTransaction(
 			requestId,
-			SAFE_BLOCK_CONFIRMATIONS,
+			safeBlockConfirmations,
 			200,
 		); // 200ms is the max we will wait for.
 		console.log("mint PKP receipt", { mintReceipt });
