@@ -8,8 +8,11 @@ import {
 	GetAuthStatusRequestParams,
 	GetAuthStatusResponse,
 } from "../../models";
+import { getTokenIdFromTransferEvent } from "../../utils/receipt";
 
-const SAFE_BLOCK_CONFIRMATIONS = 8;
+const safeBlockConfirmations = parseInt(
+	process.env.SAFE_BLOCK_CONFIRMATIONS || "8",
+);
 
 export async function getAuthStatusHandler(
 	req: Request<
@@ -31,7 +34,7 @@ export async function getAuthStatusHandler(
 	try {
 		mintReceipt = await provider.waitForTransaction(
 			requestId,
-			SAFE_BLOCK_CONFIRMATIONS,
+			safeBlockConfirmations,
 			200,
 		); // 200ms is the max we will wait for.
 		console.log("mint PKP receipt", { mintReceipt });
@@ -53,8 +56,19 @@ export async function getAuthStatusHandler(
 
 	console.debug(mintReceipt.logs);
 
-	// once tx hash received, fetch eth adddress from chain
-	const tokenIdFromEvent = mintReceipt.logs[2].topics[3];
+	// Once tx hash received, fetch eth adddress from chain
+	let tokenIdFromEvent: string;
+	try {
+		tokenIdFromEvent = await getTokenIdFromTransferEvent(mintReceipt);
+	} catch (err) {
+		console.error("Error fetching tokenId from receipt", {
+			err,
+		});
+		return res.status(500).json({
+			error: "Unable to fetch tokenId from receipt",
+		});
+	}
+
 	try {
 		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
 		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
