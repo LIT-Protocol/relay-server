@@ -37,35 +37,30 @@ Run `yarn start` to start the server.
 
 ## Available Endpoints
 
-Staging instance of the relay server is live at https://relay-server-staging.herokuapp.com.
+Staging instance of the relay server is live at https://relay-server-staging.herokuapp.com. Check out the [demo app](https://github.com/LIT-Protocol/oauth-pkp-signup-example) for an example of how to use the relay server.
 
 ### Minting PKPs
 
-| HTTP Verb | Path                    | Description                              |
-| --------- | ----------------------- | ---------------------------------------- |
-| POST      | /auth/google            | Mint PKP for authorized Google account   |
-| POST      | /auth/discord           | Mint PKP for authorized Discord account  |
-| POST      | /auth/wallet            | Mint PKP for verified Eth wallet account |
-| GET       | /auth/status/:requestId | Poll status of minting PKP transaction   |
+| HTTP Verb | Path                                         | Description                                                    |
+| --------- | -------------------------------------------- | -------------------------------------------------------------- |
+| POST      | /auth/google                                 | Mint PKP for authorized Google account                         |
+| POST      | /auth/discord                                | Mint PKP for authorized Discord account                        |
+| POST      | /auth/wallet                                 | Mint PKP for verified Eth wallet account                       |
+| GET       | /auth/webauthn/generate-registration-options | Register (i.e., create an account) via supported authenticator |
+| POST      | /auth/webauthn/verify-registration           | Verify the authenticator's response                            |
+| GET       | /auth/status/:requestId                      | Poll status of minting PKP transaction                         |
 
 </br>
 
 ### Fetching PKPs
 
-| HTTP Verb | Path                   | Description                                           |
-| --------- | ---------------------- | ----------------------------------------------------- |
-| POST      | /auth/google/userinfo  | Fetch PKPs associated with authorized Google account  |
-| POST      | /auth/discord/userinfo | Mint PKPs associated with authorized Discord account  |
-| POST      | /auth/wallet/userinfo  | Mint PKPs associated with verified Eth wallet account |
+| HTTP Verb | Path                   | Description                                            |
+| --------- | ---------------------- | ------------------------------------------------------ |
+| POST      | /auth/google/userinfo  | Fetch PKPs associated with authorized Google account   |
+| POST      | /auth/discord/userinfo | Fetch PKPs associated with authorized Discord account  |
+| POST      | /auth/wallet/userinfo  | Fetch PKPs associated with verified Eth wallet account |
 
 </br>
-
-### Handling WebAuthn\*
-
-| HTTP Verb | Path                                         | Description                                                    |
-| --------- | -------------------------------------------- | -------------------------------------------------------------- |
-| GET       | /auth/webauthn/generate-registration-options | Register (i.e., create an account) via supported authenticator |
-| POST      | /auth/webauthn/verify-registration           | Verify the authenticator's response                            |
 
 \*Note: WebAuthn implementation is still a work in progress.
 
