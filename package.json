@@ -14,6 +14,7 @@
   "dependencies": {
     "@simplewebauthn/server": "6.2.1",
     "base64url": "^3.0.1",
+    "cbor": "^8.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "elliptic": "^6.5.4",

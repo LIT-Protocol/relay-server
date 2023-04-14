@@ -75,6 +75,7 @@ export async function getAuthStatusHandler(
 
 		return res.status(200).json({
 			status: AuthStatus.Succeeded,
+			pkpTokenId: tokenIdFromEvent,
 			pkpEthAddress,
 			pkpPublicKey,
 		});

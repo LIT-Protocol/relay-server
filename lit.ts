@@ -3,7 +3,7 @@ import fs from "fs";
 import { RedisClientType } from "redis";
 import config from "./config";
 import redisClient from "./lib/redisClient";
-import { AuthMethodType, StoreConditionWithSigner } from "./models";
+import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 
 export function getProvider() {
 	return new ethers.providers.JsonRpcProvider(
@@ -156,6 +156,47 @@ export async function mintPKP({
 		);
 		console.log("tx", tx);
 		return tx;
+	}
+}
+
+export async function getPKPsForAuthMethod({
+	authMethodType,
+	idForAuthMethod,
+}: {
+	authMethodType: AuthMethodType;
+	idForAuthMethod: string;
+}) {
+	if (!authMethodType || !idForAuthMethod) {
+		throw new Error(
+			"Auth method type and id are required to fetch PKPs by auth method",
+		);
+	}
+
+	const pkpPermissions = getPermissionsContract();
+	if (pkpPermissions) {
+		try {
+			const tokenIds = await pkpPermissions.getTokenIdsForAuthMethod(
+				authMethodType,
+				idForAuthMethod,
+			);
+			const pkps: PKP[] = [];
+			for (let i = 0; i < tokenIds.length; i++) {
+				const pubkey = await pkpPermissions.getPubkey(tokenIds[i]);
+				if (pubkey) {
+					const ethAddress = ethers.utils.computeAddress(pubkey);
+					pkps.push({
+						tokenId: tokenIds[i],
+						publicKey: pubkey,
+						ethAddress: ethAddress,
+					});
+				}
+			}
+			return pkps;
+		} catch (err) {
+			throw new Error("Unable to get PKPs for auth method");
+		}
+	} else {
+		throw new Error("Unable to connect to PKP Permissions contract");
 	}
 }
 

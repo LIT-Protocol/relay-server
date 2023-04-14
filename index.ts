@@ -40,7 +40,10 @@ import type {
 import { LoggedInUser } from "./example-server";
 
 import cors from "cors";
-import { googleOAuthVerifyToMintHandler } from "./routes/auth/google";
+import {
+	googleOAuthVerifyToMintHandler,
+	googleOAuthVerifyToFetchPKPsHandler,
+} from "./routes/auth/google";
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
@@ -49,6 +52,14 @@ import {
 	webAuthnVerifyRegistrationHandler,
 	webAuthnGenerateRegistrationOptionsHandler,
 } from "./routes/auth/webAuthn";
+import {
+	discordOAuthVerifyToFetchPKPsHandler,
+	discordOAuthVerifyToMintHandler,
+} from "./routes/auth/discord";
+import {
+	walletVerifyToMintHandler,
+	walletVerifyToFetchPKPsHandler,
+} from "./routes/auth/wallet";
 import config from "./config";
 
 const app = express();
@@ -309,9 +320,23 @@ app.post("/verify-authentication", async (req, res) => {
 	res.send({ verified });
 });
 
-app.post("/store-condition", limiter, storeConditionHandler);
+// --- Store condition
+app.post("/store-condition", storeConditionHandler);
+
+// --- Mint PKP for authorized account
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
+app.post("/auth/discord", discordOAuthVerifyToMintHandler);
+app.post("/auth/wallet", walletVerifyToMintHandler);
+
+// --- Fetch PKPs tied to authorized account
+app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
+app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
+app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
+
+// --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
+
+// --- WebAuthn
 app.post(
 	"/auth/webauthn/verify-registration",
 	webAuthnVerifyRegistrationHandler,
