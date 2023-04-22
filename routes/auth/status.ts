@@ -11,7 +11,7 @@ import {
 import { getTokenIdFromTransferEvent } from "../../utils/receipt";
 
 const safeBlockConfirmations = parseInt(
-	process.env.SAFE_BLOCK_CONFIRMATIONS || "8",
+	process.env.SAFE_BLOCK_CONFIRMATIONS || "1",
 );
 
 export async function getAuthStatusHandler(
@@ -35,8 +35,8 @@ export async function getAuthStatusHandler(
 		mintReceipt = await provider.waitForTransaction(
 			requestId,
 			safeBlockConfirmations,
-			200,
-		); // 200ms is the max we will wait for.
+			30000,
+		); // 30000ms is the max we will wait for.
 		console.log("mint PKP receipt", { mintReceipt });
 	} catch (err: any) {
 		console.error("Error waiting for transaction hash", {
