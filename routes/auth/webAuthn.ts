@@ -20,7 +20,11 @@ import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { ethers, utils } from "ethers";
 import { hexlify, keccak256, toUtf8Bytes } from "ethers/lib/utils";
 import config from "../../config";
-import { getPubkeyForAuthMethod, mintPKP } from "../../lit";
+import {
+	getPKPsForAuthMethod,
+	getPubkeyForAuthMethod,
+	mintPKP,
+} from "../../lit";
 import { getDomainFromUrl } from "../../utils/string";
 
 /**
@@ -43,9 +47,9 @@ export function webAuthnGenerateRegistrationOptionsHandler(
 		userID: keccak256(toUtf8Bytes(authenticatorUsername)).slice(2),
 		userName: authenticatorUsername,
 		timeout: 60000,
-		attestationType: "direct", // TODO: change to none
+		attestationType: "none", // TODO: change to none
 		authenticatorSelection: {
-			userVerification: "required",
+			userVerification: "preferred",
 			residentKey: "required",
 		},
 		supportedAlgorithmIDs: [-7, -257], // ES256 and RS256
@@ -150,6 +154,34 @@ export async function webAuthnVerifyRegistrationHandler(
 		console.error("Unable to mint PKP for user", { _error });
 		return res.status(500).json({
 			error: "Unable to mint PKP for user",
+		});
+	}
+}
+
+export async function webauthnVerifyToFetchPKPsHandler(
+	req: Request<any>,
+	res: Response<any>,
+) {
+	// Check if PKP already exists for this credentialRawId.
+	console.log("credentialRawId", req.body.credential.rawId);
+
+	try {
+		const idForAuthMethod = generateAuthMethodId(req.body.credential.rawId);
+
+		const pkps = await getPKPsForAuthMethod({
+			authMethodType: AuthMethodType.WebAuthn,
+			idForAuthMethod,
+		});
+		console.info("Fetched PKPs with WebAuthn", {
+			pkps: pkps,
+		});
+		return res.status(200).json({
+			pkps: pkps,
+		});
+	} catch (err) {
+		console.error("Unable to fetch PKPs for given WebAuthn", { err });
+		return res.status(500).json({
+			error: "Unable to fetch PKPs for given WebAuthn",
 		});
 	}
 }
