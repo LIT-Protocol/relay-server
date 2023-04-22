@@ -47,9 +47,9 @@ export function webAuthnGenerateRegistrationOptionsHandler(
 		userID: keccak256(toUtf8Bytes(authenticatorUsername)).slice(2),
 		userName: authenticatorUsername,
 		timeout: 60000,
-		attestationType: "none", // TODO: change to none
+		attestationType: "direct", // TODO: change to none
 		authenticatorSelection: {
-			userVerification: "preferred",
+			userVerification: "required",
 			residentKey: "required",
 		},
 		supportedAlgorithmIDs: [-7, -257], // ES256 and RS256
