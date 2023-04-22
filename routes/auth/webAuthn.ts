@@ -79,6 +79,7 @@ export async function webAuthnVerifyRegistrationHandler(
 
 	// Check if PKP already exists for this credentialRawId.
 	console.log("credentialRawId", req.body.credential.rawId);
+
 	const authMethodId = generateAuthMethodId(req.body.credential.rawId);
 	try {
 		const pubKey = await getPubkeyForAuthMethod({
@@ -158,7 +159,7 @@ export async function webAuthnVerifyRegistrationHandler(
 	}
 }
 
-export async function webauthnVerifyToFetchPKPsHandler(
+export async function webAuthnVerifyToFetchPKPsHandler(
 	req: Request<any>,
 	res: Response<any>,
 ) {
