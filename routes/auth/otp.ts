@@ -56,7 +56,7 @@ export async function otpVerifyToMintHandler(
 	let userId;
 
 	try {
-		userId = parseJWT(jwt);
+		userId = parseJWT(tmpToken);
 		payload = await verifyOtpJWT(jwt);
 		if (payload.userId !== userId) {
 			throw new Error("UserId does not match token contents");
@@ -105,9 +105,12 @@ export async function otpVerifyToFetchPKPsHandler(
 ) {
 	const { jwt } = req.body;
 	let payload: OtpVerificationPayload | null;
+
+	const tmpToken = (" " + jwt).slice(1);
 	let userId;
 	try {
-		userId = parseJWT(jwt);
+		userId = parseJWT(tmpToken);
+		console.log(userId);
 		payload = await verifyOtpJWT(jwt);
 		if (payload.userId !== userId) {
 			throw new Error("UserId does not match token contents");
@@ -124,7 +127,8 @@ export async function otpVerifyToFetchPKPsHandler(
 
 	// fetch PKPs for user
 	try {
-		const idForAuthMethod = userId;
+		let idForAuthMethod = userId;
+		idForAuthMethod = utils.keccak256(toUtf8Bytes(userId));
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.OTP,
 			idForAuthMethod,
