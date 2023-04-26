@@ -12,6 +12,7 @@ import { getPKPsForAuthMethod, mintPKP } from "../../lit";
 import fetch from "node-fetch";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
+import { PKP } from '../../dist/models/index';
 
 const AUTH_SERVER_URL =
 	process.env.AUTH_SERVER_URL || "http://127.0.0.1:8080/api/otp/verify";
@@ -115,7 +116,7 @@ export async function otpVerifyToFetchPKPsHandler(
 		if (payload.userId !== userId) {
 			throw new Error("UserId does not match token contents");
 		}
-		console.info("Sucessful verification of otp token", {
+		console.info("Sucessful verification of OTP token", {
 			userid: payload.userId,
 		});
 	} catch (e) {
@@ -133,16 +134,16 @@ export async function otpVerifyToFetchPKPsHandler(
 			authMethodType: AuthMethodType.OTP,
 			idForAuthMethod,
 		});
-		console.info("Fetched PKPs with Google auth", {
+		console.info("Fetched PKPs with OTP auth", {
 			pkps: pkps,
 		});
 		return res.status(200).json({
 			pkps: pkps,
 		});
 	} catch (err) {
-		console.error("Unable to fetch PKPs for given Google account", { err });
+		console.error("Unable to fetch PKPs for given userId", { err });
 		return res.status(500).json({
-			error: "Unable to fetch PKPs for given Google account",
+			error: "Unable to fetch PKPs for given user Id",
 		});
 	}
 }
