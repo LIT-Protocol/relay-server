@@ -8,6 +8,7 @@ import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
 	AuthMethodVerifyRegistrationResponse,
+	AuthMethodVerifyToFetchResponse,
 	WebAuthnVerifyRegistrationRequest,
 } from "../../models";
 
@@ -160,8 +161,14 @@ export async function webAuthnVerifyRegistrationHandler(
 }
 
 export async function webAuthnVerifyToFetchPKPsHandler(
-	req: Request<any>,
-	res: Response<any>,
+	req: Request<
+		{},
+		AuthMethodVerifyToFetchResponse,
+		WebAuthnVerifyRegistrationRequest,
+		ParsedQs,
+		Record<string, any>
+	>,
+	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
 ) {
 	// Check if PKP already exists for this credentialRawId.
 	console.log("credentialRawId", req.body.credential.rawId);
