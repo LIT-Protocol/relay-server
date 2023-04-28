@@ -12,7 +12,6 @@ import { getPKPsForAuthMethod, mintPKP } from "../../lit";
 import fetch from "node-fetch";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
-import { PKP } from '../../dist/models/index';
 
 const AUTH_SERVER_URL =
 	process.env.AUTH_SERVER_URL || "http://127.0.0.1:8080/api/otp/verify";
@@ -52,12 +51,21 @@ export async function otpVerifyToMintHandler(
 ) {
 	const { jwt } = req.body;
 	let payload: OtpVerificationPayload | null;
-
+	
 	const tmpToken = (" " + jwt).slice(1);
 	let userId;
-
+	let tokenBody: Record<string, unknown>;
 	try {
-		userId = parseJWT(tmpToken);
+		tokenBody = parseJWT(tmpToken);
+		let message: string = tokenBody['extraData'] as string;
+		let contents = message.split("|");
+
+		if (contents.length !== 2) {
+			throw new Error("invalid message format in token message");
+		}
+
+		userId = contents[0];
+
 		payload = await verifyOtpJWT(jwt);
 		if (payload.userId !== userId) {
 			throw new Error("UserId does not match token contents");
@@ -105,19 +113,28 @@ export async function otpVerifyToFetchPKPsHandler(
 	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
 ) {
 	const { jwt } = req.body;
-	let payload: OtpVerificationPayload | null;
 
 	const tmpToken = (" " + jwt).slice(1);
 	let userId;
+	let tokenBody: Record<string, unknown>;
 	try {
-		userId = parseJWT(tmpToken);
+		tokenBody = parseJWT(tmpToken);
+
+		let message: string = tokenBody.extraData as string;
+		let contents = message.split("|");
+
+		if (contents.length !== 2) {
+			throw new Error("invalid message format in token message");
+		}
+
+		userId = contents[0];
 		console.log(userId);
-		payload = await verifyOtpJWT(jwt);
-		if (payload.userId !== userId) {
+		const resp = await verifyOtpJWT(jwt);
+		if (resp.userId !== userId) {
 			throw new Error("UserId does not match token contents");
 		}
 		console.info("Sucessful verification of OTP token", {
-			userid: payload.userId,
+			userid: resp.userId,
 		});
 	} catch (e) {
 		console.error("unable to verify OTP token");
@@ -128,8 +145,9 @@ export async function otpVerifyToFetchPKPsHandler(
 
 	// fetch PKPs for user
 	try {
-		let idForAuthMethod = userId;
-		idForAuthMethod = utils.keccak256(toUtf8Bytes(userId));
+		let idForAuthMethod = userId as string;
+		let sub = tokenBody.sub as string;
+		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId}.${sub}`));
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.OTP,
 			idForAuthMethod,
@@ -153,19 +171,13 @@ export async function otpVerifyToFetchPKPsHandler(
  * @param jwt token to parse
  * @returns {string}- userId contained within the token message
  */
-function parseJWT(jwt: string): string {
+function parseJWT(jwt: string): Record<string, unknown> {
 	let parts = jwt.split(".");
 	if (parts.length !== 3) {
 		throw new Error("Invalid token length");
 	}
 	let body =  Buffer.from(parts[1], 'base64');
 	let parsedBody: Record<string, unknown> = JSON.parse(body.toString('ascii'));
-	let message: string = parsedBody['extraData'] as string;
-	let contents = message.split("|");
-
-	if (contents.length !== 2) {
-		throw new Error("invalid message format in token message");
-	}
-
-	return contents[0];
+	console.log("JWT body: ", parsedBody);
+	return parsedBody;
 }
