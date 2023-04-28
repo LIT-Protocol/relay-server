@@ -51,6 +51,7 @@ import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
 import {
 	webAuthnVerifyRegistrationHandler,
 	webAuthnGenerateRegistrationOptionsHandler,
+	webAuthnVerifyToFetchPKPsHandler,
 } from "./routes/auth/webAuthn";
 import {
 	discordOAuthVerifyToFetchPKPsHandler,
@@ -332,6 +333,8 @@ app.post("/auth/wallet", walletVerifyToMintHandler);
 app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
+
+app.post("/auth/webauthn/userinfo", webAuthnVerifyToFetchPKPsHandler);
 
 // --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
