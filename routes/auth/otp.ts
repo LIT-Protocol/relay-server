@@ -146,8 +146,8 @@ export async function otpVerifyToFetchPKPsHandler(
 	// fetch PKPs for user
 	try {
 		let idForAuthMethod = userId as string;
-		let sub = tokenBody.sub as string;
-		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId}.${sub}`));
+		let orgId = (tokenBody.orgId as string).toLowerCase();
+		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId}.${orgId}`));
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.OTP,
 			idForAuthMethod,
