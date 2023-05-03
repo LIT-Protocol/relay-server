@@ -73,7 +73,7 @@ export async function otpVerifyToMintHandler(
 		if (payload.userId !== userId) {
 			throw new Error("UserId does not match token contents");
 		}
-		console.info("Sucessful verification of otp token", {
+		console.info("Sucessful verification of OTP token", {
 			userid: payload.userId,
 		});
 	} catch (e) {
@@ -91,7 +91,7 @@ export async function otpVerifyToMintHandler(
 			authMethodId,
 			authMethodPubkey: "0x",
 		});
-		console.info("Minting PKP with Google auth", {
+		console.info("Minting PKP OTP", {
 			requestId: mintTx.hash,
 		});
 		return res.status(200).json({
