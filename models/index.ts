@@ -9,7 +9,7 @@ export interface DiscordOAuthVerifyRegistrationRequest {
 }
 
 export interface OTPAuthVerifyRegistrationRequest {
-	jwt: string;
+	accessToken: string;
 }
 
 export interface AuthMethodVerifyRegistrationResponse {
