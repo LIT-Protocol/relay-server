@@ -13,6 +13,7 @@ import fetch from "node-fetch";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 
+// TODO: UPDATE TO DEPLOYED DOMAIN
 const AUTH_SERVER_URL =
 	process.env.AUTH_SERVER_URL || "http://127.0.0.1:8080/api/otp/verify";
 
