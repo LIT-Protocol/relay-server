@@ -54,11 +54,12 @@ Staging instance of the relay server is live at https://relay-server-staging.her
 
 ### Fetching PKPs
 
-| HTTP Verb | Path                   | Description                                            |
-| --------- | ---------------------- | ------------------------------------------------------ |
-| POST      | /auth/google/userinfo  | Fetch PKPs associated with authorized Google account   |
-| POST      | /auth/discord/userinfo | Fetch PKPs associated with authorized Discord account  |
-| POST      | /auth/wallet/userinfo  | Fetch PKPs associated with verified Eth wallet account |
+| HTTP Verb | Path                    | Description                                            |
+| --------- | ----------------------- | ------------------------------------------------------ |
+| POST      | /auth/google/userinfo   | Fetch PKPs associated with authorized Google account   |
+| POST      | /auth/discord/userinfo  | Fetch PKPs associated with authorized Discord account  |
+| POST      | /auth/wallet/userinfo   | Fetch PKPs associated with verified Eth wallet account |
+| POST      | /auth/webauthn/userinfo | Fetch PKPs associated with WebAuthn credential         |
 
 </br>
 

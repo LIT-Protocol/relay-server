@@ -8,6 +8,7 @@ import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
 	AuthMethodVerifyRegistrationResponse,
+	AuthMethodVerifyToFetchResponse,
 	WebAuthnVerifyRegistrationRequest,
 } from "../../models";
 
@@ -20,7 +21,11 @@ import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { ethers, utils } from "ethers";
 import { hexlify, keccak256, toUtf8Bytes } from "ethers/lib/utils";
 import config from "../../config";
-import { getPubkeyForAuthMethod, mintPKP } from "../../lit";
+import {
+	getPKPsForAuthMethod,
+	getPubkeyForAuthMethod,
+	mintPKP,
+} from "../../lit";
 import { getDomainFromUrl } from "../../utils/string";
 
 /**
@@ -75,6 +80,7 @@ export async function webAuthnVerifyRegistrationHandler(
 
 	// Check if PKP already exists for this credentialRawId.
 	console.log("credentialRawId", req.body.credential.rawId);
+
 	const authMethodId = generateAuthMethodId(req.body.credential.rawId);
 	try {
 		const pubKey = await getPubkeyForAuthMethod({
@@ -150,6 +156,40 @@ export async function webAuthnVerifyRegistrationHandler(
 		console.error("Unable to mint PKP for user", { _error });
 		return res.status(500).json({
 			error: "Unable to mint PKP for user",
+		});
+	}
+}
+
+export async function webAuthnVerifyToFetchPKPsHandler(
+	req: Request<
+		{},
+		AuthMethodVerifyToFetchResponse,
+		WebAuthnVerifyRegistrationRequest,
+		ParsedQs,
+		Record<string, any>
+	>,
+	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
+) {
+	// Check if PKP already exists for this credentialRawId.
+	console.log("credentialRawId", req.body.credential.rawId);
+
+	try {
+		const idForAuthMethod = generateAuthMethodId(req.body.credential.rawId);
+
+		const pkps = await getPKPsForAuthMethod({
+			authMethodType: AuthMethodType.WebAuthn,
+			idForAuthMethod,
+		});
+		console.info("Fetched PKPs with WebAuthn", {
+			pkps: pkps,
+		});
+		return res.status(200).json({
+			pkps: pkps,
+		});
+	} catch (err) {
+		console.error("Unable to fetch PKPs for given WebAuthn", { err });
+		return res.status(500).json({
+			error: "Unable to fetch PKPs for given WebAuthn",
 		});
 	}
 }
