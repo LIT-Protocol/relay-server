@@ -49,14 +49,16 @@ export async function otpVerifyToMintHandler(
 		number
 	>,
 ) {
-	const { jwt } = req.body;
+	const { accessToken } = req.body;
 	let payload: OtpVerificationPayload | null;
 	
-	const tmpToken = (" " + jwt).slice(1);
+	const tmpToken = (" " + accessToken).slice(1);
 	let userId;
 	let tokenBody: Record<string, unknown>;
+	let orgId;
 	try {
 		tokenBody = parseJWT(tmpToken);
+		orgId = (tokenBody.orgId as string).toLowerCase();
 		let message: string = tokenBody['extraData'] as string;
 		let contents = message.split("|");
 
@@ -66,7 +68,7 @@ export async function otpVerifyToMintHandler(
 
 		userId = contents[0];
 
-		payload = await verifyOtpJWT(jwt);
+		payload = await verifyOtpJWT(accessToken);
 		if (payload.userId !== userId) {
 			throw new Error("UserId does not match token contents");
 		}
@@ -82,7 +84,7 @@ export async function otpVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = utils.keccak256(toUtf8Bytes(userId));
+		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId}.${orgId}`));
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.OTP,
 			authMethodId,
@@ -112,9 +114,9 @@ export async function otpVerifyToFetchPKPsHandler(
 	>,
 	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
 ) {
-	const { jwt } = req.body;
+	const { accessToken } = req.body;
 
-	const tmpToken = (" " + jwt).slice(1);
+	const tmpToken = (" " + accessToken).slice(1);
 	let userId;
 	let tokenBody: Record<string, unknown>;
 	try {
@@ -129,7 +131,7 @@ export async function otpVerifyToFetchPKPsHandler(
 
 		userId = contents[0];
 		console.log(userId);
-		const resp = await verifyOtpJWT(jwt);
+		const resp = await verifyOtpJWT(accessToken);
 		if (resp.userId !== userId) {
 			throw new Error("UserId does not match token contents");
 		}
