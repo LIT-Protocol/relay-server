@@ -85,7 +85,7 @@ export async function otpVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId}.${orgId}`));
+		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId}:${orgId}`));
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.OTP,
 			authMethodId,
@@ -150,7 +150,7 @@ export async function otpVerifyToFetchPKPsHandler(
 	try {
 		let idForAuthMethod = userId as string;
 		let orgId = (tokenBody.orgId as string).toLowerCase();
-		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId}.${orgId}`));
+		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId}:${orgId}`));
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.OTP,
 			idForAuthMethod,
