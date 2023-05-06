@@ -8,6 +8,10 @@ export interface DiscordOAuthVerifyRegistrationRequest {
 	accessToken: string;
 }
 
+export interface OTPAuthVerifyRegistrationRequest {
+	accessToken: string;
+}
+
 export interface AuthMethodVerifyRegistrationResponse {
 	requestId?: string;
 	error?: string;
@@ -53,6 +57,11 @@ export interface StoreConditionRequest {
 export interface StoreConditionResponse {
 	txHash?: string;
 	error?: string;
+}
+
+export interface OtpVerificationPayload {
+	userId: string,
+	status: boolean,
 }
 
 export interface StoreConditionWithSigner {
@@ -117,6 +126,7 @@ export enum AuthMethodType {
 	Discord,
 	Google,
 	GoogleJwt,
+	OTP
 }
 
 export interface PKP {

@@ -62,6 +62,7 @@ import {
 	walletVerifyToFetchPKPsHandler,
 } from "./routes/auth/wallet";
 import config from "./config";
+import { otpVerifyToFetchPKPsHandler, otpVerifyToMintHandler } from "./routes/auth/otp";
 
 const app = express();
 
@@ -72,7 +73,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use(limiter);
-app.use(apiKeyGateAndTracking);
+// app.use(apiKeyGateAndTracking);
 
 /**
  * If the words "metadata statements" mean anything to you, you'll want to enable this route. It
@@ -328,11 +329,13 @@ app.post("/store-condition", storeConditionHandler);
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.post("/auth/discord", discordOAuthVerifyToMintHandler);
 app.post("/auth/wallet", walletVerifyToMintHandler);
+app.post("/auth/otp", otpVerifyToMintHandler);
 
 // --- Fetch PKPs tied to authorized account
 app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
+app.post("/auth/otp/userinfo", otpVerifyToFetchPKPsHandler);
 
 app.post("/auth/webauthn/userinfo", webAuthnVerifyToFetchPKPsHandler);
 
