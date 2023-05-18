@@ -18,24 +18,12 @@ dotenv.config();
 import type {
 	GenerateAuthenticationOptionsOpts,
 	GenerateRegistrationOptionsOpts,
-	VerifiedAuthenticationResponse,
-	VerifiedRegistrationResponse,
-	VerifyAuthenticationResponseOpts,
-	VerifyRegistrationResponseOpts,
 } from "@simplewebauthn/server";
 import {
 	// Authentication
 	generateAuthenticationOptions,
 	generateRegistrationOptions,
-	verifyAuthenticationResponse,
-	verifyRegistrationResponse,
 } from "@simplewebauthn/server";
-
-import type {
-	AuthenticationCredentialJSON,
-	AuthenticatorDevice,
-	RegistrationCredentialJSON,
-} from "@simplewebauthn/typescript-types";
 
 import { LoggedInUser } from "./example-server";
 
@@ -73,7 +61,7 @@ app.use(express.json());
 app.use(cors());
 
 app.use(limiter);
-// app.use(apiKeyGateAndTracking);
+app.use(apiKeyGateAndTracking);
 
 /**
  * If the words "metadata statements" mean anything to you, you'll want to enable this route. It
@@ -176,70 +164,6 @@ app.get("/generate-registration-options", (req, res) => {
 	res.send(options);
 });
 
-app.post("/verify-registration", async (req, res) => {
-	const body: RegistrationCredentialJSON = req.body;
-
-	const user = inMemoryUserDeviceDB[loggedInUserId];
-
-	const expectedChallenge = user.currentChallenge;
-
-	let verification: VerifiedRegistrationResponse;
-	try {
-		const opts: VerifyRegistrationResponseOpts = {
-			credential: body,
-			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin: config.expectedOrigins,
-			expectedRPID: rpID,
-			requireUserVerification: true,
-		};
-		verification = await verifyRegistrationResponse(opts);
-	} catch (error) {
-		const _error = error as Error;
-		console.error(_error);
-		return res.status(400).send({ error: _error.message });
-	}
-
-	const { verified, registrationInfo } = verification;
-
-	if (verified && registrationInfo) {
-		console.log("registrationInfo", registrationInfo);
-		const { credentialPublicKey, credentialID, counter } = registrationInfo;
-
-		const existingDevice = user.devices.find((device) =>
-			device.credentialID.equals(credentialID),
-		);
-
-		if (!existingDevice) {
-			/**
-			 * Add the returned device to the user's list of devices
-			 */
-			const newDevice: AuthenticatorDevice = {
-				credentialPublicKey,
-				credentialID,
-				counter,
-				transports: body.transports,
-			};
-			user.devices.push(newDevice);
-
-			// const packed = packAuthData({
-			// credentialPublicKey,
-			// credentialID,
-			// counter,
-			// });
-
-			// mint the PKP with this as an auth method
-			// const pkp = await mintPKP({
-			//   // credentialPublicKey,
-			//   // credentialID,
-			//   authMethodType: AuthMethodType.WebAuthn,
-			//   idForAuthMethod: // TODO:
-			// });
-		}
-	}
-
-	res.send({ verified });
-});
-
 /**
  * Login (a.k.a. "Authentication")
  */
@@ -269,58 +193,6 @@ app.get("/generate-authentication-options", (req, res) => {
 	res.send(options);
 });
 
-app.post("/verify-authentication", async (req, res) => {
-	const body: AuthenticationCredentialJSON = req.body;
-
-	const user = inMemoryUserDeviceDB[loggedInUserId];
-
-	const expectedChallenge = user.currentChallenge;
-
-	let dbAuthenticator: AuthenticatorDevice;
-	const bodyCredIDBuffer = base64url.toBuffer(body.rawId);
-	// "Query the DB" here for an authenticator matching `credentialID`
-	for (const dev of user.devices) {
-		if (dev.credentialID.equals(bodyCredIDBuffer)) {
-			dbAuthenticator = dev;
-			break;
-		}
-	}
-	console.log("dbAuthenticator", dbAuthenticator!);
-
-	if (!dbAuthenticator!) {
-		return res
-			.status(400)
-			.send({ error: "Authenticator is not registered with this site" });
-	}
-
-	let verification: VerifiedAuthenticationResponse;
-	try {
-		const opts: VerifyAuthenticationResponseOpts = {
-			credential: body,
-			expectedChallenge: `${expectedChallenge}`,
-			expectedOrigin: config.expectedOrigins,
-			expectedRPID: rpID,
-			authenticator: dbAuthenticator,
-			requireUserVerification: true,
-		};
-		verification = await verifyAuthenticationResponse(opts);
-	} catch (error) {
-		const _error = error as Error;
-		console.error(_error);
-		return res.status(400).send({ error: _error.message });
-	}
-
-	const { verified, authenticationInfo } = verification;
-
-	if (verified) {
-		// Update the authenticator's counter in the DB to the newest count in the authentication
-		dbAuthenticator.counter = authenticationInfo.newCounter;
-	}
-
-	// const { credentialPublicKey, credentialID, counter } = authenticationInfo;
-
-	res.send({ verified });
-});
 
 // --- Store condition
 app.post("/store-condition", storeConditionHandler);
