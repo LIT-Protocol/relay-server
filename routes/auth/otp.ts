@@ -15,7 +15,7 @@ import { toUtf8Bytes } from "ethers/lib/utils";
 
 // TODO: UPDATE TO DEPLOYED DOMAIN
 const AUTH_SERVER_URL =
-	process.env.AUTH_SERVER_URL || "http://127.0.0.1:8080/api/otp/verify";
+	process.env.AUTH_SERVER_URL || "http://158.69.34.228:80/api/otp/verify";
 
 async function verifyOtpJWT(jwt: string): Promise<OtpVerificationPayload> {
 	const res = await fetch(AUTH_SERVER_URL, {
@@ -23,6 +23,7 @@ async function verifyOtpJWT(jwt: string): Promise<OtpVerificationPayload> {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
+			'api-key': '67e55044-10b1-426f-9247-bb680e5fe0c8_relayer'
 		},
 		body: JSON.stringify({
 			token: jwt,
