@@ -1,15 +1,20 @@
 import type { RegistrationCredentialJSON } from "@simplewebauthn/typescript-types";
 
 export interface GoogleOAuthVerifyRegistrationRequest {
-	idToken: string;
+	authMethodId: string;
 }
 
 export interface DiscordOAuthVerifyRegistrationRequest {
-	accessToken: string;
+	authMethodId: string;
 }
 
 export interface OTPAuthVerifyRegistrationRequest {
 	accessToken: string;
+}
+
+export interface RegistrationRequest {
+	authMethodId: string,
+	authMethodType: number,
 }
 
 export interface AuthMethodVerifyRegistrationResponse {

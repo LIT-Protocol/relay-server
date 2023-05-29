@@ -6,6 +6,7 @@ import {
 	AuthSig,
 	AuthMethodVerifyRegistrationResponse,
 	AuthMethodVerifyToFetchResponse,
+	RegistrationRequest,
 } from "../../models";
 import { utils } from "ethers";
 import { mintPKP, getPKPsForAuthMethod } from "../../lit";
@@ -25,7 +26,7 @@ export async function walletVerifyToMintHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyRegistrationResponse,
-		AuthSig,
+		RegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
@@ -36,26 +37,10 @@ export async function walletVerifyToMintHandler(
 	>,
 ) {
 	// get wallet auth sig from body
-	const authSig = req.body;
-
-	// verify auth sig
-	const verified: boolean = verifyAuthSig(authSig);
-	if (verified) {
-		console.info("Successfully verified authentication signature", {
-			address: authSig.address,
-		});
-	} else {
-		console.error("Unable to verify authentication signature", {
-			address: authSig.address,
-		});
-		return res.status(400).json({
-			error: "Unable to verify authentication signature",
-		});
-	}
+	const {authMethodId} = req.body;
 
 	// mint PKP for user
 	try {
-		const authMethodId = authSig.address;
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.EthWallet,
 			authMethodId,
@@ -80,36 +65,20 @@ export async function walletVerifyToFetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
-		AuthSig,
+		RegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
 	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
 ) {
 	// get auth sig from body
-	const authSig = req.body;
-
-	// verify auth sig
-	const verified: boolean = verifyAuthSig(authSig);
-	if (verified) {
-		console.info("Successfully verified authentication signature", {
-			address: authSig.address,
-		});
-	} else {
-		console.error("Unable to verify authentication signature", {
-			address: authSig.address,
-		});
-		return res.status(400).json({
-			error: "Unable to verify authentication signature",
-		});
-	}
+	const {authMethodId} = req.body;
 
 	// fetch PKP for user
 	try {
-		const idForAuthMethod = authSig.address;
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.EthWallet,
-			idForAuthMethod,
+			idForAuthMethod: authMethodId,
 		});
 		console.info("Fetched PKPs with Eth wallet", {
 			pkps: pkps,

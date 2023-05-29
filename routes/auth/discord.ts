@@ -13,24 +13,6 @@ import { mintPKP, getPKPsForAuthMethod } from "../../lit";
 
 const APP_ID = process.env.DISCORD_CLIENT_ID || "105287423965869266";
 
-// Verify Discord access token by fetching current user info
-async function verifyAndFetchDiscordUserId(
-	accessToken: string,
-): Promise<string> {
-	const meResponse = await fetch("https://discord.com/api/users/@me", {
-		method: "GET",
-		headers: {
-			authorization: `Bearer ${accessToken}`,
-		},
-	});
-	if (meResponse.ok) {
-		const user = await meResponse.json();
-		return user.id;
-	} else {
-		throw new Error("Unable to verify Discord account");
-	}
-}
-
 // Mint PKP for verified Discord account
 export async function discordOAuthVerifyToMintHandler(
 	req: Request<
@@ -47,20 +29,7 @@ export async function discordOAuthVerifyToMintHandler(
 	>,
 ) {
 	// get Discord access token from body
-	const { accessToken } = req.body;
-
-	// verify access token by fetching user info
-	let userId: string;
-	try {
-		userId = await verifyAndFetchDiscordUserId(accessToken);
-		console.info("Successfully verified Discord account", {
-			userId: userId,
-		});
-	} catch (err) {
-		return res.status(400).json({
-			error: "Unable to verify Discord account",
-		});
-	}
+	const { authMethodId } = req.body;
 
 	// mint PKP for user
 	try {
