@@ -65,29 +65,12 @@ export async function discordOAuthVerifyToFetchPKPsHandler(
 	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
 ) {
 	// get Discord access token from body
-	const { accessToken } = req.body;
+	const { authMethodId } = req.body;
 
-	// verify access token by fetching user info
-	let userId: string;
 	try {
-		userId = await verifyAndFetchDiscordUserId(accessToken);
-		console.info("Successfully verified Discord account", {
-			userId: userId,
-		});
-	} catch (err) {
-		return res.status(400).json({
-			error: "Unable to verify Discord account",
-		});
-	}
-
-	// fetch PKP for user
-	try {
-		const idForAuthMethod = utils.keccak256(
-			toUtf8Bytes(`${userId}:${APP_ID}`),
-		);
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.Discord,
-			idForAuthMethod,
+			idForAuthMethod: authMethodId,
 		});
 		console.info("Fetched PKPs with Discord auth", {
 			pkps: pkps,
