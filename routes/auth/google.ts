@@ -3,7 +3,7 @@ import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
 import {
 	AuthMethodType,
-	RegistrationnRequest,
+	RegistrationRequest,
 	AuthMethodVerifyRegistrationResponse,
 	AuthMethodVerifyToFetchResponse,
 } from "../../models";
@@ -17,7 +17,7 @@ export async function googleOAuthVerifyToMintHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyRegistrationResponse,
-		RegistrationnRequest,
+		RegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
@@ -56,7 +56,7 @@ export async function googleOAuthVerifyToFetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
-		RegistrationnRequest,
+		RegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
