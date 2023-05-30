@@ -37,9 +37,9 @@ import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
 import {
-	webAuthnVerifyRegistrationHandler,
+	webAuthnRegistrationHandler,
 	webAuthnGenerateRegistrationOptionsHandler,
-	webAuthnVerifyToFetchPKPsHandler,
+	webAuthnFetchPKPsHandler,
 } from "./routes/auth/webAuthn";
 import {
 	discordOAuthVerifyToFetchPKPsHandler,
@@ -209,7 +209,7 @@ app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 app.post("/auth/otp/userinfo", otpVerifyToFetchPKPsHandler);
 
-app.post("/auth/webauthn/userinfo", webAuthnVerifyToFetchPKPsHandler);
+app.post("/auth/webauthn/userinfo", webAuthnFetchPKPsHandler);
 
 // --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
@@ -217,7 +217,7 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 // --- WebAuthn
 app.post(
 	"/auth/webauthn/verify-registration",
-	webAuthnVerifyRegistrationHandler,
+	webAuthnRegistrationHandler,
 );
 app.get(
 	"/auth/webauthn/generate-registration-options",

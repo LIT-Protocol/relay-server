@@ -62,7 +62,7 @@ export function webAuthnGenerateRegistrationOptionsHandler(
 	return res.json(options);
 }
 
-export async function webAuthnVerifyRegistrationHandler(
+export async function webAuthnRegistrationHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyRegistrationResponse,
@@ -104,7 +104,7 @@ export async function webAuthnVerifyRegistrationHandler(
 	}
 }
 
-export async function webAuthnVerifyToFetchPKPsHandler(
+export async function webAuthnFetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
