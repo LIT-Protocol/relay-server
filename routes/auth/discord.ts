@@ -33,9 +33,7 @@ export async function discordOAuthVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = utils.keccak256(
-			toUtf8Bytes(`${userId}:${APP_ID}`),
-		);
+
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.Discord,
 			authMethodId,
