@@ -28,10 +28,6 @@ import {
 import { LoggedInUser } from "./example-server";
 
 import cors from "cors";
-import {
-	googleOAuthVerifyToMintHandler,
-	googleOAuthVerifyToFetchPKPsHandler,
-} from "./routes/auth/google";
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
 import { storeConditionHandler } from "./routes/storeCondition";
@@ -41,16 +37,10 @@ import {
 	webAuthnGenerateRegistrationOptionsHandler,
 	webAuthnFetchPKPsHandler,
 } from "./routes/auth/webAuthn";
-import {
-	discordOAuthVerifyToFetchPKPsHandler,
-	discordOAuthVerifyToMintHandler,
-} from "./routes/auth/discord";
-import {
-	walletVerifyToMintHandler,
-	walletVerifyToFetchPKPsHandler,
-} from "./routes/auth/wallet";
+
+import {mintPKPHandler, fetchPKPsHandler} from './routes/auth/mintAndFetch';
+
 import config from "./config";
-import { otpVerifyToFetchPKPsHandler, otpVerifyToMintHandler } from "./routes/auth/otp";
 
 const app = express();
 
@@ -198,16 +188,10 @@ app.get("/generate-authentication-options", (req, res) => {
 app.post("/store-condition", storeConditionHandler);
 
 // --- Mint PKP for authorized account
-app.post("/auth/google", googleOAuthVerifyToMintHandler);
-app.post("/auth/discord", discordOAuthVerifyToMintHandler);
-app.post("/auth/wallet", walletVerifyToMintHandler);
-app.post("/auth/otp", otpVerifyToMintHandler);
+app.post("/auth", mintPKPHandler);
 
 // --- Fetch PKPs tied to authorized account
-app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
-app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
-app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
-app.post("/auth/otp/userinfo", otpVerifyToFetchPKPsHandler);
+app.post("/auth/userinfo", fetchPKPsHandler);
 
 app.post("/auth/webauthn/userinfo", webAuthnFetchPKPsHandler);
 
