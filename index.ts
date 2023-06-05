@@ -200,7 +200,7 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 
 // --- WebAuthn
 app.post(
-	"/auth/webauthn/verify-registration",
+	"/auth/webauthn/registration",
 	webAuthnRegistrationHandler,
 );
 app.get(
