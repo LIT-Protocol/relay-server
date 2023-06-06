@@ -15,7 +15,7 @@ export interface OTPAuthVerifyRegistrationRequest {
 export interface RegistrationRequest {
 	authMethodId: string,
 	authMethodType: number,
-	authMethodPubkey?: string,
+	authMethodPubKey?: string,
 }
 
 export interface AuthMethodVerifyRegistrationResponse {
