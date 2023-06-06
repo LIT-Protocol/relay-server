@@ -6,19 +6,19 @@ import {
 	DiscordOAuthVerifyRegistrationRequest,
 	AuthMethodVerifyRegistrationResponse,
 	AuthMethodVerifyToFetchResponse,
+	RegistrationRequest,
+	FetchRequest,
 } from "../../models";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 import { mintPKP, getPKPsForAuthMethod } from "../../lit";
-
-const APP_ID = process.env.DISCORD_CLIENT_ID || "105287423965869266";
 
 // Mint PKP for verified Discord account
 export async function mintPKPHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyRegistrationResponse,
-		DiscordOAuthVerifyRegistrationRequest,
+		RegistrationRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
@@ -29,25 +29,25 @@ export async function mintPKPHandler(
 	>,
 ) {
 	// get Discord access token from body
-	const { authMethodId } = req.body;
+	const { authMethodType, authMethodId } = req.body;
 
 	// mint PKP for user
 	try {
 		const mintTx = await mintPKP({
-			authMethodType: AuthMethodType.Discord,
+			authMethodType,
 			authMethodId,
 			authMethodPubkey: "0x",
 		});
-		console.info("Minting PKP with Discord auth", {
+		console.info("Minting PKP with auth type", authMethodType, {
 			requestId: mintTx.hash,
 		});
 		return res.status(200).json({
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for given Discord account", { err });
+		console.error("Unable to mint PKP for auth type", authMethodType, { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for given Discord account",
+			error: `Unable to mint PKP for given auth method type ${authMethodType}`,
 		});
 	}
 }
@@ -57,32 +57,32 @@ export async function fetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
-		DiscordOAuthVerifyRegistrationRequest,
+		FetchRequest,
 		ParsedQs,
 		Record<string, any>
 	>,
 	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
 ) {
 	// get Discord access token from body
-	const { authMethodId } = req.body;
+	const { authMethodType, authMethodId } = req.body;
 
 	try {
 		const pkps = await getPKPsForAuthMethod({
-			authMethodType: AuthMethodType.Discord,
+			authMethodType: authMethodType,
 			idForAuthMethod: authMethodId,
 		});
-		console.info("Fetched PKPs with Discord auth", {
+		console.info("Fetched PKPs with auth type", authMethodType, {
 			pkps: pkps,
 		});
 		return res.status(200).json({
 			pkps: pkps,
 		});
 	} catch (err) {
-		console.error("Unable to fetch PKPs for given Discord account", {
+		console.error(`Unable to fetch PKPs for given auth type ${authMethodType}`, {
 			err,
 		});
 		return res.status(500).json({
-			error: "Unable to fetch PKPs for given Discord account",
+			error: `Unable to fetch PKPs for given auth method type: ${authMethodType}`,
 		});
 	}
 }
