@@ -165,17 +165,17 @@ export async function webAuthnVerifyToFetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
-		WebAuthnVerifyRegistrationRequest,
+		any,
 		ParsedQs,
 		Record<string, any>
 	>,
 	res: Response<AuthMethodVerifyToFetchResponse, Record<string, any>, number>,
 ) {
 	// Check if PKP already exists for this credentialRawId.
-	console.log("credentialRawId", req.body.credential.rawId);
+	console.log("credentialRawId", req.body.rawId);
 
 	try {
-		const idForAuthMethod = generateAuthMethodId(req.body.credential.rawId);
+		const idForAuthMethod = generateAuthMethodId(req.body.rawId);
 
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.WebAuthn,
