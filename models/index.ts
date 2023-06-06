@@ -18,6 +18,8 @@ export interface RegistrationRequest {
 	authMethodPubKey?: string,
 }
 
+export type FetchRequest = RegistrationRequest;
+
 export interface AuthMethodVerifyRegistrationResponse {
 	requestId?: string;
 	error?: string;
