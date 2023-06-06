@@ -76,9 +76,9 @@ export async function webAuthnRegistrationHandler(
 		number
 	>,
 ) {
-	let { authMethodId, authMethodPubkey } = req.body;
+	let { authMethodId, authMethodPubKey } = req.body;
 	try {
-		if (!authMethodPubkey) {
+		if (!authMethodPubKey) {
 			return res.status(404).json({
 				error: "Auth method pubkey not found in request body",
 			});
@@ -89,7 +89,7 @@ export async function webAuthnRegistrationHandler(
 			authMethodId,
 			// We want to use the CBOR encoding here to retain as much information as possible
 			// about the COSE (public) key.
-			authMethodPubkey: authMethodPubkey as string,
+			authMethodPubkey: authMethodPubKey as string,
 		});
 
 		return res.status(200).json({
