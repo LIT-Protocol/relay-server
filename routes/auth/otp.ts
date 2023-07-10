@@ -13,30 +13,6 @@ import fetch from "node-fetch";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 
-// TODO: UPDATE TO DEPLOYED DOMAIN
-const AUTH_SERVER_URL =
-	process.env.AUTH_SERVER_URL || "https://auth-api.litgateway.com/api/otp/verify";
-
-async function verifyOtpJWT(jwt: string): Promise<OtpVerificationPayload> {
-	const res = await fetch(AUTH_SERVER_URL, {
-		redirect: "error",
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			'api-key': '67e55044-10b1-426f-9247-bb680e5fe0c8_relayer'
-		},
-		body: JSON.stringify({
-			token: jwt,
-		}),
-	});
-	if (res.status < 200 || res.status > 299) {
-		throw new Error("Error while verifying token on remote endpoint");
-	}
-	const respBody = await res.json();
-
-	return respBody as OtpVerificationPayload;
-}
-
 export async function otpVerifyToMintHandler(
 	req: Request<
 		{},
@@ -52,31 +28,26 @@ export async function otpVerifyToMintHandler(
 	>,
 ) {
 	const { accessToken } = req.body;
-	let payload: OtpVerificationPayload | null;
-	
 	const tmpToken = (" " + accessToken).slice(1);
-	let userId;
+	let userId: string;
 	let tokenBody: Record<string, unknown>;
-	let orgId;
+	let orgId: string;
 	try {
 		tokenBody = parseJWT(tmpToken);
-		orgId = (tokenBody.orgId as string).toLowerCase();
-		let message: string = tokenBody['extraData'] as string;
-		let contents = message.split("|");
-
-		if (contents.length !== 2) {
-			throw new Error("invalid message format in token message");
+		const audience = (tokenBody['aud'] as string[])[0];
+		if (!audience) {
+			return res.status(401).json({
+				error: "Unable to parse project Id from token",
+			});
 		}
-
-		userId = contents[0];
-
-		payload = await verifyOtpJWT(accessToken);
-		if (payload.userId !== userId) {
-			throw new Error("UserId does not match token contents");
+		orgId = audience;
+		if (tokenBody['sub']) {
+			userId = tokenBody['sub'] as string;
+		} else {
+			return res.status(401).json({
+				error: "Unable to parse user Id from token",
+			});
 		}
-		console.info("Sucessful verification of OTP token", {
-			userid: payload.userId,
-		});
 	} catch (e) {
 		console.error("unable to verify OTP token ", e);
 		return res.status(400).json({
@@ -86,7 +57,7 @@ export async function otpVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId}:${orgId}`));
+		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId.toLowerCase()}:${orgId.toLowerCase()}`));
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.OTP,
 			authMethodId,
@@ -119,27 +90,26 @@ export async function otpVerifyToFetchPKPsHandler(
 	const { accessToken } = req.body;
 
 	const tmpToken = (" " + accessToken).slice(1);
-	let userId;
+	let userId: string;
+	let orgId: string;
 	let tokenBody: Record<string, unknown>;
 	try {
+
 		tokenBody = parseJWT(tmpToken);
-
-		let message: string = tokenBody.extraData as string;
-		let contents = message.split("|");
-
-		if (contents.length !== 2) {
-			throw new Error("invalid message format in token message");
+		const audience = (tokenBody['aud'] as string[])[0];
+		if (!audience) {
+			return res.status(401).json({
+				error: "Unable to parse project Id from token",
+			});
 		}
-
-		userId = contents[0];
-		console.log(userId);
-		const resp = await verifyOtpJWT(accessToken);
-		if (resp.userId !== userId) {
-			throw new Error("UserId does not match token contents");
+		orgId = audience;
+		if (tokenBody['sub']) {
+			userId = tokenBody['sub'] as string;
+		} else {
+			return res.status(401).json({
+				error: "Unable to parse user Id from token",
+			});
 		}
-		console.info("Sucessful verification of OTP token", {
-			userid: resp.userId,
-		});
 	} catch (e) {
 		console.error("unable to verify OTP token");
 		return res.status(400).json({
@@ -149,9 +119,8 @@ export async function otpVerifyToFetchPKPsHandler(
 
 	// fetch PKPs for user
 	try {
-		let idForAuthMethod = userId as string;
-		let orgId = (tokenBody.orgId as string).toLowerCase();
-		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId}:${orgId}`));
+		let idForAuthMethod: string;	
+		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId.toLowerCase()}:${orgId.toLowerCase()}`));
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.OTP,
 			idForAuthMethod,
