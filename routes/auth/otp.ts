@@ -41,6 +41,7 @@ export async function otpVerifyToMintHandler(
 			});
 		}
 		orgId = audience;
+
 		if (tokenBody['sub']) {
 			userId = tokenBody['sub'] as string;
 		} else {
