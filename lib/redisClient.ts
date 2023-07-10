@@ -13,7 +13,8 @@ let redisClient: redis.RedisClientType;
 		console.error(`Error : ${error}`),
 	);
 
-	await redisClient.connect();
+	const redisClientConnected = await redisClient.connect();
+	console.log(`Redis client connected: ${redisClientConnected}`);
 })();
 
 export default redisClient!;
