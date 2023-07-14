@@ -50,6 +50,7 @@ import {
 	walletVerifyToFetchPKPsHandler,
 } from "./routes/auth/wallet";
 import config from "./config";
+import { stytchOtpVerifyToFetchPKPsHandler, stytchOtpVerifyToMintHandler } from "./routes/auth/stytchOtp";
 import { otpVerifyToFetchPKPsHandler, otpVerifyToMintHandler } from "./routes/auth/otp";
 
 const app = express();
@@ -202,12 +203,14 @@ app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.post("/auth/discord", discordOAuthVerifyToMintHandler);
 app.post("/auth/wallet", walletVerifyToMintHandler);
 app.post("/auth/otp", otpVerifyToMintHandler);
+app.post("/auth/stytch-otp", otpVerifyToMintHandler);
 
 // --- Fetch PKPs tied to authorized account
 app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 app.post("/auth/otp/userinfo", otpVerifyToFetchPKPsHandler);
+app.post("/auth/stytch-otp/userinfo", otpVerifyToFetchPKPsHandler);
 
 app.post("/auth/webauthn/userinfo", webAuthnVerifyToFetchPKPsHandler);
 
