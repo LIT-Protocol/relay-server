@@ -126,8 +126,10 @@ export enum AuthMethodType {
 	Discord,
 	Google,
 	GoogleJwt,
-	OTP
+	OTP,
+	StytchOtp = 9
 }
+
 
 export interface PKP {
 	tokenId: string;
