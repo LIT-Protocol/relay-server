@@ -12,6 +12,25 @@ export interface OTPAuthVerifyRegistrationRequest {
 	accessToken: string;
 }
 
+export interface MintNextAndAddAuthMethodsRequest {
+	keyType: string;
+	permittedAuthMethodTypes: string[];
+	permittedAuthMethodIds: string[];
+	permittedAuthMethodPubkeys: string[];
+	permittedAuthMethodScopes: string[][];
+	addPkpEthAddressAsPermittedAddress: boolean;
+	sendPkpToItself: boolean;
+}
+
+export interface MintNextAndAddAuthMethodsResponse
+	extends AuthMethodVerifyRegistrationResponse {}
+
+export interface FetchRequest {
+	authMethodId: string;
+	authMethodType: number;
+	authMethodPubKey?: string;
+}
+
 export interface AuthMethodVerifyRegistrationResponse {
 	requestId?: string;
 	error?: string;
@@ -60,8 +79,8 @@ export interface StoreConditionResponse {
 }
 
 export interface OtpVerificationPayload {
-	userId: string,
-	status: boolean,
+	userId: string;
+	status: boolean;
 }
 
 export interface StoreConditionWithSigner {
@@ -127,9 +146,8 @@ export enum AuthMethodType {
 	Google,
 	GoogleJwt,
 	OTP,
-	StytchOtp = 9
+	StytchOtp = 9,
 }
-
 
 export interface PKP {
 	tokenId: string;

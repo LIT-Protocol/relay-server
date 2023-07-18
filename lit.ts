@@ -99,6 +99,52 @@ export async function storeConditionWithSigner(
 	return tx;
 }
 
+export async function mintPKPV2({
+	keyType,
+	permittedAuthMethodTypes,
+	permittedAuthMethodIds,
+	permittedAuthMethodPubkeys,
+	permittedAuthMethodScopes,
+	addPkpEthAddressAsPermittedAddress,
+	sendPkpToItself,
+}: {
+	keyType: string;
+	permittedAuthMethodTypes: string[];
+	permittedAuthMethodIds: string[];
+	permittedAuthMethodPubkeys: string[];
+	permittedAuthMethodScopes: string[][];
+	addPkpEthAddressAsPermittedAddress: boolean;
+	sendPkpToItself: boolean;
+}): Promise<ethers.Transaction> {
+	console.log(
+		"In mintPKPV2",
+		keyType,
+		permittedAuthMethodTypes,
+		permittedAuthMethodIds,
+		permittedAuthMethodPubkeys,
+		permittedAuthMethodScopes,
+		addPkpEthAddressAsPermittedAddress,
+		sendPkpToItself,
+	);
+	const pkpHelper = getPkpHelperContract();
+	const pkpNft = getPkpNftContract();
+
+	// first get mint cost
+	const mintCost = await pkpNft.mintCost();
+	const tx = await pkpHelper.mintNextAndAddAuthMethods(
+		keyType,
+		permittedAuthMethodTypes,
+		permittedAuthMethodIds,
+		permittedAuthMethodPubkeys,
+		permittedAuthMethodScopes,
+		addPkpEthAddressAsPermittedAddress,
+		sendPkpToItself,
+		{ value: mintCost },
+	);
+	console.log("tx", tx);
+	return tx;
+}
+
 export async function mintPKP({
 	authMethodType,
 	authMethodId,

@@ -49,9 +49,21 @@ import {
 	walletVerifyToMintHandler,
 	walletVerifyToFetchPKPsHandler,
 } from "./routes/auth/wallet";
+
+import {
+	fetchPKPsHandler,
+	mintNextAndAddAuthMethodsHandler,
+} from "./routes/auth/mintAndFetch";
+
 import config from "./config";
-import { stytchOtpVerifyToFetchPKPsHandler, stytchOtpVerifyToMintHandler } from "./routes/auth/stytchOtp";
-import { otpVerifyToFetchPKPsHandler, otpVerifyToMintHandler } from "./routes/auth/otp";
+import {
+	stytchOtpVerifyToFetchPKPsHandler,
+	stytchOtpVerifyToMintHandler,
+} from "./routes/auth/stytchOtp";
+import {
+	otpVerifyToFetchPKPsHandler,
+	otpVerifyToMintHandler,
+} from "./routes/auth/otp";
 
 const app = express();
 
@@ -194,11 +206,12 @@ app.get("/generate-authentication-options", (req, res) => {
 	res.send(options);
 });
 
-
 // --- Store condition
 app.post("/store-condition", storeConditionHandler);
 
 // --- Mint PKP for authorized account
+app.post("/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
+
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.post("/auth/discord", discordOAuthVerifyToMintHandler);
 app.post("/auth/wallet", walletVerifyToMintHandler);
