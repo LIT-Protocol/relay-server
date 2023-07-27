@@ -22,8 +22,8 @@ export class Sequencer {
 	private _running: boolean = false;
 	private _waitTime: number = process.env.CHAIN_POLLING_INTERVAL_MS
 		? parseInt(process.env.CHAIN_POLLING_INTERVAL_MS, 10)
-		: 5_000;
-
+		: 200;
+	private _nonce: number = -1;
 	private _pollingPromise: Promise<void> | undefined;
 
 	static get Instance(): Sequencer {
@@ -76,8 +76,11 @@ export class Sequencer {
 				const next: ActionWrapper =
 					this._queue.shift() as ActionWrapper;
 				try {
-					//@ts-ignore
-					let nonce = await Sequencer._wallet.getTransactionCount();
+					let nonce =
+						this._nonce === -1
+							//@ts-ignore
+							? await Sequencer._wallet.getTransactionCount()
+							: this._nonce + -1;
 					console.log("Nonce for tx: ", nonce);
 					let params = next.action.params;
 					let transactionData = next.action.transactionData
@@ -95,12 +98,9 @@ export class Sequencer {
 					next.resolve(res);
 				} catch (e) {
 					console.error(e);
-					this._flush();
+					this._flush(e as Error);
+					this._nonce = -1;
 				}
-				// Sleep for 2 seconds to space contract calls
-				await new Promise<void>((resolve, reject) => {
-					setTimeout(() => resolve(), this._waitTime);
-				});
 			}
 		});
 
@@ -117,10 +117,10 @@ export class Sequencer {
 		);
 	}
 
-	private _flush(): void {
+	private _flush(e: Error): void {
 		while (this._queue.length > 0) {
 			const action = this._queue.pop();
-			action?.reject();
+			action?.reject(e);
 		}
 	}
 }
