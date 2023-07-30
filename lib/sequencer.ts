@@ -117,6 +117,7 @@ export class Sequencer {
 						params as any,
 					);
 					next.resolve(res);
+					delete this._actionIndex[next.id];
 				} catch (e) {
 					e = new SequencerError((e as Error).message, next.id);
 					console.error(
