@@ -145,6 +145,8 @@ export async function mintPKP({
 				false,
 			],
 			transactionData: { value: mintCost },
+		}).catch((e) => {
+			console.error("Error while minting pkp", e);
 		});
 
 		console.log("tx", tx);

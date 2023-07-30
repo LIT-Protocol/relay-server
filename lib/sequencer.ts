@@ -14,6 +14,27 @@ export type ActionWrapper = {
 	reject: any;
 };
 
+export class SequencerError extends Error {
+	private _id: string;
+	constructor(message: string, id: string) {
+		super(message);
+		this._id = id;
+	}
+
+	get Id(): string {
+		return this._id;
+	}
+
+	public override toString(): string {
+		return `
+			Message: ${this.message}
+			Name: ${this.name}
+			Id: ${this._id}
+			Stack: ${this.stack}
+		`;
+	}
+}
+
 export class Sequencer {
 	private static _instance: Sequencer;
 	private static _wallet: Wallet | providers.JsonRpcProvider;
@@ -25,6 +46,7 @@ export class Sequencer {
 		: 200;
 	private _nonce: number = -1;
 	private _pollingPromise: Promise<void> | undefined;
+	private _actionIndex: Record<string, Promise<any>> = {};
 
 	static get Instance(): Sequencer {
 		if (!Sequencer._instance) Sequencer._instance = new Sequencer();
@@ -45,14 +67,16 @@ export class Sequencer {
 			rlv = resolve;
 			rjct = reject;
 		});
-
+		let id = this._uuidv4();
 		this._queue.push({
 			action: item,
-			id: this._uuidv4(),
+			id,
 			resolve: rlv,
 			reject: rjct,
 		});
 
+		this._actionIndex[id] = prms;
+		
 		if (!this._running) this.start();
 
 		return prms;
@@ -78,8 +102,8 @@ export class Sequencer {
 				try {
 					let nonce =
 						this._nonce === -1
-							//@ts-ignore
-							? await Sequencer._wallet.getTransactionCount()
+							? //@ts-ignore
+							  await Sequencer._wallet.getTransactionCount()
 							: this._nonce + -1;
 					console.log("Nonce for tx: ", nonce);
 					let params = next.action.params;
@@ -88,16 +112,17 @@ export class Sequencer {
 						: {};
 					transactionData["nonce"] = nonce;
 					params.push(transactionData);
-					let res = await next.action.action
-						.apply(this, params as any)
-						.catch((e) => {
-							console.error(
-								"[Sequencer] error while executing queued action",
-							);
-						});
+					let res = await next.action.action.apply(
+						this,
+						params as any,
+					);
 					next.resolve(res);
 				} catch (e) {
-					console.error(e);
+					e = new SequencerError((e as Error).message, next.id);
+					console.error(
+						"[Sequencer] error while executing queued action",
+						(e as SequencerError).toString(),
+					);
 					this._flush(e as Error);
 					this._nonce = -1;
 				}
@@ -122,5 +147,6 @@ export class Sequencer {
 			const action = this._queue.pop();
 			action?.reject(e);
 		}
+		this._pollingPromise = undefined;
 	}
 }
