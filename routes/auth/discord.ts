@@ -11,7 +11,7 @@ import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 import { mintPKP, getPKPsForAuthMethod } from "../../lit";
 
-const APP_ID = process.env.DISCORD_CLIENT_ID || "105287423965869266";
+const APP_ID = process.env.DISCORD_CLIENT_ID || "1052874239658692668";
 
 // Verify Discord access token by fetching current user info
 async function verifyAndFetchDiscordUserId(
