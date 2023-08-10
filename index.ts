@@ -212,13 +212,20 @@ app.post("/store-condition", storeConditionHandler);
 // --- Mint PKP for authorized account
 app.post("/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
 
+// --- Fetch PKPs tied to authorized account
+app.post("/fetch-pkps-by-auth-method", fetchPKPsHandler);
+
+// --- Poll minting progress
+app.get("/auth/status/:requestId", getAuthStatusHandler);
+
+// *** Deprecated ***
+
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.post("/auth/discord", discordOAuthVerifyToMintHandler);
 app.post("/auth/wallet", walletVerifyToMintHandler);
 app.post("/auth/otp", otpVerifyToMintHandler);
 app.post("/auth/stytch-otp", stytchOtpVerifyToMintHandler);
 
-// --- Fetch PKPs tied to authorized account
 app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
@@ -227,10 +234,6 @@ app.post("/auth/stytch-otp/userinfo", stytchOtpVerifyToFetchPKPsHandler);
 
 app.post("/auth/webauthn/userinfo", webAuthnVerifyToFetchPKPsHandler);
 
-// --- Poll minting progress
-app.get("/auth/status/:requestId", getAuthStatusHandler);
-
-// --- WebAuthn
 app.post(
 	"/auth/webauthn/verify-registration",
 	webAuthnVerifyRegistrationHandler,
