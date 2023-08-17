@@ -33,7 +33,7 @@ function getContract(abiPath: string, deployedContractAddress: string) {
 function getAccessControlConditionsContract() {
 	return getContract(
 		"./contracts/AccessControlConditions.json",
-		config.accessControlConditionsAddress,
+		config?.serranoContract?.accessControlConditionsAddress as string,
 	);
 }
 
@@ -52,18 +52,24 @@ function getPkpNftContractAbiPath() {
 }
 
 function getPkpHelperContract() {
-	return getContract(getPkpHelperContractAbiPath(), config.pkpHelperAddress);
+	return getContract(
+		getPkpHelperContractAbiPath(),
+		config?.serranoContract?.pkpHelperAddress as string,
+	);
 }
 
 function getPermissionsContract() {
 	return getContract(
 		"./contracts/PKPPermissions.json",
-		config.pkpPermissionsAddress,
+		config?.serranoContract?.pkpPermissionsAddress as string,
 	);
 }
 
 function getPkpNftContract() {
-	return getContract(getPkpNftContractAbiPath(), config.pkpNftAddress);
+	return getContract(
+		getPkpNftContractAbiPath(),
+		config?.serranoContract?.pkpNftAddress as string,
+	);
 }
 
 function prependHexPrefixIfNeeded(hexStr: string) {
@@ -83,7 +89,9 @@ export async function getPkpPublicKey(tokenId: string) {
 	return pkpNft.getPubkey(tokenId);
 }
 
-export async function setSequencerWallet(wallet: ethers.Wallet | ethers.providers.JsonRpcProvider) {
+export async function setSequencerWallet(
+	wallet: ethers.Wallet | ethers.providers.JsonRpcProvider,
+) {
 	Sequencer.Wallet = wallet;
 }
 
@@ -178,22 +186,24 @@ export async function mintPKP({
 
 		// Get next unminted PKP pubkey.
 		const pkpPubkeyForPkpNft = await getNextAvailablePkpPubkey(redisClient);
-		
-		const tx = await sequencer.wait({
-			action: pkpHelper.mintAndAddAuthMethods,
-			params: [
-				pkpPubkeyForPkpNft, // In SoloNet, we choose which PKP pubkey we would like to attach to the minted PKP.
-				[authMethodType],
-				[authMethodId],
-				[authMethodPubkey],
-				[[ethers.BigNumber.from("0")]],
-				true,
-				false,
-			],
-			transactionData: { value: mintCost },
-		}).catch((e) => {
-			console.error("Error while minting pkp", e);
-		});
+
+		const tx = await sequencer
+			.wait({
+				action: pkpHelper.mintAndAddAuthMethods,
+				params: [
+					pkpPubkeyForPkpNft, // In SoloNet, we choose which PKP pubkey we would like to attach to the minted PKP.
+					[authMethodType],
+					[authMethodId],
+					[authMethodPubkey],
+					[[ethers.BigNumber.from("0")]],
+					true,
+					false,
+				],
+				transactionData: { value: mintCost },
+			})
+			.catch((e) => {
+				console.error("Error while minting pkp", e);
+			});
 
 		console.log("tx", tx);
 		return tx;

@@ -1,4 +1,5 @@
 import type { RegistrationCredentialJSON } from "@simplewebauthn/typescript-types";
+import { ethers } from "ethers";
 
 export interface GoogleOAuthVerifyRegistrationRequest {
 	idToken: string;
@@ -22,6 +23,15 @@ export interface MintNextAndAddAuthMethodsRequest {
 	sendPkpToItself: boolean;
 }
 
+export interface Claim {
+	derivedKeyId: string;
+	signatures: ethers.Signature;
+	pubkey:string;
+}
+
+export interface ClaimAndMintResponse {
+	tx: string;
+}
 export interface MintNextAndAddAuthMethodsResponse
 	extends AuthMethodVerifyRegistrationResponse {}
 
@@ -115,15 +125,20 @@ export interface SessionSigSignedMessage {
 	expiration: string;
 }
 
+export interface Contract {
+	accessControlConditionsAddress: string;
+	pkpHelperAddress: string;
+	pkpPermissionsAddress: string;
+	pkpNftAddress: string;
+}
+
 export interface Config {
 	redisUrl: string;
 	port: number;
 	enableHttps: boolean;
 	expectedOrigins: string[];
-	accessControlConditionsAddress: string;
-	pkpHelperAddress: string;
-	pkpPermissionsAddress: string;
-	pkpNftAddress: string;
+	serranoContract?: Contract,
+	cayenneContracts?: Contract,
 	useSoloNet: boolean;
 }
 
