@@ -31,45 +31,82 @@ function getContract(abiPath: string, deployedContractAddress: string) {
 }
 
 function getAccessControlConditionsContract() {
-	return getContract(
-		"./contracts/AccessControlConditions.json",
-		config?.serranoContract?.accessControlConditionsAddress as string,
-	);
+	switch(config.network){
+        case 'serrano':
+	        return getContract(
+		        "./contracts/serrano/AccessControlConditions.json",
+		        config?.serranoContract?.accessControlConditionsAddress as string,
+	        );
+	    case 'cayenne':
+    	return getContract(
+		    "./contracts/cayenne/AccessControlConditions.json",
+		    config?.cayenneContracts?.accessControlConditionsAddress as string,
+	    );
+    }
 }
 
 function getPkpHelperContractAbiPath() {
 	if (config.useSoloNet) {
-		return "./contracts/SoloNetPKPHelper.json";
+		return "./contracts/serrano/SoloNetPKPHelper.json";
 	}
-	return "./contracts/PKPHelper.json";
+	return "./contracts/serrano/PKPHelper.json";
 }
 
 function getPkpNftContractAbiPath() {
 	if (config.useSoloNet) {
-		return "./contracts/SoloNetPKP.json";
+		return "./contracts/serrano/SoloNetPKP.json";
 	}
-	return "./contracts/PKPNFT.json";
+    switch (config.network) {
+        case 'serrano':
+            return "./contracts/serrano/PKPNFT.json";
+        case 'cayenne':
+            return "./contracts/cayenne/PKPNFT.json";
+    }
 }
 
 function getPkpHelperContract() {
-	return getContract(
-		getPkpHelperContractAbiPath(),
-		config?.serranoContract?.pkpHelperAddress as string,
-	);
+	switch(config.network) {
+        case 'serrano':
+            return getContract(
+		        getPkpHelperContractAbiPath(),
+		        config?.serranoContract?.pkpHelperAddress as string,
+	        );
+        case 'cayenne':
+            return getContract(
+		        getPkpHelperContractAbiPath(),
+		        config?.cayenneContracts?.pkpHelperAddress as string,
+	        );
+    }
 }
 
 function getPermissionsContract() {
-	return getContract(
-		"./contracts/PKPPermissions.json",
-		config?.serranoContract?.pkpPermissionsAddress as string,
-	);
+    switch(config.network) {
+        case 'serrano':
+    	    return getContract(
+		        "./contracts/serrano/PKPPermissions.json",
+		        config?.serranoContract?.pkpPermissionsAddress as string,
+	        );
+        case 'cayenne':
+	        return getContract(
+		        "./contracts/PKPPermissions.json",
+		        config?.cayenneContracts?.pkpPermissionsAddress as string,
+	        );
+    }
 }
 
 function getPkpNftContract() {
-	return getContract(
-		getPkpNftContractAbiPath(),
-		config?.serranoContract?.pkpNftAddress as string,
-	);
+    switch(config.network) {
+        case 'serrano':
+    	    return getContract(
+		        getPkpNftContractAbiPath(),
+		        config?.serranoContract?.pkpNftAddress as string,
+	        );
+        case 'cayenne':
+	        return getContract(
+		        getPkpNftContractAbiPath(),
+		        config?.cayenneContracts?.pkpNftAddress as string,
+	        );
+    }
 }
 
 function prependHexPrefixIfNeeded(hexStr: string) {

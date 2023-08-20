@@ -14,6 +14,7 @@ const {
 	CAYENNE_PKP_NFT_ADDRESS,
 	CAYENNE_PKP_HELPER_ADDRESS,
 	CAYENNE_PKP_PERMISSIONS_ADDRESS,
+	NETWORK,
 	USE_SOLO_NET,
 	EXPECTED_ORIGINS,
 } = process.env;
@@ -50,8 +51,10 @@ const baseConfig = {
 			CAYENNE_PKP_PERMISSIONS_ADDRESS ||
 			"0x4Aed2F242E806c58758677059340e29E6B5b7619",
 	},
+	network: "serrano",
 	useSoloNet: USE_SOLO_NET === "true",
 	expectedOrigins: EXPECTED_ORIGINS?.split(",") || ["http://localhost:3000"],
+	
 };
 
 export default {

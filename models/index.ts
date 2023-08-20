@@ -140,6 +140,7 @@ export interface Config {
 	serranoContract?: Contract,
 	cayenneContracts?: Contract,
 	useSoloNet: boolean;
+	network: "serrano" | "cayenne";
 }
 
 export enum CapabilityProtocolPrefix {
