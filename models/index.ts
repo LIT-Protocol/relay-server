@@ -3,6 +3,9 @@ import type { RegistrationCredentialJSON } from "@simplewebauthn/typescript-type
 export interface GoogleOAuthVerifyRegistrationRequest {
 	idToken: string;
 }
+export interface AppleOAuthVerifyRegistrationRequest {
+	accessToken: string;
+}
 
 export interface DiscordOAuthVerifyRegistrationRequest {
 	accessToken: string;
@@ -146,6 +149,7 @@ export enum AuthMethodType {
 	Google,
 	GoogleJwt,
 	OTP,
+	APPLE_JWT = 8,
 	StytchOtp = 9,
 }
 

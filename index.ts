@@ -64,6 +64,7 @@ import {
 	otpVerifyToFetchPKPsHandler,
 	otpVerifyToMintHandler,
 } from "./routes/auth/otp";
+import { appleOAuthVerifyToMintHandler } from "./routes/auth/apple";
 
 const app = express();
 
@@ -222,12 +223,14 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.post("/auth/discord", discordOAuthVerifyToMintHandler);
+app.post("/auth/apple", appleOAuthVerifyToMintHandler);
 app.post("/auth/wallet", walletVerifyToMintHandler);
 app.post("/auth/otp", otpVerifyToMintHandler);
 app.post("/auth/stytch-otp", stytchOtpVerifyToMintHandler);
 
 app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
+// app.post("/auth/apple/userinfo", appleOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
 app.post("/auth/otp/userinfo", otpVerifyToFetchPKPsHandler);
 app.post("/auth/stytch-otp/userinfo", stytchOtpVerifyToFetchPKPsHandler);
