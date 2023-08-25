@@ -51,7 +51,7 @@ const baseConfig = {
 			CAYENNE_PKP_PERMISSIONS_ADDRESS ||
 			"0x4Aed2F242E806c58758677059340e29E6B5b7619",
 	},
-	network: "serrano",
+	network: NETWORK || "serrano",
 	useSoloNet: USE_SOLO_NET === "true",
 	expectedOrigins: EXPECTED_ORIGINS?.split(",") || ["http://localhost:3000"],
 	

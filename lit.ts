@@ -5,6 +5,8 @@ import config from "./config";
 import redisClient from "./lib/redisClient";
 import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 import { Sequencer } from "./lib/sequencer";
+import { SiweMessage } from 'siwe';
+import { toUtf8Bytes } from 'ethers/lib/utils';
 
 export function getProvider() {
 	return new ethers.providers.JsonRpcProvider(
@@ -49,7 +51,12 @@ function getPkpHelperContractAbiPath() {
 	if (config.useSoloNet) {
 		return "./contracts/serrano/SoloNetPKPHelper.json";
 	}
-	return "./contracts/serrano/PKPHelper.json";
+	switch(config.network){
+        case 'serrano':
+	        return './contracts/serrano/PKPHelper.json';
+	    case 'cayenne':
+			return './contracts/cayenne/PKPHelper.json';
+    }
 }
 
 function getPkpNftContractAbiPath() {
@@ -267,6 +274,93 @@ export async function mintPKP({
 		return tx;
 	}
 }
+
+export async function claimPKP({
+	keyId,
+	signatures,
+	authMethodType,
+	authMethodId,
+	authMethodPubkey,
+}: {
+	keyId: string,
+	signatures: ethers.Signature[],
+	authMethodType: AuthMethodType;
+	authMethodId: string;
+	authMethodPubkey: string;
+}): Promise<ethers.Transaction> {
+	console.log("in mintPKP");
+	const pkpHelper = getPkpHelperContract();
+	const pkpNft = getPkpNftContract();
+
+	// first get mint cost
+	const mintCost = await pkpNft.mintCost();
+	const sequencer = Sequencer.Instance;
+
+	Sequencer.Wallet = getSigner();
+	const mappedSignatures = signatures.map((value) => {
+		return {
+			r: value.r,
+			s: value.s,
+			v: value.v
+		};
+	});
+	// then, mint PKP using helper
+	if (config.useSoloNet) {
+		console.info("Minting PKP against SoloNet PKPHelper contract", {
+			authMethodType,
+			authMethodId,
+			authMethodPubkey,
+		});
+
+		// Get next unminted PKP pubkey.
+		const pkpPubkeyForPkpNft = await getNextAvailablePkpPubkey(redisClient);
+
+		const tx = await sequencer
+			.wait({
+				action: pkpHelper.mintAndAddAuthMethods,
+				params: [
+					pkpPubkeyForPkpNft, // In SoloNet, we choose which PKP pubkey we would like to attach to the minted PKP.
+					[authMethodType],
+					[authMethodId],
+					[authMethodPubkey],
+					[[ethers.BigNumber.from("0")]],
+					true,
+					false,
+				],
+				transactionData: { value: mintCost },
+			})
+			.catch((e) => {
+				console.error("Error while minting pkp", e);
+			});
+
+		console.log("tx", tx);
+		return tx;
+	} else {
+		console.info("Minting PKP against PKPHelper contract", {
+			authMethodType,
+			authMethodId,
+			authMethodPubkey,
+		});
+		const tx = await sequencer.wait({
+			action: pkpHelper.claimAndMintNextAndAddAuthMethods,
+			params: [
+				2,
+				utils.keccak256(toUtf8Bytes(keyId)),
+				mappedSignatures,
+				[authMethodType],
+				[utils.keccak256(toUtf8Bytes(authMethodId))],
+				[authMethodPubkey],
+				[[ethers.BigNumber.from("0")]],
+				true,
+				true,
+			],
+			transactionData: { value: mintCost },
+		});
+		console.log("tx", tx);
+		return tx;
+	}
+}
+
 
 export async function getPKPsForAuthMethod({
 	authMethodType,

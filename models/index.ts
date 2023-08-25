@@ -25,8 +25,9 @@ export interface MintNextAndAddAuthMethodsRequest {
 
 export interface Claim {
 	derivedKeyId: string;
-	signatures: ethers.Signature;
+	signatures: ethers.Signature[];
 	pubkey:string;
+	authMethodType: number;
 }
 
 export interface ClaimAndMintResponse {

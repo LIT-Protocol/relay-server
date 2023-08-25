@@ -65,6 +65,8 @@ import {
 	otpVerifyToMintHandler,
 } from "./routes/auth/otp";
 
+import { mintClaimedKeyId } from "./routes/auth/claim";
+
 const app = express();
 
 const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost" } = process.env;
@@ -242,6 +244,8 @@ app.get(
 	"/auth/webauthn/generate-registration-options",
 	webAuthnGenerateRegistrationOptionsHandler,
 );
+app.post("/auth/claim", mintClaimedKeyId);
+
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
