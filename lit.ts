@@ -297,13 +297,7 @@ export async function claimPKP({
 	const sequencer = Sequencer.Instance;
 
 	Sequencer.Wallet = getSigner();
-	const mappedSignatures = signatures.map((value) => {
-		return {
-			r: value.r,
-			s: value.s,
-			v: value.v
-		};
-	});
+
 	// then, mint PKP using helper
 	if (config.useSoloNet) {
 		console.info("Minting PKP against SoloNet PKPHelper contract", {
@@ -345,10 +339,10 @@ export async function claimPKP({
 			action: pkpHelper.claimAndMintNextAndAddAuthMethods,
 			params: [
 				2,
-				utils.keccak256(toUtf8Bytes(keyId)),
-				mappedSignatures,
+				`0x${keyId}`,
+				signatures,
 				[authMethodType],
-				[utils.keccak256(toUtf8Bytes(authMethodId))],
+				[`0x${authMethodId}`],
 				[authMethodPubkey],
 				[[ethers.BigNumber.from("0")]],
 				true,
