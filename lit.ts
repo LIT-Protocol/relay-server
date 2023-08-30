@@ -282,13 +282,13 @@ export async function claimPKP({
 	authMethodId,
 	authMethodPubkey,
 }: {
-	keyId: string,
-	signatures: ethers.Signature[],
+	keyId: string;
+	signatures: ethers.Signature[];
 	authMethodType: AuthMethodType;
 	authMethodId: string;
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
-	console.log("in mintPKP");
+	console.log("in claimPKP");
 	const pkpHelper = getPkpHelperContract();
 	const pkpNft = getPkpNftContract();
 
@@ -354,7 +354,6 @@ export async function claimPKP({
 		return tx;
 	}
 }
-
 
 export async function getPKPsForAuthMethod({
 	authMethodType,
