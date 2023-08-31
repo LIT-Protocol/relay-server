@@ -95,7 +95,7 @@ function getPermissionsContract() {
 	        );
         case 'cayenne':
 	        return getContract(
-		        "./contracts/PKPPermissions.json",
+		        "./contracts/cayenne/PKPPermissions.json",
 		        config?.cayenneContracts?.pkpPermissionsAddress as string,
 	        );
     }
