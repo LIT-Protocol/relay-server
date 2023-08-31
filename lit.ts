@@ -26,7 +26,7 @@ function getContract(abiPath: string, deployedContractAddress: string) {
 	const contractJson = JSON.parse(fs.readFileSync(abiPath, "utf8"));
 	const ethersContract = new ethers.Contract(
 		deployedContractAddress,
-		contractJson,
+		contractJson.abi,
 		signer,
 	);
 	return ethersContract;
