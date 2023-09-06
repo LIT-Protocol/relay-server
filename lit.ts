@@ -351,7 +351,7 @@ export async function claimPKP({
 			authMethodId,
 			authMethodPubkey,
 		});
-		const tx = await sequencer.wait({
+		let tx = await sequencer.wait({
 			action: pkpHelper.claimAndMintNextAndAddAuthMethods,
 			params: [
 				2,
@@ -366,6 +366,8 @@ export async function claimPKP({
 			],
 			transactionData: { value: mintCost },
 		});
+
+		tx = await tx.wait();
 		console.log("tx", tx);
 		return tx;
 	}

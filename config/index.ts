@@ -43,18 +43,17 @@ const baseConfig = {
 			"0x8b353Bb9E26F2c2B8155f377982537C39AD01A1B",
 		pkpNftAddress:
 			CAYENNE_PKP_NFT_ADDRESS ||
-			"0xAC2159fA4DC095cA76E035415699446386229562",
+			"0xdD708D4E0c4f787FcD6271D583a860082b48f721",
 		pkpHelperAddress:
 			CAYENNE_PKP_HELPER_ADDRESS ||
-			"0x43db60069D175F4D77e49b46B99073d8297f00a3",
+			"0x26F573b30644837b37be324079024bceb4e0929e",
 		pkpPermissionsAddress:
 			CAYENNE_PKP_PERMISSIONS_ADDRESS ||
-			"0xA7DB2Bf287a728E0cD22806325a247997f978446",
+			"0x9C5DF2fF1c31Ee3D0eA6456F40Bf81501d24a6fB",
 	},
 	network: NETWORK || "serrano",
 	useSoloNet: USE_SOLO_NET === "true",
 	expectedOrigins: EXPECTED_ORIGINS?.split(",") || ["http://localhost:3000"],
-	
 };
 
 export default {
