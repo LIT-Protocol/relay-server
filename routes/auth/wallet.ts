@@ -7,8 +7,9 @@ import {
 	AuthMethodVerifyRegistrationResponse,
 	AuthMethodVerifyToFetchResponse,
 } from "../../models";
-import { utils } from "ethers";
+import { ethers, utils } from "ethers";
 import { mintPKP, getPKPsForAuthMethod } from "../../lit";
+import { toUint8Array } from "js-base64";
 
 // Check that the message has been signed by the given address
 function verifyAuthSig(authSig: AuthSig): boolean {
@@ -55,7 +56,7 @@ export async function walletVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = authSig.address;
+		const authMethodId = ethers.utils.keccak256(toUint8Array(`${authSig.address}:lit`));
 		const mintTx = await mintPKP({
 			authMethodType: AuthMethodType.EthWallet,
 			authMethodId,
@@ -106,7 +107,7 @@ export async function walletVerifyToFetchPKPsHandler(
 
 	// fetch PKP for user
 	try {
-		const idForAuthMethod = authSig.address;
+		const idForAuthMethod = ethers.utils.keccak256(toUint8Array(`${authSig.address}:lit`));
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.EthWallet,
 			idForAuthMethod,
