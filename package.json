@@ -32,6 +32,7 @@
 		"siwe": "2.1.3",
 		"tweetnacl": "^1.0.3",
 		"tweetnacl-util": "^0.15.1",
+		"typescript": "^5.2.2",
 		"uint8arrays": "^3.0.0"
 	},
 	"devDependencies": {
