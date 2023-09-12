@@ -60,10 +60,6 @@ import {
 	stytchOtpVerifyToFetchPKPsHandler,
 	stytchOtpVerifyToMintHandler,
 } from "./routes/auth/stytchOtp";
-import {
-	otpVerifyToFetchPKPsHandler,
-	otpVerifyToMintHandler,
-} from "./routes/auth/otp";
 
 import { mintClaimedKeyId } from "./routes/auth/claim";
 
@@ -225,13 +221,11 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
 app.post("/auth/discord", discordOAuthVerifyToMintHandler);
 app.post("/auth/wallet", walletVerifyToMintHandler);
-app.post("/auth/otp", otpVerifyToMintHandler);
 app.post("/auth/stytch-otp", stytchOtpVerifyToMintHandler);
 
 app.post("/auth/google/userinfo", googleOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/discord/userinfo", discordOAuthVerifyToFetchPKPsHandler);
 app.post("/auth/wallet/userinfo", walletVerifyToFetchPKPsHandler);
-app.post("/auth/otp/userinfo", otpVerifyToFetchPKPsHandler);
 app.post("/auth/stytch-otp/userinfo", stytchOtpVerifyToFetchPKPsHandler);
 
 app.post("/auth/webauthn/userinfo", webAuthnVerifyToFetchPKPsHandler);
