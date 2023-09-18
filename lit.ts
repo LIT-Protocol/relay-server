@@ -303,7 +303,7 @@ export async function claimPKP({
 	authMethodType: AuthMethodType;
 	authMethodId: string;
 	authMethodPubkey: string;
-}): Promise<ethers.Transaction> {
+}): Promise<ethers.ContractReceipt> {
 	console.log("in claimPKP");
 	const pkpHelper = getPkpHelperContract();
 	const pkpNft = getPkpNftContract();
