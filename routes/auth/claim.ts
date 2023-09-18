@@ -33,7 +33,7 @@ export async function mintClaimedKeyId(
 			authMethodPubkey: "0x",
 		});
 		console.info("claimed key id: transaction hash (request id): ", {
-			requestId: mintTx.hash
+			requestId: mintTx.
 		});
 		return res.status(200).json({
 			requestId: mintTx.hash
