@@ -354,22 +354,18 @@ export async function claimPKP({
 		let tx = await sequencer.wait({
 			action: pkpHelper.claimAndMintNextAndAddAuthMethods,
 			params: [
+				[2, `0x${keyId}`, signatures],
 				[
 					2,
-					`0x${keyId}`,
-					signatures
-				],
-				[
-					 2,
-					 [],
 					[],
-					 [],
-					 [],
+					[],
+					[],
+					[],
 					[authMethodType],
 					[`0x${authMethodId}`],
 					[authMethodPubkey],
-					[[ethers.BigNumber.from(1)]]
-				]
+					[[ethers.BigNumber.from(1)]],
+				],
 			],
 			transactionData: { value: mintCost },
 		});
