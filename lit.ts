@@ -333,7 +333,7 @@ export async function claimPKP({
 					[authMethodType],
 					[authMethodId],
 					[authMethodPubkey],
-					[[ethers.BigNumber.from("0")]],
+					[[ethers.BigNumber.from("1")]],
 					true,
 					false,
 				],
@@ -368,7 +368,7 @@ export async function claimPKP({
 					[authMethodType],
 					[`0x${authMethodId}`],
 					[authMethodPubkey],
-					[[ethers.BigNumber.from(0)]]
+					[[ethers.BigNumber.from(1)]]
 				]
 			],
 			transactionData: { value: mintCost },
