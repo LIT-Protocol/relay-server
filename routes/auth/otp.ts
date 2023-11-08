@@ -13,7 +13,31 @@ import fetch from "node-fetch";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 
-export async function stytchOtpVerifyToMintHandler(
+// TODO: UPDATE TO DEPLOYED DOMAIN
+const AUTH_SERVER_URL =
+	process.env.AUTH_SERVER_URL || "https://auth-api.litgateway.com/api/otp/verify";
+
+async function verifyOtpJWT(jwt: string): Promise<OtpVerificationPayload> {
+	const res = await fetch(AUTH_SERVER_URL, {
+		redirect: "error",
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			'api-key': '67e55044-10b1-426f-9247-bb680e5fe0c8_relayer'
+		},
+		body: JSON.stringify({
+			token: jwt,
+		}),
+	});
+	if (res.status < 200 || res.status > 299) {
+		throw new Error("Error while verifying token on remote endpoint");
+	}
+	const respBody = await res.json();
+
+	return respBody as OtpVerificationPayload;
+}
+
+export async function otpVerifyToMintHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyRegistrationResponse,
@@ -28,29 +52,33 @@ export async function stytchOtpVerifyToMintHandler(
 	>,
 ) {
 	const { accessToken } = req.body;
+	let payload: OtpVerificationPayload | null;
+	
 	const tmpToken = (" " + accessToken).slice(1);
-	let userId: string;
+	let userId;
 	let tokenBody: Record<string, unknown>;
-	let orgId: string;
+	let orgId;
 	try {
 		tokenBody = parseJWT(tmpToken);
-		const audience = (tokenBody['aud'] as string[])[0];
-		if (!audience) {
-			return res.status(401).json({
-				error: "Unable to parse project Id from token",
-			});
-		}
-		orgId = audience;
+		orgId = (tokenBody.orgId as string).toLowerCase();
+		let message: string = tokenBody['extraData'] as string;
+		let contents = message.split("|");
 
-		if (tokenBody['sub']) {
-			userId = tokenBody['sub'] as string;
-		} else {
-			return res.status(401).json({
-				error: "Unable to parse user Id from token",
-			});
+		if (contents.length !== 2) {
+			throw new Error("invalid message format in token message aborting op");
 		}
+
+		userId = contents[0];
+
+		payload = await verifyOtpJWT(accessToken);
+		if (payload.userId !== userId) {
+			throw new Error("UserId does not match token contents");
+		}
+		console.info("Sucessful verification of OTP token", {
+			userid: payload.userId,
+		});
 	} catch (e) {
-		console.error("unable to verify OTP token ", e);
+		console.error("unable to verify OTP token", e);
 		return res.status(400).json({
 			error: "Unable to verify OTP token",
 		});
@@ -58,9 +86,9 @@ export async function stytchOtpVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId.toLowerCase()}:${orgId.toLowerCase()}`));
+		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId}:${orgId}`));
 		const mintTx = await mintPKP({
-			authMethodType: AuthMethodType.StytchOtp,
+			authMethodType: AuthMethodType.OTP,
 			authMethodId,
 			authMethodPubkey: "0x",
 		});
@@ -78,7 +106,7 @@ export async function stytchOtpVerifyToMintHandler(
 	}
 }
 
-export async function stytchOtpVerifyToFetchPKPsHandler(
+export async function otpVerifyToFetchPKPsHandler(
 	req: Request<
 		{},
 		AuthMethodVerifyToFetchResponse,
@@ -91,26 +119,27 @@ export async function stytchOtpVerifyToFetchPKPsHandler(
 	const { accessToken } = req.body;
 
 	const tmpToken = (" " + accessToken).slice(1);
-	let userId: string;
-	let orgId: string;
+	let userId;
 	let tokenBody: Record<string, unknown>;
 	try {
-
 		tokenBody = parseJWT(tmpToken);
-		const audience = (tokenBody['aud'] as string[])[0];
-		if (!audience) {
-			return res.status(401).json({
-				error: "Unable to parse project Id from token",
-			});
+
+		let message: string = tokenBody.extraData as string;
+		let contents = message.split("|");
+
+		if (contents.length !== 2) {
+			throw new Error("invalid message format in token message");
 		}
-		orgId = audience;
-		if (tokenBody['sub']) {
-			userId = tokenBody['sub'] as string;
-		} else {
-			return res.status(401).json({
-				error: "Unable to parse user Id from token",
-			});
+
+		userId = contents[0];
+		console.log(userId);
+		const resp = await verifyOtpJWT(accessToken);
+		if (resp.userId !== userId) {
+			throw new Error("UserId does not match token contents");
 		}
+		console.info("Sucessful verification of OTP token", {
+			userid: resp.userId,
+		});
 	} catch (e) {
 		console.error("unable to verify OTP token");
 		return res.status(400).json({
@@ -120,10 +149,11 @@ export async function stytchOtpVerifyToFetchPKPsHandler(
 
 	// fetch PKPs for user
 	try {
-		let idForAuthMethod: string;	
-		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId.toLowerCase()}:${orgId.toLowerCase()}`));
+		let idForAuthMethod = userId as string;
+		let orgId = (tokenBody.orgId as string).toLowerCase();
+		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId}:${orgId}`));
 		const pkps = await getPKPsForAuthMethod({
-			authMethodType: AuthMethodType.StytchOtp,
+			authMethodType: AuthMethodType.OTP,
 			idForAuthMethod,
 		});
 		console.info("Fetched PKPs with OTP auth", {

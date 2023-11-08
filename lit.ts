@@ -255,7 +255,7 @@ export async function mintPKP({
 					[authMethodType],
 					[authMethodId],
 					[authMethodPubkey],
-					[[ethers.BigNumber.from("0")]],
+					[[ethers.BigNumber.from(1)]],
 					true,
 					false,
 				],
@@ -280,7 +280,7 @@ export async function mintPKP({
 				[authMethodType],
 				[authMethodId],
 				[authMethodPubkey],
-				[[ethers.BigNumber.from("0")]],
+				[[ethers.BigNumber.from(1)]],
 				true,
 				true,
 			],
@@ -333,7 +333,7 @@ export async function claimPKP({
 					[authMethodType],
 					[authMethodId],
 					[authMethodPubkey],
-					[[ethers.BigNumber.from("0")]],
+					[[ethers.BigNumber.from(1)]],
 					true,
 					false,
 				],
@@ -354,20 +354,23 @@ export async function claimPKP({
 		let tx = await sequencer.wait({
 			action: pkpHelper.claimAndMintNextAndAddAuthMethods,
 			params: [
-				2,
-				`0x${keyId}`,
-				signatures,
-				[authMethodType],
-				[`0x${authMethodId}`],
-				[authMethodPubkey],
-				[[ethers.BigNumber.from("0")]],
-				true,
-				true,
+				[2, `0x${keyId}`, signatures],
+				[
+					2,
+					[],
+					[],
+					[],
+					[],
+					[authMethodType],
+					[`0x${authMethodId}`],
+					[authMethodPubkey],
+					[[ethers.BigNumber.from(1)]],
+					true,
+					true
+				],
 			],
 			transactionData: { value: mintCost },
 		});
-
-		tx = await tx.wait();
 		console.log("tx", tx);
 		return tx;
 	}

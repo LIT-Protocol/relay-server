@@ -1,7 +1,7 @@
 import { Base64 } from "js-base64";
 import { SiweMessage, SiweResponse } from "siwe";
 import nacl from "tweetnacl";
-import { uint8arrayFromString } from "@lit-protocol/uint8arrays";
+import { fromString } from "uint8arrays";
 import {
 	AuthSig,
 	CapabilityObject,
@@ -11,9 +11,9 @@ import {
 } from "../models";
 
 function checkEd25519Signature(sessionSig: SessionSig): boolean {
-	const sigBytes = uint8arrayFromString(sessionSig.sig, "base16");
-	const msgBytes = uint8arrayFromString(sessionSig.signedMessage, "utf8");
-	const pubKeyBytes = uint8arrayFromString(sessionSig.address, "base16");
+	const sigBytes = fromString(sessionSig.sig, "base16");
+	const msgBytes = fromString(sessionSig.signedMessage, "utf8");
+	const pubKeyBytes = fromString(sessionSig.address, "base16");
 
 	return nacl.sign.detached.verify(msgBytes, sigBytes, pubKeyBytes);
 }
