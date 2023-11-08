@@ -303,7 +303,7 @@ export async function claimPKP({
 	authMethodType: AuthMethodType;
 	authMethodId: string;
 	authMethodPubkey: string;
-}): Promise<ethers.Transaction> {
+}): Promise<ethers.ContractReceipt> {
 	console.log("in claimPKP");
 	const pkpHelper = getPkpHelperContract();
 	const pkpNft = getPkpNftContract();
@@ -333,7 +333,7 @@ export async function claimPKP({
 					[authMethodType],
 					[authMethodId],
 					[authMethodPubkey],
-					[[ethers.BigNumber.from(1)]],
+					[[ethers.BigNumber.from("1")]],
 					true,
 					false,
 				],
@@ -365,8 +365,6 @@ export async function claimPKP({
 					[`0x${authMethodId}`],
 					[authMethodPubkey],
 					[[ethers.BigNumber.from(1)]],
-					true,
-					true
 				],
 			],
 			transactionData: { value: mintCost },
