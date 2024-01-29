@@ -27,7 +27,7 @@ async function getContractFromWorker(network: 'manzano' | 'habanero', contractNa
 	}
 
 	const contract = contractData.contracts[0];
-	console.log(`Received contract "${contractName} from "${network}"`);
+	console.log(`Contract address: ${contract.address_hash}"`);
 
 	// -- ethers contract
 	const ethersContract = new ethers.Contract(
