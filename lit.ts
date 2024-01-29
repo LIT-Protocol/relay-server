@@ -16,8 +16,7 @@ async function getContractFromWorker(network: 'manzano' | 'habanero', contractNa
 	const contractsDataRes = await fetch(network === 'manzano' ? MANZANO_CONTRACT_ADDRESSES : HABANERO_CONTRACT_ADDRESSES);
 	const contractList = (await contractsDataRes.json()).data;
 
-	const foundContractNames = contractList.map((contract: any) => contract.name);
-	console.log(`Found contracts for '${contractName}' in ${network}: '${foundContractNames.join("', '")}'`);
+	console.log(`Attempting to get contract "${contractName} from "${network}"`);
 
 	// find object where name is == contractName
 	const contractData = contractList.find((contract: any) => contract.name === contractName);
@@ -27,13 +26,13 @@ async function getContractFromWorker(network: 'manzano' | 'habanero', contractNa
 		throw new Error(`No contract found with name ${contractName}`);
 	}
 
-	const contractAddress = contractData.address_hash;
-	const jsonAbi = contractData.contracts[0].ABI;
+	const contract = contractData.contracts[0];
+	console.log(`Received contract "${contractName} from "${network}"`);
 
 	// -- ethers contract
 	const ethersContract = new ethers.Contract(
-		contractAddress,
-		jsonAbi,
+		contract.address_hash,
+		contract.ABI,
 		signer,
 	);
 
@@ -245,6 +244,9 @@ export async function mintPKPV2({
 		addPkpEthAddressAsPermittedAddress,
 		sendPkpToItself,
 	);
+
+	console.log('config.network:', config.network);
+
 	const pkpHelper = await getPkpHelperContract();
 	const pkpNft = await getPkpNftContract();
 
