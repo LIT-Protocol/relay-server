@@ -351,7 +351,7 @@ export async function claimPKP({
 	authMethodType: AuthMethodType;
 	authMethodId: string;
 	authMethodPubkey: string;
-}): Promise<ethers.ContractReceipt> {
+}): Promise<ethers.Transaction> {
 	console.log("in claimPKP");
 	const pkpHelper = await getPkpHelperContract();
 	const pkpNft = await getPkpNftContract();
