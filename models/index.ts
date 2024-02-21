@@ -26,7 +26,7 @@ export interface MintNextAndAddAuthMethodsRequest {
 export interface Claim {
 	derivedKeyId: string;
 	signatures: ethers.Signature[];
-	pubkey:string;
+	pubkey: string;
 	authMethodType: number;
 }
 
@@ -34,7 +34,7 @@ export interface ClaimAndMintResponse {
 	tx: string;
 }
 export interface MintNextAndAddAuthMethodsResponse
-	extends AuthMethodVerifyRegistrationResponse {}
+	extends AuthMethodVerifyRegistrationResponse { }
 
 export interface FetchRequest {
 	authMethodId: string;
@@ -141,7 +141,7 @@ export interface Config {
 	serranoContract?: Contract,
 	cayenneContracts?: Contract,
 	useSoloNet: boolean;
-	network: "serrano" | "cayenne";
+	network: "serrano" | "cayenne" | 'manzano' | 'habanero';
 }
 
 export enum CapabilityProtocolPrefix {
@@ -170,4 +170,9 @@ export interface PKP {
 	tokenId: string;
 	publicKey: string;
 	ethAddress: string;
+}
+
+export interface ResolvedAuthMethod {
+	appId: string;
+	userId: string;
 }

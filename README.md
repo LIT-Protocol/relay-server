@@ -67,7 +67,7 @@ Staging instance of the relay server is live at https://relay-server-staging.her
 
 </br>
 
-### Storing Conditions
+### Storing Conditions (only available on Serrano and Cayenne)
 
 | HTTP Verb | Path             | Description                          |
 | --------- | ---------------- | ------------------------------------ |

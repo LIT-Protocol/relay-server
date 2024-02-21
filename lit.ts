@@ -8,6 +8,38 @@ import { Sequencer } from "./lib/sequencer";
 import { SiweMessage } from "siwe";
 import { toUtf8Bytes } from "ethers/lib/utils";
 
+const MANZANO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/manzano-contract-addresses';
+const HABANERO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/habanero-contract-addresses';
+
+async function getContractFromWorker(network: 'manzano' | 'habanero', contractName: string) {
+	const signer = getSigner();
+	const contractsDataRes = await fetch(network === 'manzano' ? MANZANO_CONTRACT_ADDRESSES : HABANERO_CONTRACT_ADDRESSES);
+	const contractList = (await contractsDataRes.json()).data;
+
+	console.log(`Attempting to get contract "${contractName} from "${network}"`);
+
+	// find object where name is == contractName
+	const contractData = contractList.find((contract: any) => contract.name === contractName);
+
+	// -- validate
+	if (!contractData) {
+		throw new Error(`No contract found with name ${contractName}`);
+	}
+
+	const contract = contractData.contracts[0];
+	console.log(`Contract address: ${contract.address_hash}"`);
+
+	// -- ethers contract
+	const ethersContract = new ethers.Contract(
+		contract.address_hash,
+		contract.ABI,
+		signer,
+	);
+
+	return ethersContract;
+
+}
+
 export function getProvider() {
 	return new ethers.providers.JsonRpcProvider(
 		process.env.LIT_TXSENDER_RPC_URL,
@@ -87,22 +119,27 @@ function getPkpNftContractAbiPath() {
 	}
 }
 
-function getPkpHelperContract() {
+async function getPkpHelperContract() {
 	switch (config.network) {
 		case "serrano":
+
 			return getContract(
-				getPkpHelperContractAbiPath(),
+				getPkpHelperContractAbiPath()!,
 				config?.serranoContract?.pkpHelperAddress as string,
 			);
 		case "cayenne":
 			return getContract(
-				getPkpHelperContractAbiPath(),
+				getPkpHelperContractAbiPath()!,
 				config?.cayenneContracts?.pkpHelperAddress as string,
 			);
+		case "manzano":
+			return getContractFromWorker('manzano', 'PKPHelper');
+		case "habanero":
+			return getContractFromWorker('habanero', 'PKPHelper');
 	}
 }
 
-function getPermissionsContract() {
+async function getPermissionsContract() {
 	switch (config.network) {
 		case "serrano":
 			return getContract(
@@ -114,21 +151,29 @@ function getPermissionsContract() {
 				"./contracts/cayenne/PKPPermissions.json",
 				config?.cayenneContracts?.pkpPermissionsAddress as string,
 			);
+		case "manzano":
+			return getContractFromWorker('manzano', 'PKPPermissions');
+		case "habanero":
+			return getContractFromWorker('habanero', 'PKPPermissions');
 	}
 }
 
-function getPkpNftContract() {
+async function getPkpNftContract() {
 	switch (config.network) {
 		case "serrano":
 			return getContract(
-				getPkpNftContractAbiPath(),
+				getPkpNftContractAbiPath()!,
 				config?.serranoContract?.pkpNftAddress as string,
 			);
 		case "cayenne":
 			return getContract(
-				getPkpNftContractAbiPath(),
+				getPkpNftContractAbiPath()!,
 				config?.cayenneContracts?.pkpNftAddress as string,
 			);
+		case "manzano":
+			return await getContractFromWorker('manzano', 'PKPNFT');
+		case "habanero":
+			return await getContractFromWorker('habanero', 'PKPNFT');
 	}
 }
 
@@ -140,12 +185,12 @@ function prependHexPrefixIfNeeded(hexStr: string) {
 }
 
 export async function getPkpEthAddress(tokenId: string) {
-	const pkpNft = getPkpNftContract();
-	return pkpNft.getEthAddress(tokenId);
+	const pkpNft = await getPkpNftContract();
+	return pkpNft.getEthAddress(tokenId)!;
 }
 
 export async function getPkpPublicKey(tokenId: string) {
-	const pkpNft = getPkpNftContract();
+	const pkpNft = await getPkpNftContract();
 	return pkpNft.getPubkey(tokenId);
 }
 
@@ -160,7 +205,7 @@ export async function storeConditionWithSigner(
 ): Promise<ethers.Transaction> {
 	console.log("Storing condition");
 	const accessControlConditions = getAccessControlConditionsContract();
-	const tx = await accessControlConditions.storeConditionWithSigner(
+	const tx = accessControlConditions?.storeConditionWithSigner(
 		prependHexPrefixIfNeeded(storeConditionRequest.key),
 		prependHexPrefixIfNeeded(storeConditionRequest.value),
 		prependHexPrefixIfNeeded(storeConditionRequest.securityHash),
@@ -199,8 +244,11 @@ export async function mintPKPV2({
 		addPkpEthAddressAsPermittedAddress,
 		sendPkpToItself,
 	);
-	const pkpHelper = getPkpHelperContract();
-	const pkpNft = getPkpNftContract();
+
+	console.log('config.network:', config.network);
+
+	const pkpHelper = await getPkpHelperContract();
+	const pkpNft = await getPkpNftContract();
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
@@ -228,8 +276,8 @@ export async function mintPKP({
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
 	console.log("in mintPKP");
-	const pkpHelper = getPkpHelperContract();
-	const pkpNft = getPkpNftContract();
+	const pkpHelper = await getPkpHelperContract();
+	const pkpNft = await getPkpNftContract();
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
@@ -303,10 +351,10 @@ export async function claimPKP({
 	authMethodType: AuthMethodType;
 	authMethodId: string;
 	authMethodPubkey: string;
-}): Promise<ethers.ContractReceipt> {
+}): Promise<ethers.Transaction> {
 	console.log("in claimPKP");
-	const pkpHelper = getPkpHelperContract();
-	const pkpNft = getPkpNftContract();
+	const pkpHelper = await getPkpHelperContract();
+	const pkpNft = await getPkpNftContract();
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
@@ -387,7 +435,7 @@ export async function getPKPsForAuthMethod({
 		);
 	}
 
-	const pkpPermissions = getPermissionsContract();
+	const pkpPermissions = await getPermissionsContract();
 	if (pkpPermissions) {
 		try {
 			const tokenIds = await pkpPermissions.getTokenIdsForAuthMethod(
@@ -422,7 +470,7 @@ export async function getPubkeyForAuthMethod({
 	authMethodType: AuthMethodType;
 	authMethodId: string;
 }): Promise<string> {
-	const permissionsContract = getPermissionsContract();
+	const permissionsContract = await getPermissionsContract();
 	const pubkey = permissionsContract.getUserPubkeyForAuthMethod(
 		authMethodType,
 		authMethodId,
