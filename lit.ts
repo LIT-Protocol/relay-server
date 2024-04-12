@@ -95,6 +95,15 @@ function getAccessControlConditionsContract() {
 	}
 }
 
+function getPkpHelperV2ContractAbiPath() {
+	switch (config.network) {
+		case "serrano":
+			return "./contracts/serrano/PKPHelperV2.json";
+		case "cayenne":
+			return "./contracts/cayenne/PKPHelperV2.json";
+	}
+}
+
 function getPkpHelperContractAbiPath() {
 	if (config.useSoloNet) {
 		return "./contracts/serrano/SoloNetPKPHelper.json";
@@ -120,22 +129,27 @@ function getPkpNftContractAbiPath() {
 }
 
 async function getPkpHelperV2Contract() {
-	// TODO: add support local paths for serrano and cayenne
-
 	switch (config.network) {
+		case "serrano":
+			return getContract(
+				getPkpHelperV2ContractAbiPath()!,
+				config?.serranoContract?.pkpHelperV2Address as string,
+			);
+		case "cayenne":
+			return getContract(
+				getPkpHelperV2ContractAbiPath()!,
+				config?.cayenneContracts?.pkpHelperV2Address as string,
+			);
 		case "manzano":
 			return getContractFromWorker('manzano', 'PKPHelperV2');
 		case "habanero":
 			return getContractFromWorker('habanero', 'PKPHelperV2');
 	}
-
-	throw new Error("Unsupported network");
 }
 
 async function getPkpHelperContract() {
 	switch (config.network) {
 		case "serrano":
-
 			return getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.serranoContract?.pkpHelperAddress as string,
