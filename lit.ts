@@ -119,6 +119,19 @@ function getPkpNftContractAbiPath() {
 	}
 }
 
+async function getPkpHelperV2Contract() {
+	// TODO: add support local paths for serrano and cayenne
+
+	switch (config.network) {
+		case "manzano":
+			return getContractFromWorker('manzano', 'PKPHelperV2');
+		case "habanero":
+			return getContractFromWorker('habanero', 'PKPHelperV2');
+	}
+
+	throw new Error("Unsupported network");
+}
+
 async function getPkpHelperContract() {
 	switch (config.network) {
 		case "serrano":
@@ -212,6 +225,61 @@ export async function storeConditionWithSigner(
 		storeConditionRequest.chainId,
 		storeConditionRequest.permanent,
 		utils.getAddress(storeConditionRequest.creatorAddress),
+	);
+	console.log("tx", tx);
+	return tx;
+}
+
+export async function mintPKPV3({
+	keyType,
+	permittedAuthMethodTypes,
+	permittedAuthMethodIds,
+	permittedAuthMethodPubkeys,
+	permittedAuthMethodScopes,
+	addPkpEthAddressAsPermittedAddress,
+	pkpEthAddressScopes,
+	sendPkpToItself,
+	burnPkp,
+}: {
+	keyType: string;
+	permittedAuthMethodTypes: string[];
+	permittedAuthMethodIds: string[];
+	permittedAuthMethodPubkeys: string[];
+	permittedAuthMethodScopes: string[][];
+	addPkpEthAddressAsPermittedAddress: boolean;
+	pkpEthAddressScopes: string[][];
+	sendPkpToItself: boolean;
+	burnPkp: boolean;
+}): Promise<ethers.Transaction> {
+	console.log(
+		"In mintPKPV2",
+		keyType,
+		permittedAuthMethodTypes,
+		permittedAuthMethodIds,
+		permittedAuthMethodPubkeys,
+		permittedAuthMethodScopes,
+		addPkpEthAddressAsPermittedAddress,
+		sendPkpToItself,
+	);
+
+	console.log('config.network:', config.network);
+
+	const pkpHelper = await getPkpHelperV2Contract();
+	const pkpNft = await getPkpNftContract();
+
+	// first get mint cost
+	const mintCost = await pkpNft.mintCost();
+	const tx = await pkpHelper.mintNextAndAddAuthMethods(
+		keyType,
+		permittedAuthMethodTypes,
+		permittedAuthMethodIds,
+		permittedAuthMethodPubkeys,
+		permittedAuthMethodScopes,
+		addPkpEthAddressAsPermittedAddress,
+		pkpEthAddressScopes,
+		sendPkpToItself,
+		burnPkp,
+		{ value: mintCost },
 	);
 	console.log("tx", tx);
 	return tx;

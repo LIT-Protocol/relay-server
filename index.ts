@@ -53,6 +53,7 @@ import {
 import {
 	fetchPKPsHandler,
 	mintNextAndAddAuthMethodsHandler,
+	mintNextAndAddAuthMethodsHandlerV2,
 } from "./routes/auth/mintAndFetch";
 
 import config from "./config";
@@ -213,6 +214,10 @@ app.post("/store-condition", storeConditionHandler);
 
 // --- Mint PKP for authorized account
 app.post("/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
+
+// --- Mint PKP for authorized account using v2 of the helper contract
+app.post("/mint-next-and-add-auth-methods-v2", mintNextAndAddAuthMethodsHandlerV2);
+
 
 // --- Fetch PKPs tied to authorized account
 app.post("/fetch-pkps-by-auth-method", fetchPKPsHandler);
