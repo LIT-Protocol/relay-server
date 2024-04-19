@@ -141,7 +141,7 @@ export interface SessionSigSignedMessage {
 export interface Contract {
 	accessControlConditionsAddress: string;
 	pkpHelperAddress: string;
-	pkpHelperV2Address: string;
+	pkpHelperV2Address?: string;
 	pkpPermissionsAddress: string;
 	pkpNftAddress: string;
 }

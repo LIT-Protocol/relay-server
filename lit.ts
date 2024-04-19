@@ -130,21 +130,13 @@ function getPkpNftContractAbiPath() {
 
 async function getPkpHelperV2Contract() {
 	switch (config.network) {
-		case "serrano":
-			return getContract(
-				getPkpHelperV2ContractAbiPath()!,
-				config?.serranoContract?.pkpHelperV2Address as string,
-			);
-		case "cayenne":
-			return getContract(
-				getPkpHelperV2ContractAbiPath()!,
-				config?.cayenneContracts?.pkpHelperV2Address as string,
-			);
 		case "manzano":
 			return getContractFromWorker('manzano', 'PKPHelperV2');
 		case "habanero":
 			return getContractFromWorker('habanero', 'PKPHelperV2');
 	}
+
+	throw new Error(`PKPHelperV2 contract not available for network ${config.network}`);
 }
 
 async function getPkpHelperContract() {
@@ -266,7 +258,7 @@ export async function mintPKPV3({
 	burnPkp: boolean;
 }): Promise<ethers.Transaction> {
 	console.log(
-		"In mintPKPV2",
+		"In mintPKPV3",
 		keyType,
 		permittedAuthMethodTypes,
 		permittedAuthMethodIds,
