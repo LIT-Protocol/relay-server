@@ -14,10 +14,12 @@
   "dependencies": {
     "@simplewebauthn/server": "6.2.1",
     "base64url": "^3.0.1",
+    "bip39": "^3.1.0",
     "cbor": "^8.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "elliptic": "^6.5.4",
+    "ethereum-cryptography": "^2.1.3",
     "ethers": "^5.7.1",
     "express": "^4.17.1",
     "express-rate-limit": "^6.6.0",
