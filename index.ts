@@ -66,6 +66,8 @@ import {
 } from "./routes/auth/otp";
 
 import { mintClaimedKeyId } from "./routes/auth/claim";
+import { registerPayerHandler } from "./routes/delegate/register";
+import { addPayeeHandler, removePayeeHandler } from "./routes/delegate/user";
 
 const app = express();
 
@@ -245,6 +247,10 @@ app.get(
 	webAuthnGenerateRegistrationOptionsHandler,
 );
 app.post("/auth/claim", mintClaimedKeyId);
+
+app.post("/delegate/register", registerPayerHandler);
+app.post("/delegate/add-user", addPayeeHandler);
+app.post("/delegate/remove-user", removePayeeHandler);
 
 
 if (ENABLE_HTTPS) {

@@ -158,6 +158,17 @@ async function getPermissionsContract() {
 	}
 }
 
+async function getPaymentDelegationContract() {
+	switch (config.network) {
+		case "manzano":
+			return getContractFromWorker('manzano', 'PaymentDelegation');
+		case "habanero":
+			return getContractFromWorker('habanero', 'PaymentDelegation');
+		default:
+			throw new Error('PaymentDelegation contract not available for this network');
+	}
+}
+
 async function getPkpNftContract() {
 	switch (config.network) {
 		case "serrano":
@@ -477,6 +488,16 @@ export async function getPubkeyForAuthMethod({
 	);
 	return pubkey;
 }
+
+export async function addPaymentDelegationPayee({
+	payerAddress,
+	payeeAddress,
+}: {
+	payerAddress: string;
+	payeeAddress: string;
+}) {
+	// TODO: Implementation
+};
 
 // export function packAuthData({
 //   credentialPublicKey,
