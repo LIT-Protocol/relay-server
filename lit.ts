@@ -5,6 +5,7 @@ import config from "./config";
 import redisClient from "./lib/redisClient";
 import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 import { Sequencer } from "./lib/sequencer";
+import { parseEther } from "ethers/lib/utils";
 
 const MANZANO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/manzano-contract-addresses';
 const HABANERO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/habanero-contract-addresses';
@@ -485,6 +486,27 @@ export async function getPubkeyForAuthMethod({
 		authMethodId,
 	);
 	return pubkey;
+}
+
+export async function sendLitTokens(recipientPublicKey: string, amount: string) {
+	const signer = getSigner();
+
+	const tx = await signer.sendTransaction({
+		to: recipientPublicKey,
+		value: parseEther(amount),
+	});
+
+	return tx.hash;
+}
+
+export async function mintCapacityCredits({
+	recipientPublicKey,
+	amount,
+}: {
+	recipientPublicKey: string;
+	amount: string;
+}) {
+	// TODO: Implementation
 }
 
 export async function addPaymentDelegationPayee({

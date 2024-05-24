@@ -26,6 +26,7 @@ Create a `.env` file at the root of the repo and populate the corresponding envi
 -   `PORT`
 -   `LIT_TXSENDER_RPC_URL`
 -   `LIT_TXSENDER_PRIVATE_KEY`
+-   `LIT_DELEGATION_ROOT_MNEMONIC`
 
 Make sure to start your Redis server if you plan to host one locally.
 
