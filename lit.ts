@@ -6,6 +6,7 @@ import redisClient from "./lib/redisClient";
 import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
+import { LitContracts } from "@lit-protocol/contracts-sdk";
 
 const MANZANO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/manzano-contract-addresses';
 const HABANERO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/habanero-contract-addresses';
@@ -500,13 +501,34 @@ export async function sendLitTokens(recipientPublicKey: string, amount: string) 
 }
 
 export async function mintCapacityCredits({
-	recipientPublicKey,
-	amount,
+	signer,
 }: {
-	recipientPublicKey: string;
-	amount: string;
+	signer: ethers.Wallet;
 }) {
-	// TODO: Implementation
+	if (config.network === "serrano") {
+		throw new Error("Capacity credits are not available on Serrano");
+	}
+
+	const contract = new LitContracts({
+		signer,
+		network: config.network
+	});
+
+	return await contract.mintCapacityCreditsNFT({
+		requestsPerKilosecond: 80,
+		daysUntilUTCMidnightExpiration: 30, // buys us some time to get auto topup working
+	});
+}
+
+export async function queryCapacityCredits(signer: ethers.Wallet) {
+	if (config.network === "serrano" || config.network == "cayenne") {
+		throw new Error("Capacity credits are not available on Serrano");
+	}
+
+	const rateLimitContract = await getContractFromWorker(config.network, 'RateLimitNFT');
+	const nft = await rateLimitContract.tokenOfOwnerByIndex(signer.address, 0);
+
+	return nft;
 }
 
 export async function addPaymentDelegationPayee({
@@ -516,7 +538,9 @@ export async function addPaymentDelegationPayee({
 	payerAddress: string;
 	payeeAddress: string;
 }) {
-	// TODO: Implementation
+	const contract = await getPaymentDelegationContract();
+	const tx = await contract.addPayee(payeeAddress, payerAddress);
+	return tx;
 };
 
 // export function packAuthData({

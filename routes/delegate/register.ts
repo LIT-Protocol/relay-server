@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import * as bip39 from 'bip39';
 import { HDKey } from 'ethereum-cryptography/hdkey';
-import { Buffer } from 'buffer';
 import crypto from 'crypto';
-import { sendLitTokens } from '../../lit';
+import { mintCapacityCredits, sendLitTokens } from '../../lit';
+import { ethers } from 'ethers';
 
 type Wallet = {
     privateKey: string;
@@ -57,8 +57,15 @@ async function fundWallet(wallet: Wallet) {
     return wallet;
 }
 
-async function createCapacityCredits(wallet: unknown) {
-    // TODO: Implement
+async function createCapacityCredits(wallet: Wallet) {
+    const signer = new ethers.Wallet(wallet.privateKey);
+    const tx = await mintCapacityCredits({ signer });
+
+    if (!tx) {
+        throw new Error("Failed to mint capacity credits");
+    }
+
+    return wallet;
 }
 
 export function registerPayerHandler(req: Request, res: Response) {
@@ -72,8 +79,8 @@ export function registerPayerHandler(req: Request, res: Response) {
     return deriveWallet(apiKey)
         .then(fundWallet)
         .then(createCapacityCredits)
-        .then(() => {
-            res.status(200).send("Payer registered");
+        .then((wallet: Wallet) => {
+            res.status(200).send(`Payer registered successfully for: ${wallet.publicKey}`);
         })
         .catch((err) => {
             console.error("Failed to register payer", err);

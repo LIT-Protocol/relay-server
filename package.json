@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@lit-protocol/contracts-sdk": "^5.1.0",
     "@simplewebauthn/server": "6.2.1",
     "base64url": "^3.0.1",
     "bip39": "^3.1.0",
@@ -38,6 +39,7 @@
     "@types/cors": "^2.8.12",
     "@types/elliptic": "^6.4.14",
     "@types/express": "^4.17.13",
+    "@types/jszip": "^3.4.1",
     "@types/jwk-to-pem": "^2.0.1",
     "@types/node": "^16.7.4",
     "@types/node-fetch": "^2.5.12",
