@@ -490,15 +490,29 @@ export async function getPubkeyForAuthMethod({
 }
 
 export async function sendLitTokens(recipientPublicKey: string, amount: string) {
+	console.log("Sending LIT tokens");
+
 	const signer = getSigner();
 
-	const tx = await signer.sendTransaction({
-		to: recipientPublicKey,
-		value: parseEther(amount),
-	});
+	console.log("Got signer", signer);
+	console.log("Sending to", recipientPublicKey);
 
-	return tx.hash;
+	try {
+		const tx = await signer.sendTransaction({
+			to: recipientPublicKey,
+			value: parseEther(amount),
+		});
+
+		console.log("Sent LIT tokens", tx.hash);
+
+		return tx.hash;
+	} catch (e) {
+		console.error("Error sending LIT tokens", e);
+		throw e;
+	}
 }
+
+
 
 export async function mintCapacityCredits({
 	signer,
@@ -509,10 +523,14 @@ export async function mintCapacityCredits({
 		throw new Error("Capacity credits are not available on Serrano");
 	}
 
+	console.log("Minting capacity credits for", signer.address);
+
 	const contract = new LitContracts({
 		signer,
 		network: config.network
 	});
+
+	await contract.connect();
 
 	return await contract.mintCapacityCreditsNFT({
 		requestsPerKilosecond: 80,

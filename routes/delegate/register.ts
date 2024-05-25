@@ -2,13 +2,8 @@ import { Request, Response } from 'express';
 import * as bip39 from 'bip39';
 import { HDKey } from 'ethereum-cryptography/hdkey';
 import crypto from 'crypto';
-import { mintCapacityCredits, sendLitTokens } from '../../lit';
-import { ethers } from 'ethers';
-
-type Wallet = {
-    privateKey: string;
-    publicKey: string;
-};
+import { getProvider, mintCapacityCredits, sendLitTokens } from '../../lit';
+import { ethers, type Wallet } from 'ethers';
 
 // Takes an arbitrary string, and converts it deterministically to a number
 //
@@ -33,7 +28,6 @@ export async function deriveWallet(apiKey: string) {
 
     const seed = await bip39.mnemonicToSeed(mnemonic);
     const hdWallet = HDKey.fromMasterSeed(seed);
-
     const userPath = `m/44'/60'/0'/0/${normalizeApiKey(apiKey) % 2147483647}`;
     const key = hdWallet.derive(userPath);
 
@@ -41,29 +35,34 @@ export async function deriveWallet(apiKey: string) {
         throw new Error("Failed to derive public key");
     }
 
-    return {
-        privateKey: key.privateKey.toString(),
-        publicKey: key.publicKey.toString(),
-    };
+    const wallet = new ethers.Wallet(key.privateKey, getProvider());
+
+    return wallet;
 }
 
+
+//0x256d43f171739Ac9c0f12FA46FF1923CE0ba1F79
+
 async function fundWallet(wallet: Wallet) {
-    const tx = await sendLitTokens(wallet.publicKey, "0.001");
+    const tx = await sendLitTokens(wallet.address, "0.001");
 
     if (!tx) {
         throw new Error("Failed to fund wallet");
     }
 
+    console.log(`Funded wallet ${wallet.publicKey} with 0.001 LIT`);
+
     return wallet;
 }
 
 async function createCapacityCredits(wallet: Wallet) {
-    const signer = new ethers.Wallet(wallet.privateKey);
-    const tx = await mintCapacityCredits({ signer });
+    const tx = await mintCapacityCredits({ signer: wallet });
 
     if (!tx) {
         throw new Error("Failed to mint capacity credits");
     }
+
+    console.log(`Minted capacity credits for ${wallet.address}`);
 
     return wallet;
 }
