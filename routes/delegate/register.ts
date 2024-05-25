@@ -40,9 +40,6 @@ export async function deriveWallet(apiKey: string) {
     return wallet;
 }
 
-
-//0x256d43f171739Ac9c0f12FA46FF1923CE0ba1F79
-
 async function fundWallet(wallet: Wallet) {
     const tx = await sendLitTokens(wallet.address, "0.001");
 
