@@ -7,6 +7,8 @@ import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
 import { LitContracts } from "@lit-protocol/contracts-sdk";
+import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
+import { CapacityToken } from "lit";
 
 const MANZANO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/manzano-contract-addresses';
 const HABANERO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/habanero-contract-addresses';
@@ -490,12 +492,7 @@ export async function getPubkeyForAuthMethod({
 }
 
 export async function sendLitTokens(recipientPublicKey: string, amount: string) {
-	console.log("Sending LIT tokens");
-
 	const signer = getSigner();
-
-	console.log("Got signer", signer);
-	console.log("Sending to", recipientPublicKey);
 
 	try {
 		const tx = await signer.sendTransaction({
@@ -511,8 +508,6 @@ export async function sendLitTokens(recipientPublicKey: string, amount: string) 
 		throw e;
 	}
 }
-
-
 
 export async function mintCapacityCredits({
 	signer,
@@ -543,22 +538,56 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 		throw new Error("Capacity credits are not available on Serrano");
 	}
 
-	const rateLimitContract = await getContractFromWorker(config.network, 'RateLimitNFT');
-	const nft = await rateLimitContract.tokenOfOwnerByIndex(signer.address, 0);
+	const litContracts = new LitContracts({
+		signer,
+		network: config.network
+	});
 
-	return nft;
+	await litContracts.connect();
+
+	const nfts: CapacityToken[] = await litContracts.rateLimitNftContractUtils.read
+		.getTokensByOwnerAddress(signer.address);
+
+	return nfts;
 }
 
 export async function addPaymentDelegationPayee({
-	payerAddress,
-	payeeAddress,
+	wallet, payeeAddresses
 }: {
-	payerAddress: string;
-	payeeAddress: string;
+	wallet: ethers.Wallet;
+	payeeAddresses: string[];
 }) {
-	const contract = await getPaymentDelegationContract();
-	const tx = await contract.addPayee(payeeAddress, payerAddress);
-	return tx;
+	if (config.network === "serrano" || config.network == "cayenne") {
+		throw new Error(`Payment delegation is not available on ${config.network}`);
+	}
+
+	const client = new LitNodeClientNodeJs({
+		alertWhenUnauthorized: false,
+		litNetwork: config.network,
+	});
+
+	await client.connect();
+
+	const capactiyToken = (await queryCapacityCredits(wallet)).at(0);
+
+	if (!capactiyToken) {
+		throw new Error("No capacity token found");
+	}
+
+	const tokenId = capactiyToken.tokenId;
+
+	const result = await client.createCapacityDelegationAuthSig({
+		uses: '1',
+		dAppOwnerWallet: wallet,
+		capacityTokenId: tokenId.toString(),
+		delegateeAddresses: payeeAddresses,
+	});
+
+	if (!result) {
+		throw new Error("Failed to add payee");
+	}
+
+	return result.capacityDelegationAuthSig;
 };
 
 // export function packAuthData({
