@@ -11,6 +11,12 @@ export async function addPayeeHandler(req: Request, res: Response) {
         return;
     }
 
+    if (!payeeAddresses || !Array.isArray(payeeAddresses) || payeeAddresses.length < 1) {
+        res.status(400).send('Missing payee addresses');
+        return;
+    }
+
+    const wallet = await deriveWallet(apiKey);
     const tx = await addPaymentDelegationPayee({
         wallet,
         payeeAddresses
