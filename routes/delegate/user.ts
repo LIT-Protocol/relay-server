@@ -1,13 +1,14 @@
 import { Request, Response } from 'express';
 import { deriveWallet } from './register';
-import { addPaymentDelegationPayee, queryCapacityCredits } from '../../lit';
+import { addPaymentDelegationPayee } from '../../lit';
 
 export async function addPayeeHandler(req: Request, res: Response) {
-    const payeeAddresses = req.body.payeeAddresses;
+    const payeeAddresses = req.body as string[];
     const apiKey = req.header('api-key');
+    const apiSecret = req.header('payer-api-key');
 
-    if (!apiKey) {
-        res.status(400).send('Missing API key');
+    if (!apiKey || !apiSecret) {
+        res.status(400).send('Missing or invalid API / Payer key');
         return;
     }
 
@@ -16,16 +17,25 @@ export async function addPayeeHandler(req: Request, res: Response) {
         return;
     }
 
-    const wallet = await deriveWallet(apiKey);
-    const tx = await addPaymentDelegationPayee({
-        wallet,
-        payeeAddresses
-    });
+    const wallet = await deriveWallet(apiKey, apiSecret);
 
-    if (!tx) {
-        res.status(500).send('Failed to add payee');
-        return;
+    try {
+        const tx = await addPaymentDelegationPayee({
+            wallet,
+            payeeAddresses
+        });
+
+        if (!tx) {
+            throw new Error('Failed to add payee: delegation transaction failed');
+        }
+    } catch (err) {
+        res.status(500).send({
+            success: false,
+            error: 'Failed to add payee: delegation transaction failed'
+        });
     }
 
-    res.status(200).send('Payee added successfully');
+    res.status(200).send({
+        success: true,
+    });
 }

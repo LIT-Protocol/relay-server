@@ -248,8 +248,8 @@ app.get(
 );
 app.post("/auth/claim", mintClaimedKeyId);
 
-app.post("/delegate/register", registerPayerHandler);
-app.post("/delegate/add-user", addPayeeHandler);
+app.post("/register-payer", registerPayerHandler);
+app.post("/add-users", addPayeeHandler);
 
 
 if (ENABLE_HTTPS) {

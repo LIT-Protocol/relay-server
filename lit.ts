@@ -568,10 +568,14 @@ export async function addPaymentDelegationPayee({
 
 	await client.connect();
 
-	const capactiyToken = (await queryCapacityCredits(wallet)).at(0);
+	const capactiyTokens = (await queryCapacityCredits(wallet));
+
+	console.log("Capacity tokens", capactiyTokens);
+
+	const capactiyToken = capactiyTokens.at(0);
 
 	if (!capactiyToken) {
-		throw new Error("No capacity token found");
+		throw new Error(`No capacity token found for ${wallet.address}`);
 	}
 
 	const tokenId = capactiyToken.tokenId;
