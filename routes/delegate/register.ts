@@ -87,7 +87,7 @@ export async function registerPayerHandler(req: Request, res: Response) {
         .then((wallet: Wallet) => {
             res.status(200).send({
                 payerPublicKey: wallet.address,
-                payerApiKey: secret
+                payerSecretKey: secret
             });
         })
         .catch((err) => {
