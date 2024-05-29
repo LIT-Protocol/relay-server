@@ -5,7 +5,7 @@ import { addPaymentDelegationPayee } from '../../lit';
 export async function addPayeeHandler(req: Request, res: Response) {
     const payeeAddresses = req.body as string[];
     const apiKey = req.header('api-key');
-    const apiSecret = req.header('payer-api-key');
+    const apiSecret = req.header('payer-secret-key');
 
     if (!apiKey || !apiSecret) {
         res.status(400).send('Missing or invalid API / Payer key');
