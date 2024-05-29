@@ -5,19 +5,19 @@ import { addPaymentDelegationPayee } from '../../lit';
 export async function addPayeeHandler(req: Request, res: Response) {
     const payeeAddresses = req.body as string[];
     const apiKey = req.header('api-key');
-    const apiSecret = req.header('payer-secret-key');
+    const payerSecret = req.header('payer-secret-key');
 
-    if (!apiKey || !apiSecret) {
+    if (!apiKey || !payerSecret) {
         res.status(400).send('Missing or invalid API / Payer key');
         return;
     }
 
     if (!payeeAddresses || !Array.isArray(payeeAddresses) || payeeAddresses.length < 1) {
-        res.status(400).send('Missing payee addresses');
+        res.status(400).send('Missing or invalid payee addresses');
         return;
     }
 
-    const wallet = await deriveWallet(apiKey, apiSecret);
+    const wallet = await deriveWallet(apiKey, payerSecret);
 
     try {
         const tx = await addPaymentDelegationPayee({
