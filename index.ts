@@ -222,6 +222,10 @@ app.post("/fetch-pkps-by-auth-method", fetchPKPsHandler);
 // --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
 
+// -- Payment Delegation
+app.post("/register-payer", registerPayerHandler);
+app.post("/add-users", addPayeeHandler);
+
 // *** Deprecated ***
 
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
@@ -247,9 +251,6 @@ app.get(
 	webAuthnGenerateRegistrationOptionsHandler,
 );
 app.post("/auth/claim", mintClaimedKeyId);
-
-app.post("/register-payer", registerPayerHandler);
-app.post("/add-users", addPayeeHandler);
 
 
 if (ENABLE_HTTPS) {
