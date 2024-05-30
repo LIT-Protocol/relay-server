@@ -494,19 +494,15 @@ export async function getPubkeyForAuthMethod({
 export async function sendLitTokens(recipientPublicKey: string, amount: string) {
 	const signer = getSigner();
 
-	try {
-		const tx = await signer.sendTransaction({
-			to: recipientPublicKey,
-			value: parseEther(amount),
-		});
+	const tx = await signer.sendTransaction({
+		to: recipientPublicKey,
+		value: parseEther(amount),
+	});
 
-		console.log("Sent LIT tokens", tx.hash);
+	const reciept = await tx.wait();
+	console.log("Sent LIT tokens", tx.hash);
 
-		return tx.hash;
-	} catch (e) {
-		console.error("Error sending LIT tokens", e);
-		throw e;
-	}
+	return reciept.blockHash;
 }
 
 export async function mintCapacityCredits({
@@ -538,6 +534,9 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 		throw new Error("Capacity credits are not available on Serrano");
 	}
 
+	// TODO: It would be good to create a local implementation of this, but for 
+	//		 now we'll just use the LitContracts package to handling querying the
+	//		 capacity credits.
 	const litContracts = new LitContracts({
 		signer,
 		network: config.network
@@ -561,27 +560,29 @@ export async function addPaymentDelegationPayee({
 		throw new Error(`Payment delegation is not available on ${config.network}`);
 	}
 
+	// TODO: It would be good to just implement the logic for this locally, and avoid
+	//		 having to pull in the LitNodeClientNodeJs package.
 	const client = new LitNodeClientNodeJs({
 		alertWhenUnauthorized: false,
 		litNetwork: config.network,
 	});
 
-	await client.connect();
-
 	const capactiyTokens = (await queryCapacityCredits(wallet));
 
 	console.log("Capacity tokens", capactiyTokens);
 
-	const capactiyToken = capactiyTokens.at(0);
+	// get the first token that is not expired
+	const capactiyToken = capactiyTokens.find((token) => !token.isExpired);
 
 	if (!capactiyToken) {
 		throw new Error(`No capacity token found for ${wallet.address}`);
 	}
 
 	const tokenId = capactiyToken.tokenId;
+	const uses = process.env.LIT_DELEGATION_USES || "128";
 
 	const result = await client.createCapacityDelegationAuthSig({
-		uses: '1',
+		uses,
 		dAppOwnerWallet: wallet,
 		capacityTokenId: tokenId.toString(),
 		delegateeAddresses: payeeAddresses,
