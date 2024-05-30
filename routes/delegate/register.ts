@@ -29,19 +29,16 @@ export async function deriveWallet(apiKey: string, payerSecret: string) {
         throw new Error("Mnemonic not set");
     }
 
-    console.log(`Deriving wallet for ${apiKey}`)
-
     const hdWallet = utils.HDNode.fromMnemonic(mnemonic);
     const userPath = `m/44'/60'/0'/0/${normalizeApiKey(apiKey + payerSecret) % 2147483647}`;
+
     const key = hdWallet.derivePath(userPath);
 
     if (!key.publicKey || !key.privateKey) {
         throw new Error("Failed to derive public key");
     }
 
-    const wallet = new ethers.Wallet(key.privateKey, getProvider());
-
-    return wallet;
+    return new ethers.Wallet(key.privateKey, getProvider());
 }
 
 async function fundWallet(wallet: Wallet) {

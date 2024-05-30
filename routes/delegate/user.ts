@@ -18,6 +18,7 @@ export async function addPayeeHandler(req: Request, res: Response) {
     }
 
     const wallet = await deriveWallet(apiKey, payerSecret);
+    let error: string | boolean = false;
 
     try {
         const tx = await addPaymentDelegationPayee({
@@ -29,13 +30,17 @@ export async function addPayeeHandler(req: Request, res: Response) {
             throw new Error('Failed to add payee: delegation transaction failed');
         }
     } catch (err) {
-        res.status(500).send({
-            success: false,
-            error: 'Failed to add payee: delegation transaction failed'
-        });
+        error = 'Failed to add payee: delegation transaction failed';
     }
 
-    res.status(200).send({
-        success: true,
-    });
+    if (error) {
+        res.status(500).send({
+            success: false,
+            error
+        });
+    } else {
+        res.status(200).send({
+            success: true
+        });
+    }
 }
