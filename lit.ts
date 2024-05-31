@@ -529,25 +529,61 @@ export async function mintCapacityCredits({
 	});
 }
 
+function normalizeTokenURI(tokenURI: string) {
+	const base64 = tokenURI[0];
+
+	const data = base64.split('data:application/json;base64,')[1];
+	const dataToString = Buffer.from(data, 'base64').toString('binary');
+
+	return JSON.parse(dataToString);
+}
+
+function normalizeCapacity(capacity: any) {
+	const [requestsPerMillisecond, expiresAt] = capacity[0];
+
+	return {
+		requestsPerMillisecond: parseInt(requestsPerMillisecond.toString()),
+		expiresAt: {
+			timestamp: parseInt(expiresAt.toString()),
+		},
+	};
+}
+
+async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
+	const [URI, capacity, isExpired] = await Promise.all([
+		contract.functions.tokenURI(tokenId).then(normalizeTokenURI),
+		contract.functions.capacity(tokenId).then(normalizeCapacity),
+		contract.functions.isExpired(tokenId),
+	]);
+
+	console.log("Capacity credit", {
+		tokenId,
+		URI,
+		capacity,
+		isExpired,
+	});
+
+	return {
+		tokenId,
+		URI,
+		capacity,
+		isExpired,
+	};
+}
+
 export async function queryCapacityCredits(signer: ethers.Wallet) {
 	if (config.network === "serrano" || config.network == "cayenne") {
 		throw new Error("Capacity credits are not available on Serrano");
 	}
 
-	// TODO: It would be good to create a local implementation of this, but for 
-	//		 now we'll just use the LitContracts package to handling querying the
-	//		 capacity credits.
-	const litContracts = new LitContracts({
-		signer,
-		network: config.network
-	});
+	const contract = await getContractFromWorker(config.network, 'RateLimitNFT');
+	const total: any = parseInt(await contract.functions.balanceOf(signer.address));
 
-	await litContracts.connect();
+	console.log("Total capacity credits", total);
 
-	const nfts: CapacityToken[] = await litContracts.rateLimitNftContractUtils.read
-		.getTokensByOwnerAddress(signer.address);
-
-	return nfts;
+	return await Promise.all([...new Array(total)].map(async (_, i) => {
+		return queryCapacityCredit(contract, i);
+	})) as CapacityToken[];
 }
 
 export async function addPaymentDelegationPayee({
@@ -567,9 +603,13 @@ export async function addPaymentDelegationPayee({
 		litNetwork: config.network,
 	});
 
-	const capactiyTokens = (await queryCapacityCredits(wallet));
+	let capactiyTokens: CapacityToken[] = [];
 
-	console.log("Capacity tokens", capactiyTokens);
+	try {
+		capactiyTokens = (await queryCapacityCredits(wallet));
+	} catch (e) {
+		console.error("Failed to query capacity tokens", e);
+	}
 
 	// get the first token that is not expired
 	const capactiyToken = capactiyTokens.find((token) => !token.isExpired);
