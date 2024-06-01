@@ -30,7 +30,7 @@ export async function addPayeeHandler(req: Request, res: Response) {
             throw new Error('Failed to add payee: delegation transaction failed');
         }
     } catch (err) {
-        error = 'Failed to add payee: delegation transaction failed';
+        error = (err as Error).message;
     }
 
     if (error) {

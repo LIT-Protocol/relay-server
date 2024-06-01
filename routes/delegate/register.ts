@@ -19,7 +19,8 @@ export function normalizeApiKey(apiKey: string): number {
 }
 
 export function generatePayerSecret(): string {
-    return crypto.randomBytes(64).toString('base64');
+    return "74G7wXeEP6Ypi4T3SnFXg9K/K4wieu7rXUX2fAexhnd5idYSVLnOTcyarcQ0L49+CyK2SRBvK9P/EjVZUO6N5w==";
+    // return crypto.randomBytes(64).toString('base64');
 }
 
 export async function deriveWallet(apiKey: string, payerSecret: string) {
@@ -42,6 +43,8 @@ export async function deriveWallet(apiKey: string, payerSecret: string) {
 }
 
 async function fundWallet(wallet: Wallet) {
+    console.log(`Funding wallet ${wallet.address} with 0.001 LIT`);
+
     const tx = await sendLitTokens(wallet.address, "0.001");
 
     if (!tx) {
@@ -76,6 +79,8 @@ export async function registerPayerHandler(req: Request, res: Response) {
     }
 
     const wallet = await deriveWallet(apiKey, secret)
+
+    console.log(`secret: ${secret}`);
 
     return fundWallet(wallet)
         .then(createCapacityCredits)

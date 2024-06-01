@@ -13,8 +13,9 @@ import { CapacityToken } from "lit";
 const MANZANO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/manzano-contract-addresses';
 const HABANERO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/habanero-contract-addresses';
 
-async function getContractFromWorker(network: 'manzano' | 'habanero', contractName: string) {
-	const signer = getSigner();
+async function getContractFromWorker(network: 'manzano' | 'habanero', contractName: string, signer?: ethers.Wallet) {
+	signer = signer ?? getSigner();
+
 	const contractsDataRes = await fetch(network === 'manzano' ? MANZANO_CONTRACT_ADDRESSES : HABANERO_CONTRACT_ADDRESSES);
 	const contractList = (await contractsDataRes.json()).data;
 
@@ -494,13 +495,15 @@ export async function getPubkeyForAuthMethod({
 export async function sendLitTokens(recipientPublicKey: string, amount: string) {
 	const signer = getSigner();
 
+	console.log('Setting up transaction')
 	const tx = await signer.sendTransaction({
 		to: recipientPublicKey,
 		value: parseEther(amount),
 	});
 
+	console.log('Waiting for confirmation', tx.hash);
 	const reciept = await tx.wait();
-	console.log("Sent LIT tokens", tx.hash);
+	console.log("Sent LIT tokens", reciept.blockHash);
 
 	return reciept.blockHash;
 }
@@ -510,23 +513,50 @@ export async function mintCapacityCredits({
 }: {
 	signer: ethers.Wallet;
 }) {
-	if (config.network === "serrano") {
-		throw new Error("Capacity credits are not available on Serrano");
+	if (config.network !== "habanero" && config.network !== "manzano") {
+		throw new Error(`Capacity credits not available on ${config.network}`);
 	}
 
-	console.log("Minting capacity credits for", signer.address);
+	const contract = await getContractFromWorker(config.network, 'RateLimitNFT', signer);
 
-	const contract = new LitContracts({
-		signer,
-		network: config.network
-	});
+	if (!contract) {
+		throw new Error('Contract is not available');
+	}
 
-	await contract.connect();
+	// set the expiration to midnight, 15 days from now
+	const timestamp = (Date.now() / 1000) + 15 * 24 * 60 * 60;
+	const futureDate = new Date(timestamp * 1000);
+	futureDate.setUTCHours(0, 0, 0, 0);
 
-	return await contract.mintCapacityCreditsNFT({
-		requestsPerKilosecond: 80,
-		daysUntilUTCMidnightExpiration: 30, // buys us some time to get auto topup working
-	});
+	// Get the Unix timestamp in seconds
+	const expires = Math.floor(futureDate.getTime() / 1000);
+
+	const requestsPerKilosecond = 150;
+
+	console.log('Estimating gas cost for minting capacity credits');
+
+	let cost = parseEther('0.001');
+
+	try {
+		cost = await contract.functions.calculateCost(requestsPerKilosecond, expires);
+	} catch (e) {
+		console.log('Unable to estimate gas cost for minting capacity credits, using fallback');
+	}
+
+	console.log('Minting cost estimated', cost);
+	console.log("Minting capacity credits", { expires, cost });
+
+	const tx = await contract.functions.mint(expires, { value: cost.toString() });
+
+	console.log("Waiting for transaction to complete", tx.hash);
+
+	const res = await tx.wait();
+
+	console.log("Result", res);
+
+	const tokenIdFromEvent = res.events[0].topics[1];
+
+	return { tx, capacityTokenId: tokenIdFromEvent };
 }
 
 function normalizeTokenURI(tokenURI: string) {
@@ -556,19 +586,12 @@ async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
 		contract.functions.isExpired(tokenId),
 	]);
 
-	console.log("Capacity credit", {
-		tokenId,
-		URI,
-		capacity,
-		isExpired,
-	});
-
 	return {
 		tokenId,
 		URI,
 		capacity,
 		isExpired,
-	};
+	} as CapacityToken;
 }
 
 export async function queryCapacityCredits(signer: ethers.Wallet) {
@@ -577,11 +600,9 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 	}
 
 	const contract = await getContractFromWorker(config.network, 'RateLimitNFT');
-	const total: any = parseInt(await contract.functions.balanceOf(signer.address));
+	const count = parseInt(await contract.functions.balanceOf(signer.address));
 
-	console.log("Total capacity credits", total);
-
-	return await Promise.all([...new Array(total)].map(async (_, i) => {
+	return await Promise.all([...new Array(count)].map(async (_, i) => {
 		return queryCapacityCredit(contract, i);
 	})) as CapacityToken[];
 }
@@ -603,22 +624,36 @@ export async function addPaymentDelegationPayee({
 		litNetwork: config.network,
 	});
 
-	let capactiyTokens: CapacityToken[] = [];
+	let capacityTokens: CapacityToken[] = [];
 
 	try {
-		capactiyTokens = (await queryCapacityCredits(wallet));
+		capacityTokens = (await queryCapacityCredits(wallet));
 	} catch (e) {
 		console.error("Failed to query capacity tokens", e);
 	}
 
 	// get the first token that is not expired
-	const capactiyToken = capactiyTokens.find((token) => !token.isExpired);
+	const capacityToken = capacityTokens.find((token) => !token.isExpired);
+	let tokenId: number | null = null;
 
-	if (!capactiyToken) {
-		throw new Error(`No capacity token found for ${wallet.address}`);
+	if (!capacityToken) {
+		// mint a new token
+		const minted = await mintCapacityCredits({ signer: wallet });
+
+		if (!minted) {
+			throw new Error("Failed to mint capacity credits");
+		}
+
+		console.log('No capacity token found, minted a new one:', minted.capacityTokenId);
+		tokenId = minted.capacityTokenId;
+	} else {
+		tokenId = capacityToken.tokenId;
 	}
 
-	const tokenId = capactiyToken.tokenId;
+	if (!tokenId) {
+		throw new Error("Failed to get ID for capacity token");
+	}
+
 	const uses = process.env.LIT_DELEGATION_USES || "128";
 
 	const result = await client.createCapacityDelegationAuthSig({
