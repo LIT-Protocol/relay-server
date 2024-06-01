@@ -13,7 +13,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@lit-protocol/contracts-sdk": "^5.1.0",
     "@lit-protocol/lit-node-client-nodejs": "^5.1.0",
     "@simplewebauthn/server": "6.2.1",
     "base64url": "^3.0.1",

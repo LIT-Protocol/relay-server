@@ -6,7 +6,6 @@ import redisClient from "./lib/redisClient";
 import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
-import { LitContracts } from "@lit-protocol/contracts-sdk";
 import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { CapacityToken } from "lit";
 

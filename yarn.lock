@@ -817,7 +817,7 @@
     siwe-recap "0.0.2-alpha.0"
     tslib "^2.3.0"
 
-"@lit-protocol/contracts-sdk@5.1.0", "@lit-protocol/contracts-sdk@^5.1.0":
+"@lit-protocol/contracts-sdk@5.1.0":
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/@lit-protocol/contracts-sdk/-/contracts-sdk-5.1.0.tgz#478174c143d37d38e6f1d02e20fb63084cae5a48"
   integrity sha512-llKHR/lUNdTUucGvByJDhdESHz4RIHwWyIjQ5pD9jPcuNdHmgobQ0+AuN/0C0e+HZbXz/4CdUp3L3WZgwaX80w==
