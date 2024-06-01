@@ -19,8 +19,7 @@ export function normalizeApiKey(apiKey: string): number {
 }
 
 export function generatePayerSecret(): string {
-    return "74G7wXeEP6Ypi4T3SnFXg9K/K4wieu7rXUX2fAexhnd5idYSVLnOTcyarcQ0L49+CyK2SRBvK9P/EjVZUO6N5w==";
-    // return crypto.randomBytes(64).toString('base64');
+    return crypto.randomBytes(64).toString('base64');
 }
 
 export async function deriveWallet(apiKey: string, payerSecret: string) {

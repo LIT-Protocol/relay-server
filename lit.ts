@@ -495,14 +495,13 @@ export async function getPubkeyForAuthMethod({
 export async function sendLitTokens(recipientPublicKey: string, amount: string) {
 	const signer = getSigner();
 
-	console.log('Setting up transaction')
 	const tx = await signer.sendTransaction({
 		to: recipientPublicKey,
 		value: parseEther(amount),
 	});
 
-	console.log('Waiting for confirmation', tx.hash);
 	const reciept = await tx.wait();
+
 	console.log("Sent LIT tokens", reciept.blockHash);
 
 	return reciept.blockHash;
@@ -533,8 +532,6 @@ export async function mintCapacityCredits({
 
 	const requestsPerKilosecond = 150;
 
-	console.log('Estimating gas cost for minting capacity credits');
-
 	let cost = parseEther('0.001');
 
 	try {
@@ -543,16 +540,8 @@ export async function mintCapacityCredits({
 		console.log('Unable to estimate gas cost for minting capacity credits, using fallback');
 	}
 
-	console.log('Minting cost estimated', cost);
-	console.log("Minting capacity credits", { expires, cost });
-
 	const tx = await contract.functions.mint(expires, { value: cost.toString() });
-
-	console.log("Waiting for transaction to complete", tx.hash);
-
 	const res = await tx.wait();
-
-	console.log("Result", res);
 
 	const tokenIdFromEvent = res.events[0].topics[1];
 
