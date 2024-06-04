@@ -511,8 +511,8 @@ export async function mintCapacityCredits({
 }: {
 	signer: ethers.Wallet;
 }) {
-	if (config.network !== "habanero" && config.network !== "manzano") {
-		throw new Error(`Capacity credits not available on ${config.network}`);
+	if (config.network === "serrano" || config.network === "cayenne") {
+		throw new Error(`Payment delegation is not available on ${config.network}`);
 	}
 
 	const contract = await getContractFromWorker(config.network, 'RateLimitNFT', signer);
@@ -584,7 +584,7 @@ async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
 
 export async function queryCapacityCredits(signer: ethers.Wallet) {
 	if (config.network === "serrano" || config.network == "cayenne") {
-		throw new Error("Capacity credits are not available on Serrano");
+		throw new Error(`Payment delegation is not available on ${config.network}`);
 	}
 
 	const contract = await getContractFromWorker(config.network, 'RateLimitNFT');
