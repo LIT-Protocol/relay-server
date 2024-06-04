@@ -568,31 +568,38 @@ function normalizeCapacity(capacity: any) {
 }
 
 async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
-	const [URI, capacity, isExpired] = await Promise.all([
-		contract.functions.tokenURI(tokenId).then(normalizeTokenURI),
-		contract.functions.capacity(tokenId).then(normalizeCapacity),
-		contract.functions.isExpired(tokenId),
-	]);
+	console.log(`Querying capacity credit for token ${tokenId}`)
 
-	return {
-		tokenId,
-		URI,
-		capacity,
-		isExpired,
-	} as CapacityToken;
+	try {
+		const [URI, capacity, isExpired] = await Promise.all([
+			contract.functions.tokenURI(tokenId).then(normalizeTokenURI),
+			contract.functions.capacity(tokenId).then(normalizeCapacity),
+			contract.functions.isExpired(tokenId)
+		]);
+
+		return {
+			tokenId,
+			URI,
+			capacity,
+			isExpired,
+		} as CapacityToken;
+	} catch (e) {
+		// Makes the stack trace a bit more clear as to what actually failed
+		throw new Error(`Failed to fetch details for capacity token ${tokenId}: ${e}`);
+	}
 }
 
 export async function queryCapacityCredits(signer: ethers.Wallet) {
-	if (config.network === "serrano" || config.network == "cayenne") {
+	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(`Payment delegation is not available on ${config.network}`);
 	}
 
 	const contract = await getContractFromWorker(config.network, 'RateLimitNFT');
 	const count = parseInt(await contract.functions.balanceOf(signer.address));
 
-	return await Promise.all([...new Array(count)].map((_, i) => (
+	return Promise.all([...new Array(count)].map((_, i) => (
 		queryCapacityCredit(contract, i)
-	))) as CapacityToken[];
+	))) as Promise<CapacityToken[]>;
 }
 
 export async function addPaymentDelegationPayee({
@@ -601,7 +608,7 @@ export async function addPaymentDelegationPayee({
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
 }) {
-	if (config.network === "serrano" || config.network == "cayenne") {
+	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(`Payment delegation is not available on ${config.network}`);
 	}
 
