@@ -70,13 +70,12 @@ async function createCapacityCredits(wallet: Wallet) {
 
 export async function registerPayerHandler(req: Request, res: Response) {
     const apiKey = req.header("api-key");
-    const secret = generatePayerSecret();
 
     if (!apiKey) {
         res.status(400).send("Missing API key");
         return;
     }
-
+    const secret = generatePayerSecret();
     const wallet = await deriveWallet(apiKey, secret)
 
     console.log(`secret: ${secret}`);
