@@ -12,6 +12,9 @@
     "allowSyntheticDefaultImports": true,
     "strict": true,
     "outDir": "dist",
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "resolveJsonModule": true,
     "paths": {
       "*": [
         "./types/*"
