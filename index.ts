@@ -66,6 +66,8 @@ import {
 } from "./routes/auth/otp";
 
 import { mintClaimedKeyId } from "./routes/auth/claim";
+import { registerPayerHandler } from "./routes/delegate/register";
+import { addPayeeHandler } from "./routes/delegate/user";
 
 const app = express();
 
@@ -219,6 +221,10 @@ app.post("/fetch-pkps-by-auth-method", fetchPKPsHandler);
 
 // --- Poll minting progress
 app.get("/auth/status/:requestId", getAuthStatusHandler);
+
+// -- Payment Delegation
+app.post("/register-payer", registerPayerHandler);
+app.post("/add-users", addPayeeHandler);
 
 // *** Deprecated ***
 

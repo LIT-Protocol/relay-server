@@ -5,14 +5,16 @@ import config from "./config";
 import redisClient from "./lib/redisClient";
 import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 import { Sequencer } from "./lib/sequencer";
-import { SiweMessage } from "siwe";
-import { toUtf8Bytes } from "ethers/lib/utils";
+import { parseEther } from "ethers/lib/utils";
+import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
+import { CapacityToken } from "lit";
 
 const MANZANO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/manzano-contract-addresses';
 const HABANERO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/habanero-contract-addresses';
 
-async function getContractFromWorker(network: 'manzano' | 'habanero', contractName: string) {
-	const signer = getSigner();
+async function getContractFromWorker(network: 'manzano' | 'habanero', contractName: string, signer?: ethers.Wallet) {
+	signer = signer ?? getSigner();
+
 	const contractsDataRes = await fetch(network === 'manzano' ? MANZANO_CONTRACT_ADDRESSES : HABANERO_CONTRACT_ADDRESSES);
 	const contractList = (await contractsDataRes.json()).data;
 
@@ -155,6 +157,17 @@ async function getPermissionsContract() {
 			return getContractFromWorker('manzano', 'PKPPermissions');
 		case "habanero":
 			return getContractFromWorker('habanero', 'PKPPermissions');
+	}
+}
+
+async function getPaymentDelegationContract() {
+	switch (config.network) {
+		case "manzano":
+			return getContractFromWorker('manzano', 'PaymentDelegation');
+		case "habanero":
+			return getContractFromWorker('habanero', 'PaymentDelegation');
+		default:
+			throw new Error('PaymentDelegation contract not available for this network');
 	}
 }
 
@@ -477,6 +490,174 @@ export async function getPubkeyForAuthMethod({
 	);
 	return pubkey;
 }
+
+export async function sendLitTokens(recipientPublicKey: string, amount: string) {
+	const signer = getSigner();
+
+	const tx = await signer.sendTransaction({
+		to: recipientPublicKey,
+		value: parseEther(amount),
+	});
+
+	const reciept = await tx.wait();
+
+	console.log("Sent LIT tokens", reciept.blockHash);
+
+	return reciept.blockHash;
+}
+
+export async function mintCapacityCredits({
+	signer,
+}: {
+	signer: ethers.Wallet;
+}) {
+	if (config.network === "serrano" || config.network === "cayenne") {
+		throw new Error(`Payment delegation is not available on ${config.network}`);
+	}
+
+	const contract = await getContractFromWorker(config.network, 'RateLimitNFT', signer);
+
+	if (!contract) {
+		throw new Error('Contract is not available');
+	}
+
+	// set the expiration to midnight, 15 days from now
+	const timestamp = (Date.now() / 1000) + 15 * 24 * 60 * 60;
+	const futureDate = new Date(timestamp * 1000);
+	futureDate.setUTCHours(0, 0, 0, 0);
+
+	// Get the Unix timestamp in seconds
+	const expires = Math.floor(futureDate.getTime() / 1000);
+
+	const requestsPerKilosecond = 150;
+
+	let cost = parseEther('0.001');
+
+	try {
+		cost = await contract.functions.calculateCost(requestsPerKilosecond, expires);
+	} catch (e) {
+		console.log('Unable to estimate gas cost for minting capacity credits, using fallback');
+	}
+
+	const tx = await contract.functions.mint(expires, { value: cost.toString() });
+	const res = await tx.wait();
+
+	const tokenIdFromEvent = res.events[0].topics[1];
+
+	return { tx, capacityTokenId: tokenIdFromEvent };
+}
+
+function normalizeTokenURI(tokenURI: string) {
+	const base64 = tokenURI[0];
+
+	const data = base64.split('data:application/json;base64,')[1];
+	const dataToString = Buffer.from(data, 'base64').toString('binary');
+
+	return JSON.parse(dataToString);
+}
+
+function normalizeCapacity(capacity: any) {
+	const [requestsPerMillisecond, expiresAt] = capacity[0];
+
+	return {
+		requestsPerMillisecond: parseInt(requestsPerMillisecond.toString()),
+		expiresAt: {
+			timestamp: parseInt(expiresAt.toString()),
+		},
+	};
+}
+
+async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
+	console.log(`Querying capacity credit for token ${tokenId}`)
+
+	try {
+		const [URI, capacity, isExpired] = await Promise.all([
+			contract.functions.tokenURI(tokenId).then(normalizeTokenURI),
+			contract.functions.capacity(tokenId).then(normalizeCapacity),
+			contract.functions.isExpired(tokenId)
+		]);
+
+		return {
+			tokenId,
+			URI,
+			capacity,
+			isExpired,
+		} as CapacityToken;
+	} catch (e) {
+		// Makes the stack trace a bit more clear as to what actually failed
+		throw new Error(`Failed to fetch details for capacity token ${tokenId}: ${e}`);
+	}
+}
+
+export async function queryCapacityCredits(signer: ethers.Wallet) {
+	if (config.network === "serrano" || config.network === "cayenne") {
+		throw new Error(`Payment delegation is not available on ${config.network}`);
+	}
+
+	const contract = await getContractFromWorker(config.network, 'RateLimitNFT');
+	const count = parseInt(await contract.functions.balanceOf(signer.address));
+
+	return Promise.all([...new Array(count)].map((_, i) => (
+		queryCapacityCredit(contract, i)
+	))) as Promise<CapacityToken[]>;
+}
+
+export async function addPaymentDelegationPayee({
+	wallet, payeeAddresses
+}: {
+	wallet: ethers.Wallet;
+	payeeAddresses: string[];
+}) {
+	if (config.network === "serrano" || config.network === "cayenne") {
+		throw new Error(`Payment delegation is not available on ${config.network}`);
+	}
+
+	// TODO: It would be good to just implement the logic for this locally, and avoid
+	//		 having to pull in the LitNodeClientNodeJs package.
+	const client = new LitNodeClientNodeJs({
+		alertWhenUnauthorized: false,
+		litNetwork: config.network,
+	});
+
+	// get the first token that is not expired
+	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
+	const capacityToken = capacityTokens.find((token) => !token.isExpired);
+
+	let tokenId: number | null = null;
+
+	if (!capacityToken) {
+		// mint a new token
+		const minted = await mintCapacityCredits({ signer: wallet });
+
+		if (!minted) {
+			throw new Error("Failed to mint capacity credits");
+		}
+
+		console.log('No capacity token found, minted a new one:', minted.capacityTokenId);
+		tokenId = minted.capacityTokenId;
+	} else {
+		tokenId = capacityToken.tokenId;
+	}
+
+	if (!tokenId) {
+		throw new Error("Failed to get ID for capacity token");
+	}
+
+	const uses = process.env.LIT_DELEGATION_USES || "128";
+
+	const result = await client.createCapacityDelegationAuthSig({
+		uses,
+		dAppOwnerWallet: wallet,
+		capacityTokenId: tokenId.toString(),
+		delegateeAddresses: payeeAddresses,
+	});
+
+	if (!result) {
+		throw new Error("Failed to add payee");
+	}
+
+	return result.capacityDelegationAuthSig;
+};
 
 // export function packAuthData({
 //   credentialPublicKey,

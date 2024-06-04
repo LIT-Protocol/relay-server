@@ -6,19 +6,22 @@
   "scripts": {
     "dev": "nodemon index.ts",
     "start": "node dist/index.js",
-    "build": "tsc"
+    "build": "tsc",
+    "postinstall": "cp patch/ethersCompat.d.ts node_modules/siwe/dist/ethersCompat.d.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@lit-protocol/lit-node-client-nodejs": "^6.0.1",
     "@simplewebauthn/server": "6.2.1",
     "base64url": "^3.0.1",
     "cbor": "^8.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "elliptic": "^6.5.4",
-    "ethers": "^5.7.1",
+    "ethereum-cryptography": "^2.1.3",
+    "ethers": "~5.6.8",
     "express": "^4.17.1",
     "express-rate-limit": "^6.6.0",
     "google-auth-library": "^8.7.0",
@@ -26,7 +29,7 @@
     "node-fetch": "^2.6.0",
     "rate-limit-redis": "^3.0.1",
     "redis": "^4.4.0",
-    "siwe": "2.1.3",
+    "siwe": "^2.3.2",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
     "uint8arrays": "^3.0.0"
