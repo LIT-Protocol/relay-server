@@ -590,9 +590,9 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 	const contract = await getContractFromWorker(config.network, 'RateLimitNFT');
 	const count = parseInt(await contract.functions.balanceOf(signer.address));
 
-	return await Promise.all([...new Array(count)].map(async (_, i) => {
-		return queryCapacityCredit(contract, i);
-	})) as CapacityToken[];
+	return await Promise.all([...new Array(count)].map((_, i) => (
+		queryCapacityCredit(contract, i)
+	))) as CapacityToken[];
 }
 
 export async function addPaymentDelegationPayee({
@@ -612,16 +612,10 @@ export async function addPaymentDelegationPayee({
 		litNetwork: config.network,
 	});
 
-	let capacityTokens: CapacityToken[] = [];
-
-	try {
-		capacityTokens = (await queryCapacityCredits(wallet));
-	} catch (e) {
-		console.error("Failed to query capacity tokens", e);
-	}
-
 	// get the first token that is not expired
+	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
 	const capacityToken = capacityTokens.find((token) => !token.isExpired);
+
 	let tokenId: number | null = null;
 
 	if (!capacityToken) {
