@@ -8,12 +8,19 @@ export async function addPayeeHandler(req: Request, res: Response) {
     const payerSecret = req.header('payer-secret-key');
 
     if (!apiKey || !payerSecret) {
-        res.status(400).send('Missing or invalid API / Payer key');
+        res.status(400).json({
+            success: false,
+            error: 'Missing or invalid API / Payer key'
+        });
+
         return;
     }
 
     if (!payeeAddresses || !Array.isArray(payeeAddresses) || payeeAddresses.length < 1) {
-        res.status(400).send('Missing or invalid payee addresses');
+        res.status(400).json({
+            success: false,
+            error: 'Missing or invalid payee addresses'
+        });
         return;
     }
 
@@ -35,12 +42,12 @@ export async function addPayeeHandler(req: Request, res: Response) {
     }
 
     if (error) {
-        res.status(500).send({
+        res.status(500).json({
             success: false,
             error
         });
     } else {
-        res.status(200).send({
+        res.status(200).json({
             success: true
         });
     }

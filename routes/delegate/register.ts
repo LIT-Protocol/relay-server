@@ -72,7 +72,11 @@ export async function registerPayerHandler(req: Request, res: Response) {
     const apiKey = req.header("api-key");
 
     if (!apiKey) {
-        res.status(400).send("Missing API key");
+        res.status(400).send({
+            success: false,
+            error: "Missing API key"
+        });
+
         return;
     }
     const secret = generatePayerSecret();
@@ -83,13 +87,17 @@ export async function registerPayerHandler(req: Request, res: Response) {
     return fundWallet(wallet)
         .then(createCapacityCredits)
         .then((wallet: Wallet) => {
-            res.status(200).send({
+            res.status(200).json({
+                success: true,
                 payerWalletAddress: wallet.address,
                 payerSecretKey: secret
             });
         })
         .catch((err) => {
             console.error("Failed to register payer", err);
-            res.status(500).send("Failed to register payer");
+            res.status(500).json({
+                success: false,
+                error: err.toString()
+            });
         });
 }
