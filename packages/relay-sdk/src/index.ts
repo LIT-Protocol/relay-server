@@ -29,7 +29,7 @@ export class LitRelayClient {
      * @param apiKey
      * @param payerSecret
      */
-    constructor(baseUrl: string, apiKey: string, payerSecret: string) {
+    private constructor(baseUrl: string, apiKey: string, payerSecret: string) {
         this.baseUrl = baseUrl;
         this.apiKey = apiKey;
 

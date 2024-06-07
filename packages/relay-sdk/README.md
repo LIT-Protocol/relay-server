@@ -39,6 +39,6 @@ const secret = client.secret;
 import { LitRelayClient } from '@lit-protocol/relay-sdk';
 
 const client = await LitRelayClient.connect('habanero', 'you-api-key', 'your-payer-secret');
-await client.addPayee('0x1234567890123456789012345678901234567890', 100);
+await client.addPayee('user-wallet-address');
 ```
 
