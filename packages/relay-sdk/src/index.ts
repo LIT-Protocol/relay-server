@@ -4,9 +4,9 @@ type SupportedNetworks = 'habanero' | 'manzano';
 function getRelayURLByNetwork(network: SupportedNetworks): string {
     switch (network) {
         case 'habanero':
-            return 'https://habanero.lit.dev';
+            return 'https://habanero-relayer.getlit.dev';
         case 'manzano':
-            return 'https://manzano.lit.dev';
+            return 'https://manzano-relayer.getlit.dev';
     }
 }
 
@@ -60,7 +60,7 @@ export class LitRelayClient {
             throw new Error('Payer secret not set');
         }
 
-        const res = await fetch(`${this.baseUrl}/delegate/user/payee`, {
+        const res = await fetch(`${this.baseUrl}/add-users`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -70,14 +70,14 @@ export class LitRelayClient {
             body: JSON.stringify([payeeAddress]),
         });
 
-        const data = await res.json();
-
         if (res.status !== 200) {
             return {
                 success: false,
-                error: data.error,
+                error: 'Failed to add payee: request failed',
             };
         }
+
+        const data = await res.json();
 
         return {
             success: true,
@@ -104,7 +104,7 @@ export class LitRelayClient {
         }
 
         const baseUrl = getRelayURLByNetwork(network);
-        const res = await fetch(`${baseUrl}/delegate/register`, {
+        const res = await fetch(`${baseUrl}/register-payer`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
