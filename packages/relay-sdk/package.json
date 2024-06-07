@@ -1,0 +1,14 @@
+{
+  "name": "@litnetwork/relay-sdk",
+  "version": "0.0.1",
+  "description": "Lightweight client for interacting with Lit Network relay server.",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node12 --outfile=index.js"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.21.4"
+  },
+  "dependencies": {}
+}
