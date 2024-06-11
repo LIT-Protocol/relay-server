@@ -1,5 +1,6 @@
 
 import { RELAY_URL_HABANERO, RELAY_URL_MANZANO } from '@lit-protocol/constants';
+import { assertNotNull, assertStatus, assertString, getProp } from './util';
 
 type SupportedNetworks = 'habanero' | 'manzano';
 
@@ -49,20 +50,14 @@ export class LitRelayClient {
      * ```
      * @param payeeAddress
      * 
-     * @returns Promise<{
-     *  success: false;
-     *  error: string;
-     * } | {
-     *  success: true;
-     *  tokenId: string;
-     * }>
+     * @returns Promise<{ tokenId: string } | Error>
      */
-    public async addPayee(payeeAddress: string) {
+    public addPayee(payeeAddress: string): Promise<{ tokenId: string }> {
         if (!this.payerSecret) {
-            throw new Error('Payer secret not set');
+            return Promise.reject('Payer secret key is missing');
         }
 
-        const res = await fetch(`${this.baseUrl}/add-users`, {
+        return fetch(`${this.baseUrl}/add-users`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -70,21 +65,11 @@ export class LitRelayClient {
                 'payer-secret-key': this.payerSecret,
             },
             body: JSON.stringify([payeeAddress]),
-        });
-
-        if (res.status !== 200) {
-            return {
-                success: false,
-                error: 'Failed to add payee: request failed',
-            };
-        }
-
-        const data = await res.json();
-
-        return {
-            success: true,
-            tokenId: data.tokenId,
-        };
+        })
+            .then(assertStatus(200, 'Failed to add payee: request failed'))
+            .then(res => res.json())
+            .then(json => assertString(json.tokenId, 'Failed to add payee: missing token ID'))
+            .then(tokenId => ({ tokenId }));
     }
 
     /**
@@ -100,31 +85,25 @@ export class LitRelayClient {
      * 
      * @returns LitRelayClient
      */
-    public static async register(network: SupportedNetworks, apiKey: string) {
+    public static register(network: SupportedNetworks, apiKey: string): Promise<LitRelayClient {
         if (network !== 'habanero' && network !== 'manzano') {
-            throw new Error('Invalid network');
+            throw Promise.reject('Invalid network');
         }
 
         const baseUrl = getRelayURLByNetwork(network);
-        const res = await fetch(`${baseUrl}/register-payer`, {
+
+        return fetch(`${baseUrl}/register-payer`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'api-key': apiKey,
             },
-        });
-
-        if (res.status !== 200) {
-            throw new Error('Failed to register payer: request failed');
-        }
-
-        const data = await res.json();
-
-        if (!data.payerSecretKey) {
-            throw new Error('Failed to register payer: missing secret key');
-        }
-
-        return new LitRelayClient(baseUrl, apiKey, data.payerSecretKey);
+        })
+            .then(assertStatus(200, 'Failed to register payer: request failed'))
+            .then(res => res.json())
+            .then(json => getProp(json, 'payerSecretKey'))
+            .then(json => assertString(json.payerSecretKey, 'Failed to register payer: missing secret key'))
+            .then(payerSecretKey => new LitRelayClient(baseUrl, apiKey, payerSecretKey));
     }
 
     /**
@@ -141,7 +120,7 @@ export class LitRelayClient {
      * 
      * @returns LitRelayClient
      */
-    public static async connect(network: SupportedNetworks, apiKey: string, payerSecret: string) {
+    public static connect(network: SupportedNetworks, apiKey: string, payerSecret: string) {
         if (network !== 'habanero' && network !== 'manzano') {
             throw new Error('Invalid network');
         }
