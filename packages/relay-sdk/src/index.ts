@@ -1,12 +1,14 @@
 
+import { RELAY_URL_HABANERO, RELAY_URL_MANZANO } from '@lit-protocol/constants';
+
 type SupportedNetworks = 'habanero' | 'manzano';
 
 function getRelayURLByNetwork(network: SupportedNetworks): string {
     switch (network) {
         case 'habanero':
-            return 'https://habanero-relayer.getlit.dev';
+            return RELAY_URL_HABANERO;
         case 'manzano':
-            return 'https://manzano-relayer.getlit.dev';
+            return RELAY_URL_MANZANO;
     }
 }
 
