@@ -11,6 +11,6 @@
     "esbuild": "^0.21.4"
   },
   "dependencies": {
-    "@lit-protocol/constants": "^6.0.0"
+    "@lit-protocol/constants": "^6.0.1"
   }
 }
