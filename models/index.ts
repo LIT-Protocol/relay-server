@@ -34,7 +34,7 @@ export interface ClaimAndMintResponse {
 	tx: string;
 }
 export interface MintNextAndAddAuthMethodsResponse
-	extends AuthMethodVerifyRegistrationResponse { }
+	extends AuthMethodVerifyRegistrationResponse {}
 
 export interface FetchRequest {
 	authMethodId: string;
@@ -138,10 +138,11 @@ export interface Config {
 	port: number;
 	enableHttps: boolean;
 	expectedOrigins: string[];
-	serranoContract?: Contract,
-	cayenneContracts?: Contract,
+	serranoContract?: Contract;
+	cayenneContracts?: Contract;
+	datilDevContracts?: Contract;
 	useSoloNet: boolean;
-	network: "serrano" | "cayenne" | 'manzano' | 'habanero';
+	network: "serrano" | "cayenne" | "manzano" | "habanero" | "datil-dev";
 }
 
 export enum CapabilityProtocolPrefix {
