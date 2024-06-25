@@ -35,6 +35,7 @@
     "uint8arrays": "^3.0.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.1.5",
     "@types/cbor": "^6.0.0",
     "@types/cors": "^2.8.12",
     "@types/elliptic": "^6.4.14",
