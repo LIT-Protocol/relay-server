@@ -1,11 +1,11 @@
-POST http://127.0.0.1:6380/mint-next-and-add-auth-methods
+POST http://127.0.0.1:6380/api/v2/mint-next-and-add-auth-methods
 Content-Type: application/json
 api-key: your-api-key-value
 
 {
     "keyType": 2,
     "permittedAuthMethodTypes": [2],
-    "permittedAuthMethodIds": [""],
+    "permittedAuthMethodIds": ["0x4825e3caf11a273792ad0405524820410cd15d6323ae4621537f0a89c1322a74"],
     "permittedAuthMethodPubkeys": ["0x"],
     "permittedAuthMethodScopes": [[1]],
     "addPkpEthAddressAsPermittedAddress": true,
