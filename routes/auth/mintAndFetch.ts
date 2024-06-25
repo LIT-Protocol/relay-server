@@ -8,6 +8,7 @@ import {
 	MintNextAndAddAuthMethodsRequest,
 	MintNextAndAddAuthMethodsResponse,
 } from "../../models";
+import { getVersionStrategy } from "../versionStrategy";
 
 export async function mintNextAndAddAuthMethodsHandler(
 	req: Request<
@@ -23,21 +24,33 @@ export async function mintNextAndAddAuthMethodsHandler(
 		number
 	>,
 ) {
+	const versionStrategy = getVersionStrategy(req.url);
+
 	// mint PKP for user
 	try {
-		const mintTx = await mintPKPV2(req.body);
+		const mintTx = await mintPKPV2({
+			...req.body,
+			versionStrategy,
+		});
+
+		console.log("mintTx:", mintTx);
+
+		const source = mintTx.hash ? 'lit-relayer' : 'thirdweb';
+
+
 		console.info("Minted PKP", {
 			requestId: mintTx.hash,
+			source,
 		});
 		return res.status(200).json({
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP", {
+		console.error("[mintNextAndAddAuthMethodsHandler] Unable to mint PKP", {
 			err,
 		});
 		return res.status(500).json({
-			error: `Unable to mint PKP`,
+			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP ${err}`,
 		});
 	}
 }

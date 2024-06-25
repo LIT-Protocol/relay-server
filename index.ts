@@ -216,6 +216,9 @@ app.post("/store-condition", storeConditionHandler);
 // --- Mint PKP for authorized account
 app.post("/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
 
+// -- (V2) Mint PKP for authorized account (using ThirdWeb)
+app.post("/api/v2/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
+
 // --- Fetch PKPs tied to authorized account
 app.post("/fetch-pkps-by-auth-method", fetchPKPsHandler);
 
