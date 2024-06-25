@@ -301,6 +301,18 @@ export async function mintPKPV2({
 				sendPkpToItself,
 				{ value: mintCost },
 			);
+
+			console.log("PRINT THIS OUT TO SEE THE TX OBJECT");
+			console.log(
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
+				{ value: mintCost }
+			);
 			console.log("tx", tx);
 			return tx;
 	}
@@ -311,8 +323,6 @@ export async function mintPKPV2({
 			contractAddress: pkpNft.address,
 			functionName: pkpNftFunctions.mintCost,
 		});
-
-		console.log("mintCost", mintCost);
 
 		const res = await ThirdWebLib.Contract.write({
 			contractAddress: pkpHelper.address,
@@ -325,11 +335,14 @@ export async function mintPKPV2({
 				permittedAuthMethodScopes,
 				addPkpEthAddressAsPermittedAddress,
 				sendPkpToItself,
+				{
+					value: mintCost
+				}
 			],
 			backendWalletAddress: "0x05Dffce4D37ffEeb758b01fE3d1f0468a78fD58D",
 		});
 
-		console.log(res);
+		console.log("res:", res);
 
 		return res as any;
 	}

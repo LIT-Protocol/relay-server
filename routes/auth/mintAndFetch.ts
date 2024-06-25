@@ -33,8 +33,14 @@ export async function mintNextAndAddAuthMethodsHandler(
 			versionStrategy,
 		});
 
+		console.log("mintTx:", mintTx);
+
+		const source = mintTx.hash ? 'lit-relayer' : 'thirdweb';
+
+
 		console.info("Minted PKP", {
 			requestId: mintTx.hash,
+			source,
 		});
 		return res.status(200).json({
 			requestId: mintTx.hash,

@@ -302,13 +302,6 @@ export namespace ThirdWebLib {
 					{
 						functionName,
 						args,
-						// args: [
-						// 	"string",
-						// 	["string", "string"],
-						// 	{},
-						// 	["string"],
-						// 	"string",
-						// ],
 					},
 					{
 						"x-backend-wallet-address": backendWalletAddress,
