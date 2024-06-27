@@ -269,13 +269,13 @@ if (ENABLE_HTTPS) {
 			app,
 		)
 		.listen(port, host, () => {
-			console.log(`🚀 Server ready at ${host}:${port}`);
+			console.log(`🚀 1: Server ready at ${host}:${port}`);
 		});
 } else {
 	const host = "127.0.0.1";
 	const port = config.port;
 
 	http.createServer(app).listen(port, () => {
-		console.log(`🚀 Server ready at ${host}:${port}`);
+		console.log(`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} |`);
 	});
 }

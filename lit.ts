@@ -14,18 +14,31 @@ const MANZANO_CONTRACT_ADDRESSES =
 const HABANERO_CONTRACT_ADDRESSES =
 	"https://lit-general-worker.getlit.dev/habanero-contract-addresses";
 
+const DATIL_DEV_CONTRACT_ADDRESSES =
+	"https://lit-general-worker-staging.onrender.com/datil-dev/contracts";
+
 async function getContractFromWorker(
-	network: "manzano" | "habanero",
+	network: "manzano" | "habanero" | "datil-dev",
 	contractName: string,
 	signer?: ethers.Wallet,
 ) {
 	signer = signer ?? getSigner();
 
-	const contractsDataRes = await fetch(
-		network === "manzano"
-			? MANZANO_CONTRACT_ADDRESSES
-			: HABANERO_CONTRACT_ADDRESSES,
-	);
+	let contractsDataRes;
+  switch (network) {
+    case "manzano":
+      contractsDataRes = await fetch(MANZANO_CONTRACT_ADDRESSES);
+      break;
+    case "habanero":
+      contractsDataRes = await fetch(HABANERO_CONTRACT_ADDRESSES);
+      break;
+    case "datil-dev":
+      contractsDataRes = await fetch(DATIL_DEV_CONTRACT_ADDRESSES);
+      break;
+    default:
+      throw new Error(`Unsupported network: ${network}`);
+  }
+	
 	const contractList = (await contractsDataRes.json()).data;
 
 	console.log(
@@ -155,10 +168,11 @@ async function getPkpHelperContract() {
 		case "habanero":
 			return getContractFromWorker("habanero", "PKPHelper");
 		case "datil-dev":
-			return getContract(
-				getPkpHelperContractAbiPath()!,
-				config?.datilDevContracts?.pkpHelperAddress as string,
-			);
+			// return getContract(
+			// 	getPkpHelperContractAbiPath()!,
+			// 	config?.datilDevContracts?.pkpHelperAddress as string,
+			// );
+			return getContractFromWorker("datil-dev", "PKPHelper");
 	}
 }
 
@@ -179,10 +193,11 @@ async function getPermissionsContract() {
 		case "habanero":
 			return getContractFromWorker("habanero", "PKPPermissions");
 		case "datil-dev":
-			return getContract(
-				"./contracts/datil-dev/PKPPermissions.json",
-				config?.datilDevContracts?.pkpPermissionsAddress as string,
-			);
+			// return getContract(
+			// 	"./contracts/datil-dev/PKPPermissions.json",
+			// 	config?.datilDevContracts?.pkpPermissionsAddress as string,
+			// );
+			return getContractFromWorker("datil-dev", "PKPPermissions");
 	}
 }
 
@@ -216,10 +231,11 @@ async function getPkpNftContract() {
 		case "habanero":
 			return await getContractFromWorker("habanero", "PKPNFT");
 		case "datil-dev":
-			return getContract(
-				getPkpNftContractAbiPath()!,
-				config?.datilDevContracts?.pkpNftAddress as string,
-			);
+			// return getContract(
+			// 	getPkpNftContractAbiPath()!,
+			// 	config?.datilDevContracts?.pkpNftAddress as string,
+			// );
+			return getContractFromWorker("datil-dev", "PKPNFT");
 	}
 }
 
@@ -297,7 +313,10 @@ export async function mintPKPV2({
 	const pkpNft = await getPkpNftContract();
 
 	// first get mint cost
-	const mintCost = await pkpNft.mintCost();
+	const mintCost = await pkpNft.mintCost().catch((e: any) => {
+		console.error("❗️ [mintPKPV2] Error while getting mint cost", e);
+	});
+
 	const tx = await pkpHelper.mintNextAndAddAuthMethods(
 		keyType,
 		permittedAuthMethodTypes,
