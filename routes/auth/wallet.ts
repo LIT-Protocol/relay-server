@@ -69,9 +69,9 @@ export async function walletVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for given Eth wallet", { err });
+		console.error("[Wallet] Unable to mint PKP for given Eth wallet", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for given Eth wallet",
+			error: "[Wallet] Unable to mint PKP for given Eth wallet",
 		});
 	}
 }

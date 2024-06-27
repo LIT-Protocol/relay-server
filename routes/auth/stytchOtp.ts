@@ -71,9 +71,9 @@ export async function stytchOtpVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for given OTP request", { err });
+		console.error("[Stytch OTP] Unable to mint PKP for given OTP request", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for given OTP request",
+			error: "[Stytch OTP] Unable to mint PKP for given OTP request",
 		});
 	}
 }

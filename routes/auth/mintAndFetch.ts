@@ -33,11 +33,11 @@ export async function mintNextAndAddAuthMethodsHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP", {
+		console.error("[mintNextAndAddAuthMethodsHandler] Unable to mint PKP", {
 			err,
 		});
 		return res.status(500).json({
-			error: `Unable to mint PKP`,
+			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP`,
 		});
 	}
 }

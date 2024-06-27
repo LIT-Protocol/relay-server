@@ -75,9 +75,9 @@ export async function googleOAuthVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for given Google account", { err });
+		console.error("[Google] Unable to mint PKP for given Google account", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for given Google account",
+			error: "[Google] Unable to mint PKP for given Google account",
 		});
 	}
 }
