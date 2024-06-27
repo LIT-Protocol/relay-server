@@ -1,0 +1,5 @@
+# Poll status of minting PKP transaction
+# GET	/auth/status/:requestId	
+
+GET http://127.0.0.1:6380/auth/status/0xa5dfce3341fa9ca44e3cbaa41da2cf7f6d6858ca5a3b71eafae090ab5ca249af
+api-key: your-api-key-value
