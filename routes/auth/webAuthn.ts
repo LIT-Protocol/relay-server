@@ -154,9 +154,9 @@ export async function webAuthnVerifyRegistrationHandler(
     });
   } catch (error) {
     const _error = error as Error;
-    console.error("Unable to mint PKP for user", { _error });
+    console.error("[WebAuthn] Unable to mint PKP for user", { _error });
     return res.status(500).json({
-      error: "Unable to mint PKP for user",
+      error: "[WebAuthn] Unable to mint PKP for user",
     });
   }
 }

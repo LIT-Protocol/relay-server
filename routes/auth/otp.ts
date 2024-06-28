@@ -99,9 +99,9 @@ export async function otpVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for given OTP request", { err });
+		console.error("[OTP] Unable to mint PKP for given OTP request", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for given OTP request",
+			error: "[OTP] Unable to mint PKP for given OTP request",
 		});
 	}
 }

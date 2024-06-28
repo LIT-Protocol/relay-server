@@ -9,19 +9,46 @@ import { parseEther } from "ethers/lib/utils";
 import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { CapacityToken } from "lit";
 
-const MANZANO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/manzano-contract-addresses';
-const HABANERO_CONTRACT_ADDRESSES = 'https://lit-general-worker.getlit.dev/habanero-contract-addresses';
+const MANZANO_CONTRACT_ADDRESSES =
+	"https://lit-general-worker.getlit.dev/manzano-contract-addresses";
+const HABANERO_CONTRACT_ADDRESSES =
+	"https://lit-general-worker.getlit.dev/habanero-contract-addresses";
 
-async function getContractFromWorker(network: 'manzano' | 'habanero', contractName: string, signer?: ethers.Wallet) {
+const DATIL_DEV_CONTRACT_ADDRESSES =
+	"https://lit-general-worker-staging.onrender.com/datil-dev/contracts";
+
+async function getContractFromWorker(
+	network: "manzano" | "habanero" | "datil-dev",
+	contractName: string,
+	signer?: ethers.Wallet,
+) {
 	signer = signer ?? getSigner();
 
-	const contractsDataRes = await fetch(network === 'manzano' ? MANZANO_CONTRACT_ADDRESSES : HABANERO_CONTRACT_ADDRESSES);
+	let contractsDataRes;
+	switch (network) {
+		case "manzano":
+			contractsDataRes = await fetch(MANZANO_CONTRACT_ADDRESSES);
+			break;
+		case "habanero":
+			contractsDataRes = await fetch(HABANERO_CONTRACT_ADDRESSES);
+			break;
+		case "datil-dev":
+			contractsDataRes = await fetch(DATIL_DEV_CONTRACT_ADDRESSES);
+			break;
+		default:
+			throw new Error(`Unsupported network: ${network}`);
+	}
+
 	const contractList = (await contractsDataRes.json()).data;
 
-	console.log(`Attempting to get contract "${contractName} from "${network}"`);
+	console.log(
+		`Attempting to get contract "${contractName} from "${network}"`,
+	);
 
 	// find object where name is == contractName
-	const contractData = contractList.find((contract: any) => contract.name === contractName);
+	const contractData = contractList.find(
+		(contract: any) => contract.name === contractName,
+	);
 
 	// -- validate
 	if (!contractData) {
@@ -39,7 +66,6 @@ async function getContractFromWorker(network: 'manzano' | 'habanero', contractNa
 	);
 
 	return ethersContract;
-
 }
 
 export function getProvider() {
@@ -106,6 +132,8 @@ function getPkpHelperContractAbiPath() {
 			return "./contracts/serrano/PKPHelper.json";
 		case "cayenne":
 			return "./contracts/cayenne/PKPHelper.json";
+		case "datil-dev":
+			return "./contracts/datil-dev/PKPHelper.json";
 	}
 }
 
@@ -118,13 +146,14 @@ function getPkpNftContractAbiPath() {
 			return "./contracts/serrano/PKPNFT.json";
 		case "cayenne":
 			return "./contracts/cayenne/PKPNFT.json";
+		case "datil-dev":
+			return "./contracts/datil-dev/PKPNFT.json";
 	}
 }
 
 async function getPkpHelperContract() {
 	switch (config.network) {
 		case "serrano":
-
 			return getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.serranoContract?.pkpHelperAddress as string,
@@ -135,9 +164,15 @@ async function getPkpHelperContract() {
 				config?.cayenneContracts?.pkpHelperAddress as string,
 			);
 		case "manzano":
-			return getContractFromWorker('manzano', 'PKPHelper');
+			return getContractFromWorker("manzano", "PKPHelper");
 		case "habanero":
-			return getContractFromWorker('habanero', 'PKPHelper');
+			return getContractFromWorker("habanero", "PKPHelper");
+		case "datil-dev":
+			// return getContract(
+			// 	getPkpHelperContractAbiPath()!,
+			// 	config?.datilDevContracts?.pkpHelperAddress as string,
+			// );
+			return getContractFromWorker("datil-dev", "PKPHelper");
 	}
 }
 
@@ -154,20 +189,28 @@ async function getPermissionsContract() {
 				config?.cayenneContracts?.pkpPermissionsAddress as string,
 			);
 		case "manzano":
-			return getContractFromWorker('manzano', 'PKPPermissions');
+			return getContractFromWorker("manzano", "PKPPermissions");
 		case "habanero":
-			return getContractFromWorker('habanero', 'PKPPermissions');
+			return getContractFromWorker("habanero", "PKPPermissions");
+		case "datil-dev":
+			// return getContract(
+			// 	"./contracts/datil-dev/PKPPermissions.json",
+			// 	config?.datilDevContracts?.pkpPermissionsAddress as string,
+			// );
+			return getContractFromWorker("datil-dev", "PKPPermissions");
 	}
 }
 
 async function getPaymentDelegationContract() {
 	switch (config.network) {
 		case "manzano":
-			return getContractFromWorker('manzano', 'PaymentDelegation');
+			return getContractFromWorker("manzano", "PaymentDelegation");
 		case "habanero":
-			return getContractFromWorker('habanero', 'PaymentDelegation');
+			return getContractFromWorker("habanero", "PaymentDelegation");
 		default:
-			throw new Error('PaymentDelegation contract not available for this network');
+			throw new Error(
+				"PaymentDelegation contract not available for this network",
+			);
 	}
 }
 
@@ -184,9 +227,15 @@ async function getPkpNftContract() {
 				config?.cayenneContracts?.pkpNftAddress as string,
 			);
 		case "manzano":
-			return await getContractFromWorker('manzano', 'PKPNFT');
+			return await getContractFromWorker("manzano", "PKPNFT");
 		case "habanero":
-			return await getContractFromWorker('habanero', 'PKPNFT');
+			return await getContractFromWorker("habanero", "PKPNFT");
+		case "datil-dev":
+			// return getContract(
+			// 	getPkpNftContractAbiPath()!,
+			// 	config?.datilDevContracts?.pkpNftAddress as string,
+			// );
+			return getContractFromWorker("datil-dev", "PKPNFT");
 	}
 }
 
@@ -258,13 +307,14 @@ export async function mintPKPV2({
 		sendPkpToItself,
 	);
 
-	console.log('config.network:', config.network);
+	console.log("config.network:", config.network);
 
 	const pkpHelper = await getPkpHelperContract();
 	const pkpNft = await getPkpNftContract();
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
+
 	const tx = await pkpHelper.mintNextAndAddAuthMethods(
 		keyType,
 		permittedAuthMethodTypes,
@@ -491,7 +541,10 @@ export async function getPubkeyForAuthMethod({
 	return pubkey;
 }
 
-export async function sendLitTokens(recipientPublicKey: string, amount: string) {
+export async function sendLitTokens(
+	recipientPublicKey: string,
+	amount: string,
+) {
 	const signer = getSigner();
 
 	const tx = await signer.sendTransaction({
@@ -512,17 +565,23 @@ export async function mintCapacityCredits({
 	signer: ethers.Wallet;
 }) {
 	if (config.network === "serrano" || config.network === "cayenne") {
-		throw new Error(`Payment delegation is not available on ${config.network}`);
+		throw new Error(
+			`Payment delegation is not available on ${config.network}`,
+		);
 	}
 
-	const contract = await getContractFromWorker(config.network, 'RateLimitNFT', signer);
+	const contract = await getContractFromWorker(
+		config.network,
+		"RateLimitNFT",
+		signer,
+	);
 
 	if (!contract) {
-		throw new Error('Contract is not available');
+		throw new Error("Contract is not available");
 	}
 
 	// set the expiration to midnight, 15 days from now
-	const timestamp = (Date.now() / 1000) + 15 * 24 * 60 * 60;
+	const timestamp = Date.now() / 1000 + 15 * 24 * 60 * 60;
 	const futureDate = new Date(timestamp * 1000);
 	futureDate.setUTCHours(0, 0, 0, 0);
 
@@ -531,15 +590,22 @@ export async function mintCapacityCredits({
 
 	const requestsPerKilosecond = 150;
 
-	let cost = parseEther('0.001');
+	let cost = parseEther("0.001");
 
 	try {
-		cost = await contract.functions.calculateCost(requestsPerKilosecond, expires);
+		cost = await contract.functions.calculateCost(
+			requestsPerKilosecond,
+			expires,
+		);
 	} catch (e) {
-		console.log('Unable to estimate gas cost for minting capacity credits, using fallback');
+		console.log(
+			"Unable to estimate gas cost for minting capacity credits, using fallback",
+		);
 	}
 
-	const tx = await contract.functions.mint(expires, { value: cost.toString() });
+	const tx = await contract.functions.mint(expires, {
+		value: cost.toString(),
+	});
 	const res = await tx.wait();
 
 	const tokenIdFromEvent = res.events[0].topics[1];
@@ -550,8 +616,8 @@ export async function mintCapacityCredits({
 function normalizeTokenURI(tokenURI: string) {
 	const base64 = tokenURI[0];
 
-	const data = base64.split('data:application/json;base64,')[1];
-	const dataToString = Buffer.from(data, 'base64').toString('binary');
+	const data = base64.split("data:application/json;base64,")[1];
+	const dataToString = Buffer.from(data, "base64").toString("binary");
 
 	return JSON.parse(dataToString);
 }
@@ -568,13 +634,13 @@ function normalizeCapacity(capacity: any) {
 }
 
 async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
-	console.log(`Querying capacity credit for token ${tokenId}`)
+	console.log(`Querying capacity credit for token ${tokenId}`);
 
 	try {
 		const [URI, capacity, isExpired] = await Promise.all([
 			contract.functions.tokenURI(tokenId).then(normalizeTokenURI),
 			contract.functions.capacity(tokenId).then(normalizeCapacity),
-			contract.functions.isExpired(tokenId)
+			contract.functions.isExpired(tokenId),
 		]);
 
 		return {
@@ -585,31 +651,41 @@ async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
 		} as CapacityToken;
 	} catch (e) {
 		// Makes the stack trace a bit more clear as to what actually failed
-		throw new Error(`Failed to fetch details for capacity token ${tokenId}: ${e}`);
+		throw new Error(
+			`Failed to fetch details for capacity token ${tokenId}: ${e}`,
+		);
 	}
 }
 
 export async function queryCapacityCredits(signer: ethers.Wallet) {
 	if (config.network === "serrano" || config.network === "cayenne") {
-		throw new Error(`Payment delegation is not available on ${config.network}`);
+		throw new Error(
+			`Payment delegation is not available on ${config.network}`,
+		);
 	}
 
-	const contract = await getContractFromWorker(config.network, 'RateLimitNFT');
+	const contract = await getContractFromWorker(
+		config.network,
+		"RateLimitNFT",
+	);
 	const count = parseInt(await contract.functions.balanceOf(signer.address));
 
-	return Promise.all([...new Array(count)].map((_, i) => (
-		queryCapacityCredit(contract, i)
-	))) as Promise<CapacityToken[]>;
+	return Promise.all(
+		[...new Array(count)].map((_, i) => queryCapacityCredit(contract, i)),
+	) as Promise<CapacityToken[]>;
 }
 
 export async function addPaymentDelegationPayee({
-	wallet, payeeAddresses
+	wallet,
+	payeeAddresses,
 }: {
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
 }) {
 	if (config.network === "serrano" || config.network === "cayenne") {
-		throw new Error(`Payment delegation is not available on ${config.network}`);
+		throw new Error(
+			`Payment delegation is not available on ${config.network}`,
+		);
 	}
 
 	// TODO: It would be good to just implement the logic for this locally, and avoid
@@ -633,7 +709,10 @@ export async function addPaymentDelegationPayee({
 			throw new Error("Failed to mint capacity credits");
 		}
 
-		console.log('No capacity token found, minted a new one:', minted.capacityTokenId);
+		console.log(
+			"No capacity token found, minted a new one:",
+			minted.capacityTokenId,
+		);
 		tokenId = minted.capacityTokenId;
 	} else {
 		tokenId = capacityToken.tokenId;
@@ -657,7 +736,7 @@ export async function addPaymentDelegationPayee({
 	}
 
 	return result.capacityDelegationAuthSig;
-};
+}
 
 // export function packAuthData({
 //   credentialPublicKey,

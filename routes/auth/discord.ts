@@ -82,9 +82,9 @@ export async function discordOAuthVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("Unable to mint PKP for given Discord account", { err });
+		console.error("[Discord] Unable to mint PKP for given Discord account", { err });
 		return res.status(500).json({
-			error: "Unable to mint PKP for given Discord account",
+			error: "[Discord] Unable to mint PKP for given Discord account",
 		});
 	}
 }
