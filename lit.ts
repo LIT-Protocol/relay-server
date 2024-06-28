@@ -25,20 +25,20 @@ async function getContractFromWorker(
 	signer = signer ?? getSigner();
 
 	let contractsDataRes;
-  switch (network) {
-    case "manzano":
-      contractsDataRes = await fetch(MANZANO_CONTRACT_ADDRESSES);
-      break;
-    case "habanero":
-      contractsDataRes = await fetch(HABANERO_CONTRACT_ADDRESSES);
-      break;
-    case "datil-dev":
-      contractsDataRes = await fetch(DATIL_DEV_CONTRACT_ADDRESSES);
-      break;
-    default:
-      throw new Error(`Unsupported network: ${network}`);
-  }
-	
+	switch (network) {
+		case "manzano":
+			contractsDataRes = await fetch(MANZANO_CONTRACT_ADDRESSES);
+			break;
+		case "habanero":
+			contractsDataRes = await fetch(HABANERO_CONTRACT_ADDRESSES);
+			break;
+		case "datil-dev":
+			contractsDataRes = await fetch(DATIL_DEV_CONTRACT_ADDRESSES);
+			break;
+		default:
+			throw new Error(`Unsupported network: ${network}`);
+	}
+
 	const contractList = (await contractsDataRes.json()).data;
 
 	console.log(
@@ -313,9 +313,7 @@ export async function mintPKPV2({
 	const pkpNft = await getPkpNftContract();
 
 	// first get mint cost
-	const mintCost = await pkpNft.mintCost().catch((e: any) => {
-		console.error("❗️ [mintPKPV2] Error while getting mint cost", e);
-	});
+	const mintCost = await pkpNft.mintCost();
 
 	const tx = await pkpHelper.mintNextAndAddAuthMethods(
 		keyType,
