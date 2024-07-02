@@ -13,6 +13,18 @@ export interface OTPAuthVerifyRegistrationRequest {
 	accessToken: string;
 }
 
+export interface MintNextAndAddAuthMethodsV2Request {
+	keyType: string;
+	permittedAuthMethodTypes: string[];
+	permittedAuthMethodIds: string[];
+	permittedAuthMethodPubkeys: string[];
+	permittedAuthMethodScopes: string[][];
+	addPkpEthAddressAsPermittedAddress: boolean;
+	pkpEthAddressScopes: string[][];
+	sendPkpToItself: boolean;
+	burnPkp: boolean;
+}
+
 export interface MintNextAndAddAuthMethodsRequest {
 	keyType: string;
 	permittedAuthMethodTypes: string[];
@@ -129,6 +141,7 @@ export interface SessionSigSignedMessage {
 export interface Contract {
 	accessControlConditionsAddress: string;
 	pkpHelperAddress: string;
+	pkpHelperV2Address?: string;
 	pkpPermissionsAddress: string;
 	pkpNftAddress: string;
 }

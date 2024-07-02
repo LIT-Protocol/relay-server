@@ -1,13 +1,47 @@
 import { Request } from "express";
 import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
-import { getPKPsForAuthMethod, mintPKPV2 } from "../../lit";
+import { getPKPsForAuthMethod, mintPKPV2, mintPKPV3 } from "../../lit";
 import {
 	AuthMethodVerifyToFetchResponse,
 	FetchRequest,
 	MintNextAndAddAuthMethodsRequest,
 	MintNextAndAddAuthMethodsResponse,
+	MintNextAndAddAuthMethodsV2Request,
 } from "../../models";
+
+export async function mintNextAndAddAuthMethodsHandlerV2(
+	req: Request<
+		{},
+		MintNextAndAddAuthMethodsResponse,
+		MintNextAndAddAuthMethodsV2Request,
+		ParsedQs,
+		Record<string, any>
+	>,
+	res: Response<
+		MintNextAndAddAuthMethodsResponse,
+		Record<string, any>,
+		number
+	>,
+) {
+	// mint PKP for user
+	try {
+		const mintTx = await mintPKPV3(req.body);
+		console.info("Minted PKP", {
+			requestId: mintTx.hash,
+		});
+		return res.status(200).json({
+			requestId: mintTx.hash,
+		});
+	} catch (err) {
+		console.error("Unable to mint PKP", {
+			err,
+		});
+		return res.status(500).json({
+			error: `Unable to mint PKP`,
+		});
+	}
+}
 
 export async function mintNextAndAddAuthMethodsHandler(
 	req: Request<
