@@ -15,7 +15,7 @@ const HABANERO_CONTRACT_ADDRESSES =
 	"https://lit-general-worker.getlit.dev/habanero-contract-addresses";
 
 const DATIL_DEV_CONTRACT_ADDRESSES =
-	"https://lit-general-worker-staging.onrender.com/datil-dev/contracts";
+	"https://lit-general-worker.getlit.dev/datil-dev/contracts";
 
 async function getContractFromWorker(
 	network: "manzano" | "habanero" | "datil-dev",
