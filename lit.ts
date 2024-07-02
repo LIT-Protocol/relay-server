@@ -581,34 +581,37 @@ export async function mintCapacityCredits({
 	}
 
 	// set the expiration to midnight, 15 days from now
-	const timestamp = Date.now() / 1000 + 15 * 24 * 60 * 60;
-	const futureDate = new Date(timestamp * 1000);
+	const timestamp = Date.now() + 15 * 24 * 60 * 60 * 1000;
+	const futureDate = new Date(timestamp);
 	futureDate.setUTCHours(0, 0, 0, 0);
 
 	// Get the Unix timestamp in seconds
 	const expires = Math.floor(futureDate.getTime() / 1000);
+	console.log("expires is set to", expires);
 
 	const requestsPerKilosecond = 150;
 
-	let cost = parseEther("0.001");
-
+	let cost;
 	try {
 		cost = await contract.functions.calculateCost(
 			requestsPerKilosecond,
 			expires,
 		);
 	} catch (e) {
-		console.log(
-			"Unable to estimate gas cost for minting capacity credits, using fallback",
+		console.error(
+			"Unable to estimate gas cost for minting capacity credits",
+			e,
 		);
+		return;
 	}
 
 	const tx = await contract.functions.mint(expires, {
 		value: cost.toString(),
 	});
+	console.log("mint tx hash: ", tx.hash);
 	const res = await tx.wait();
 
-	const tokenIdFromEvent = res.events[0].topics[1];
+	const tokenIdFromEvent = res.events[0].topics[3];
 
 	return { tx, capacityTokenId: tokenIdFromEvent };
 }
@@ -633,8 +636,19 @@ function normalizeCapacity(capacity: any) {
 	};
 }
 
-async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
-	console.log(`Querying capacity credit for token ${tokenId}`);
+async function queryCapacityCredit(
+	contract: ethers.Contract,
+	owner: string,
+	tokenIndexForUser: number,
+) {
+	console.log(
+		`Querying capacity credit for owner ${owner} at index ${tokenIndexForUser}`,
+	);
+
+	const tokenId = (
+		await contract.functions.tokenOfOwnerByIndex(owner, tokenIndexForUser)
+	).toString();
+	console.log(`Actually querying tokenId ${tokenId}`);
 
 	try {
 		const [URI, capacity, isExpired] = await Promise.all([
@@ -647,7 +661,7 @@ async function queryCapacityCredit(contract: ethers.Contract, tokenId: number) {
 			tokenId,
 			URI,
 			capacity,
-			isExpired,
+			isExpired: isExpired[0],
 		} as CapacityToken;
 	} catch (e) {
 		// Makes the stack trace a bit more clear as to what actually failed
@@ -671,7 +685,9 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 	const count = parseInt(await contract.functions.balanceOf(signer.address));
 
 	return Promise.all(
-		[...new Array(count)].map((_, i) => queryCapacityCredit(contract, i)),
+		[...new Array(count)].map((_, i) =>
+			queryCapacityCredit(contract, signer.address, i),
+		),
 	) as Promise<CapacityToken[]>;
 }
 
@@ -688,15 +704,9 @@ export async function addPaymentDelegationPayee({
 		);
 	}
 
-	// TODO: It would be good to just implement the logic for this locally, and avoid
-	//		 having to pull in the LitNodeClientNodeJs package.
-	const client = new LitNodeClientNodeJs({
-		alertWhenUnauthorized: false,
-		litNetwork: config.network,
-	});
-
 	// get the first token that is not expired
 	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
+	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
 	const capacityToken = capacityTokens.find((token) => !token.isExpired);
 
 	let tokenId: number | null = null;
@@ -722,20 +732,20 @@ export async function addPaymentDelegationPayee({
 		throw new Error("Failed to get ID for capacity token");
 	}
 
-	const uses = process.env.LIT_DELEGATION_USES || "128";
+	// add payer in contract
+	const provider = getProvider();
+	const paymentDelegationContract = await getContractFromWorker(
+		config.network,
+		"PaymentDelegation",
+		wallet,
+	);
 
-	const result = await client.createCapacityDelegationAuthSig({
-		uses,
-		dAppOwnerWallet: wallet,
-		capacityTokenId: tokenId.toString(),
-		delegateeAddresses: payeeAddresses,
-	});
-
-	if (!result) {
-		throw new Error("Failed to add payee");
-	}
-
-	return result.capacityDelegationAuthSig;
+	const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+		payeeAddresses,
+	);
+	console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+	await tx.wait();
+	return tx;
 }
 
 // export function packAuthData({

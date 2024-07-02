@@ -754,20 +754,20 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@lit-protocol/access-control-conditions@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/access-control-conditions/-/access-control-conditions-6.0.1.tgz#5e873a38c90a8de56e1a7b76145ba4f519ee073e"
-  integrity sha512-oGiHy2+LIib4/hDnkGIwpsDzPq+trqw1hBDliuYQVxBFfCCLl3EHr4nIfSfH/IzTStR3ZnmSPSeABpMHp38ESQ==
+"@lit-protocol/access-control-conditions@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/access-control-conditions/-/access-control-conditions-6.1.0-datil-dev.alpha.1.tgz#8ba14ec6c99b3e8434c900d6c2961db628a1cfb2"
+  integrity sha512-WN3ihunse3i8Vr+oRcJVeWiGnhrOPG8SbQHJ8KnYpk5bG5h50DG/yrIrvOWiqCsdRsC+38EUJaBz3XIm7BNVyA==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@ethersproject/contracts" "5.7.0"
     "@ethersproject/providers" "5.7.2"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/logger" "6.0.1"
-    "@lit-protocol/misc" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
-    "@lit-protocol/uint8arrays" "6.0.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/logger" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/misc" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/uint8arrays" "6.1.0-datil-dev.alpha.1"
     ajv "^8.12.0"
     ethers "^5.7.1"
     jszip "^3.10.1"
@@ -784,21 +784,21 @@
   dependencies:
     ajv "^8.12.0"
 
-"@lit-protocol/auth-helpers@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/auth-helpers/-/auth-helpers-6.0.1.tgz#20b29d14b0d8abe3988fbe4de774a5b173fd6838"
-  integrity sha512-H1G3EV4uz5cDIHhc+jWqvFDtecwLYVUOL+WDrEy83wZhDSgG/llAcbITkvkfZtvS6GeLZnur31rwC7CiPdSfLQ==
+"@lit-protocol/auth-helpers@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/auth-helpers/-/auth-helpers-6.1.0-datil-dev.alpha.1.tgz#bc85049755f10c4947cd40f0c3bb58b4156d8509"
+  integrity sha512-18l8IyagZgLxFEbcuDg7Rdl3rVfehX4syDHMuz2PuAEYE2sWBQuMJeQG4I3qNV0CnFINiCAhRhVj3sZ221qy3w==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@ethersproject/contracts" "5.7.0"
     "@ethersproject/providers" "5.7.2"
-    "@lit-protocol/access-control-conditions" "6.0.1"
+    "@lit-protocol/access-control-conditions" "6.1.0-datil-dev.alpha.1"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/logger" "6.0.1"
-    "@lit-protocol/misc" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
-    "@lit-protocol/uint8arrays" "6.0.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/logger" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/misc" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/uint8arrays" "6.1.0-datil-dev.alpha.1"
     ajv "^8.12.0"
     ethers "^5.7.1"
     jszip "^3.10.1"
@@ -809,31 +809,31 @@
     uint8arrays "^4.0.3"
     util "0.12.5"
 
-"@lit-protocol/bls-sdk@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/bls-sdk/-/bls-sdk-6.0.1.tgz#bdd6ba5b397a6283f3730f6453072367da9f7445"
-  integrity sha512-rWnfMJM2iPlIrT7nLshiFYvpBx3ywepBcBpHFes4QG9EtQDam1MG+sJjPS7tmqboHVpbvwiAlOlpPUL3CEzmhA==
+"@lit-protocol/bls-sdk@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/bls-sdk/-/bls-sdk-6.1.0-datil-dev.alpha.1.tgz#93e8c45a69f20090cdc15b87f7c5001054d2ff75"
+  integrity sha512-VsyilZpqc4H9gRaQ3B7iZ6jum8kVgl8urHU+qh66v1YubtPE3thIJmtpxi7i15VJt1U9CSDQtcqdS73cKp9CBA==
   dependencies:
     tslib "1.14.1"
     util "0.12.5"
 
-"@lit-protocol/constants@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/constants/-/constants-6.0.1.tgz#dbe594671c95318c56bdea658a8f80f53d7fb247"
-  integrity sha512-/cZhS7zdrfoCkA5WJzCdvV1eI72UCaJne/G3c/kAQNVhPewVr7A1af0KtZsZCfonjuWTz5jjHq9/pe9oA1rb7g==
+"@lit-protocol/constants@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/constants/-/constants-6.1.0-datil-dev.alpha.1.tgz#028b477b71d08ad3d7aa4418ce416bf976a9240c"
+  integrity sha512-Cjgil82WrdYd3wGy0CvazooDyN9IfxwQHHOo3hJ5isIs0OeREHPz6vfmVZiRMMFJn9zLYFULQqN+alPkhysZjw==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/types" "6.0.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
     ethers "^5.7.1"
     jszip "^3.10.1"
     siwe "^2.0.5"
     tslib "1.14.1"
 
-"@lit-protocol/contracts-sdk@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/contracts-sdk/-/contracts-sdk-6.0.1.tgz#ca5aa29994e1c0fdc3291c94e09b2c31f9113859"
-  integrity sha512-YfcPgi7gSVQo5HpI6BsM0EhCY/OH3mME4KohhklGRWXJ0fq2/9YRjcSZOCe2uk5J6e/n2S7AhmOn5m4XG/rCzg==
+"@lit-protocol/contracts-sdk@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/contracts-sdk/-/contracts-sdk-6.1.0-datil-dev.alpha.1.tgz#ec0aa5c96644981d659c4792d83eb437138aa89f"
+  integrity sha512-0KSNB1tP/4ONM2Em+SecAZxArfrypTzq9UE18t6n13ZVGZ3UxljluE1VYub/XzwTuDevdCdrXR6o/yWNwES/2g==
   dependencies:
     "@cosmjs/amino" "0.30.1"
     "@cosmjs/crypto" "0.30.1"
@@ -843,10 +843,10 @@
     "@ethersproject/contracts" "5.7.0"
     "@ethersproject/providers" "5.7.2"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/logger" "6.0.1"
-    "@lit-protocol/misc" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/logger" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/misc" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
     ajv "^8.12.0"
     bitcoinjs-lib "^6.1.0"
     ethers "^5.7.1"
@@ -859,10 +859,10 @@
     uint8arrays "^4.0.3"
     util "0.12.5"
 
-"@lit-protocol/core@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/core/-/core-6.0.1.tgz#21efd7bb6299cbbacc7925a1fd62212fdb37cda6"
-  integrity sha512-+9cU5VWoIArJlaRWmS8zrTxHId2iJDxwGnP9asH6KxEEzHTE+oxV6LqHBxVICJviLv8JNqcNxVSOcgGmq97NpQ==
+"@lit-protocol/core@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/core/-/core-6.1.0-datil-dev.alpha.1.tgz#42a1625112c44a05b52f9b2d5ca6e71209eb5cdb"
+  integrity sha512-RdMCHxDg/EAN64qHhwyvoI7jaE3v4mU9CFPZO01z/b9Rvl2uAmHkG3P8oQ+y7Zv/e5C6MBTB5shhE0PG68pd+g==
   dependencies:
     "@cosmjs/amino" "0.30.1"
     "@cosmjs/crypto" "0.30.1"
@@ -871,19 +871,19 @@
     "@ethersproject/abstract-provider" "5.7.0"
     "@ethersproject/contracts" "5.7.0"
     "@ethersproject/providers" "5.7.2"
-    "@lit-protocol/access-control-conditions" "6.0.1"
+    "@lit-protocol/access-control-conditions" "6.1.0-datil-dev.alpha.1"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/bls-sdk" "6.0.1"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/contracts-sdk" "6.0.1"
-    "@lit-protocol/crypto" "6.0.1"
-    "@lit-protocol/ecdsa-sdk" "6.0.1"
-    "@lit-protocol/logger" "6.0.1"
-    "@lit-protocol/misc" "6.0.1"
-    "@lit-protocol/nacl" "6.0.1"
-    "@lit-protocol/sev-snp-utils-sdk" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
-    "@lit-protocol/uint8arrays" "6.0.1"
+    "@lit-protocol/bls-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/contracts-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/crypto" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/ecdsa-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/logger" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/misc" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/nacl" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/sev-snp-utils-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/uint8arrays" "6.1.0-datil-dev.alpha.1"
     ajv "^8.12.0"
     bitcoinjs-lib "^6.1.0"
     bs58 "^5.0.0"
@@ -901,24 +901,24 @@
     uint8arrays "^4.0.3"
     util "0.12.5"
 
-"@lit-protocol/crypto@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/crypto/-/crypto-6.0.1.tgz#6832f232c3760f427bc3080967151ff5cd4f850f"
-  integrity sha512-kvqbXlpiX1dnhvrtX5OtU7ZNiuxtWCqvrUgnljqv+oQktozxsDHSMtsh3el/lgaFiCERba3E08Lcw8llRMrncw==
+"@lit-protocol/crypto@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/crypto/-/crypto-6.1.0-datil-dev.alpha.1.tgz#6ff26ce1e79e7f61b4ce79abee407fe21b41d9db"
+  integrity sha512-pupZL0IiuaSW6AEnHaGtZa49LpALjo+jSHIxH5/HeyjB6AuJ+b8NkHQSZRF66BMKQdgD59yaXvtfryZ35lT4OA==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@ethersproject/contracts" "5.7.0"
     "@ethersproject/providers" "5.7.2"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/bls-sdk" "6.0.1"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/ecdsa-sdk" "6.0.1"
-    "@lit-protocol/logger" "6.0.1"
-    "@lit-protocol/misc" "6.0.1"
-    "@lit-protocol/nacl" "6.0.1"
-    "@lit-protocol/sev-snp-utils-sdk" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
-    "@lit-protocol/uint8arrays" "6.0.1"
+    "@lit-protocol/bls-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/ecdsa-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/logger" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/misc" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/nacl" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/sev-snp-utils-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/uint8arrays" "6.1.0-datil-dev.alpha.1"
     ajv "^8.12.0"
     cross-fetch "3.1.4"
     ethers "^5.7.1"
@@ -930,33 +930,33 @@
     uint8arrays "^4.0.3"
     util "0.12.5"
 
-"@lit-protocol/ecdsa-sdk@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/ecdsa-sdk/-/ecdsa-sdk-6.0.1.tgz#ec1ffc27a4fd45a6a6268de4fa610e726c72063d"
-  integrity sha512-/NRJ0snOu+XIR6WeD5WVzzfgPmTNTu2ZMbZR9D/Kdbb1ujjKRFVEAWopSaZS0zpSUX/9DAhS8atGKZLeJsY6xA==
+"@lit-protocol/ecdsa-sdk@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/ecdsa-sdk/-/ecdsa-sdk-6.1.0-datil-dev.alpha.1.tgz#ed9bb94a05f85447a5bb7d2da47fcdd95bfd6a5f"
+  integrity sha512-Crd1EbPY52TICgN/dAgksfB+ZSBLZDmHdQ+pLY0iBx2rAv/ANkRgPL/AyKVIlItmTV+qva9UlRK/25mcdZ8lxw==
   dependencies:
     tslib "1.14.1"
     util "0.12.5"
 
-"@lit-protocol/encryption@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/encryption/-/encryption-6.0.1.tgz#6099b67176cfd8b3230ee4d0322d874e398ff5cc"
-  integrity sha512-tmRkmUzsZoepyYd12zj5Ep/PIiqhigm+Eu5x7uFICdHlK9j2XjxgquELK93ooMP7BFP/iAWsViNe1VqOj1pvMQ==
+"@lit-protocol/encryption@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/encryption/-/encryption-6.1.0-datil-dev.alpha.1.tgz#60a564abd94ea5a8a99ac13c8496539cad377c0a"
+  integrity sha512-xMV9ZQpPb26NWkaFFHCzrveTVvU8v27Dy7za/RPYHlA7vGIywbipvPB2Ho3PwD5l3NC3YewTd4RynsIAq9ajtg==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@ethersproject/contracts" "5.7.0"
     "@ethersproject/providers" "5.7.2"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/bls-sdk" "6.0.1"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/crypto" "6.0.1"
-    "@lit-protocol/ecdsa-sdk" "6.0.1"
-    "@lit-protocol/logger" "6.0.1"
-    "@lit-protocol/misc" "6.0.1"
-    "@lit-protocol/nacl" "6.0.1"
-    "@lit-protocol/sev-snp-utils-sdk" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
-    "@lit-protocol/uint8arrays" "6.0.1"
+    "@lit-protocol/bls-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/crypto" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/ecdsa-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/logger" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/misc" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/nacl" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/sev-snp-utils-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/uint8arrays" "6.1.0-datil-dev.alpha.1"
     ajv "^8.12.0"
     cross-fetch "3.1.4"
     ethers "^5.7.1"
@@ -968,10 +968,10 @@
     uint8arrays "^4.0.3"
     util "0.12.5"
 
-"@lit-protocol/lit-node-client-nodejs@^6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/lit-node-client-nodejs/-/lit-node-client-nodejs-6.0.1.tgz#804cf20438085a4b3eda2d1bf3d2c8920f0e359d"
-  integrity sha512-aR7HRx0+wBITM06zBCaAb0ioWRmtQti+XsZssP2G7xb5UPObkL06dlMyL0Y0Q6FgfpUsd82IPple/fY0u5TOeg==
+"@lit-protocol/lit-node-client-nodejs@^6.1.0-datil-dev.alpha.0":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/lit-node-client-nodejs/-/lit-node-client-nodejs-6.1.0-datil-dev.alpha.1.tgz#40d8076304e6f65b636a76fb52de97d5f06d4411"
+  integrity sha512-TefJL1QeXD5f1lxs8PnVUU9uEdn8D+BMQu4UbkkktY3+ZKkut8oMNtKJW4BG+vP1bQjQKVw84yzLEty0lyVTwQ==
   dependencies:
     "@cosmjs/amino" "0.30.1"
     "@cosmjs/crypto" "0.30.1"
@@ -981,23 +981,23 @@
     "@ethersproject/contracts" "5.7.0"
     "@ethersproject/providers" "5.7.2"
     "@ethersproject/transactions" "5.7.0"
-    "@lit-protocol/access-control-conditions" "6.0.1"
+    "@lit-protocol/access-control-conditions" "6.1.0-datil-dev.alpha.1"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/auth-helpers" "6.0.1"
-    "@lit-protocol/bls-sdk" "6.0.1"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/contracts-sdk" "6.0.1"
-    "@lit-protocol/core" "6.0.1"
-    "@lit-protocol/crypto" "6.0.1"
-    "@lit-protocol/ecdsa-sdk" "6.0.1"
-    "@lit-protocol/encryption" "6.0.1"
-    "@lit-protocol/logger" "6.0.1"
-    "@lit-protocol/misc" "6.0.1"
-    "@lit-protocol/misc-browser" "6.0.1"
-    "@lit-protocol/nacl" "6.0.1"
-    "@lit-protocol/sev-snp-utils-sdk" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
-    "@lit-protocol/uint8arrays" "6.0.1"
+    "@lit-protocol/auth-helpers" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/bls-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/contracts-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/core" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/crypto" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/ecdsa-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/encryption" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/logger" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/misc" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/misc-browser" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/nacl" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/sev-snp-utils-sdk" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/uint8arrays" "6.1.0-datil-dev.alpha.1"
     ajv "^8.12.0"
     bitcoinjs-lib "^6.1.0"
     bs58 "^5.0.0"
@@ -1016,15 +1016,15 @@
     uint8arrays "^4.0.3"
     util "0.12.5"
 
-"@lit-protocol/logger@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/logger/-/logger-6.0.1.tgz#32d9f7c02eb794549b0f1f2065a28010fc0e5c80"
-  integrity sha512-ojV+ThHKVe74pQVYuMmHLM3bIElPFvtQKbt7GV3coT9cFpsUPLCmqRNYbxzoc+1nQJxNZSaA5cLdOLzpoipSUg==
+"@lit-protocol/logger@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/logger/-/logger-6.1.0-datil-dev.alpha.1.tgz#fe443dfbd166e21dc70448b2411e16c0f5ad7f02"
+  integrity sha512-VomIF2c4XMUB2P4/0Q1exS79mJ26GONYkAdtCFtcsst0c4attR6Cd/G4qR7QAaMlknvwcia+pNKTMN1eFVgRYA==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
     ethers "^5.7.1"
     jszip "^3.10.1"
     punycode "2.3.1"
@@ -1032,33 +1032,33 @@
     tslib "1.14.1"
     uint8arrays "^4.0.3"
 
-"@lit-protocol/misc-browser@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/misc-browser/-/misc-browser-6.0.1.tgz#791de21e717de95e06a10217515c56c563130a8c"
-  integrity sha512-GAfu/42qhCSvnKRIpJWYsw8fPvcXJrwttnRTkTjAkrgT3qWqj9L6nn4lYlNw1D9EqYMGnpYbr2Gz4ZS7NMZLNg==
+"@lit-protocol/misc-browser@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/misc-browser/-/misc-browser-6.1.0-datil-dev.alpha.1.tgz#6bd8e969b4be3ff4c8649c59fef089068fcd3666"
+  integrity sha512-2URYEyLoNV0zy4tjXJIO3mPboDhvHqKMCCRVAUjlztbJdfNwnmxrmOL7JvqLrcErfnLIUhiwJDU0JWNJon/ZEA==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
-    "@lit-protocol/uint8arrays" "6.0.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/uint8arrays" "6.1.0-datil-dev.alpha.1"
     ethers "^5.7.1"
     jszip "^3.10.1"
     siwe "^2.0.5"
     tslib "1.14.1"
 
-"@lit-protocol/misc@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/misc/-/misc-6.0.1.tgz#d9b594cee87f3bfcb69c2c2e3e926e3ccaa05515"
-  integrity sha512-49xwxPq4e5aw30P1v5DQEx0efSdhxiHc6+sCiJRrXR2I7lsJbE9IyGcdS0R3Dq5GmZ3QD2k7aiWG4vqEP2dicQ==
+"@lit-protocol/misc@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/misc/-/misc-6.1.0-datil-dev.alpha.1.tgz#4ded51aada432132900fd649e6d5b18928168aa2"
+  integrity sha512-veUMRnv4hcGuNwvHNCC+jSIPm43KFP+zCHUjFlVr1qTISY2fbl+ncIoIOoSZ9QvlJ0FRDX4hazIxxkdHrrLG3w==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@ethersproject/contracts" "5.7.0"
     "@ethersproject/providers" "5.7.2"
     "@lit-protocol/accs-schemas" "0.0.7"
-    "@lit-protocol/constants" "6.0.1"
-    "@lit-protocol/logger" "6.0.1"
-    "@lit-protocol/types" "6.0.1"
+    "@lit-protocol/constants" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/logger" "6.1.0-datil-dev.alpha.1"
+    "@lit-protocol/types" "6.1.0-datil-dev.alpha.1"
     ajv "^8.12.0"
     ethers "^5.7.1"
     jszip "^3.10.1"
@@ -1068,25 +1068,25 @@
     uint8arrays "^4.0.3"
     util "0.12.5"
 
-"@lit-protocol/nacl@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/nacl/-/nacl-6.0.1.tgz#28385c97909eb5fa253f8bee2a5f435da7c35d8c"
-  integrity sha512-pkkwW1JTBXmUYa3hEyHgyQGIJFaZCWd6/eB5RkkbccIY2c3QvOyghCfQE6JyLGP20llgsMFHvjwG8+qA6r8CMQ==
+"@lit-protocol/nacl@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/nacl/-/nacl-6.1.0-datil-dev.alpha.1.tgz#4d2ba5c0cd223af600ad6127752fe7030cb6095f"
+  integrity sha512-0iHeAp5ohOSizYj3Z+neSKOweT1+cnzCMEVT4tYC+VIw2Y9ia+irQiRuMX6ybnGnIiB/24hPikQ1suSuj/r6Pg==
   dependencies:
     tslib "1.14.1"
 
-"@lit-protocol/sev-snp-utils-sdk@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/sev-snp-utils-sdk/-/sev-snp-utils-sdk-6.0.1.tgz#fbc0290d67d58837005a8ebbbb338c1e8a6ddb4a"
-  integrity sha512-k54JVq0IkeEZ2b6cKEe61K64vTAuBM0WN/Mv5fbZVez1bM9uBU0HFON5gUfTeNVn57wIo4vWOOCCtyzpn8Bbdg==
+"@lit-protocol/sev-snp-utils-sdk@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/sev-snp-utils-sdk/-/sev-snp-utils-sdk-6.1.0-datil-dev.alpha.1.tgz#47334bf2082d521e7cc6ce4141544b5867fa6af0"
+  integrity sha512-mF0X+jZnpB9f4AubyBfPu5RqDnk72Hd12k2FeLAxOfGgAK/Ep32pnVAU2SYCBhUxFhDZQYpvQJnGi8xKBNW/9w==
   dependencies:
     cross-fetch "3.1.4"
     tslib "1.14.1"
 
-"@lit-protocol/types@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/types/-/types-6.0.1.tgz#10b88285a4de16f7605d4892c0a5724150bdcb4d"
-  integrity sha512-csTiuS3YUv95cC8npcwZ8Uu6DwR52+lDbvp/riJ23I+KXpH0w6YA41jEE1nnm9S8P3eJnOBFwTiq2DvrjEQ7Dw==
+"@lit-protocol/types@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/types/-/types-6.1.0-datil-dev.alpha.1.tgz#1015cece08ffa891445bba1e29529e445ffd1b79"
+  integrity sha512-6cfaklAyTMGo2GeQKzFkEt36zL4XdK0jJOjzto8sRW9if/ssv9/lrV3K8WqnoOYczTy65gxZv0LXsKC6UWQP9Q==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@lit-protocol/accs-schemas" "0.0.7"
@@ -1095,10 +1095,10 @@
     siwe "^2.0.5"
     tslib "1.14.1"
 
-"@lit-protocol/uint8arrays@6.0.1":
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/@lit-protocol/uint8arrays/-/uint8arrays-6.0.1.tgz#07ef6f47f29662c7d9d22d738208680273f95f67"
-  integrity sha512-1n+Rkk7tC4KZWsRj6Cd6lmxQqYUxeZ517xddZn7kKr5A8L0EgdDEkfKPQOHkuxe0SFEMoLihlI/SFyqFqcOjug==
+"@lit-protocol/uint8arrays@6.1.0-datil-dev.alpha.1":
+  version "6.1.0-datil-dev.alpha.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/uint8arrays/-/uint8arrays-6.1.0-datil-dev.alpha.1.tgz#94188a602bc35b79b3915b6db417b864915a0155"
+  integrity sha512-PMhd/aqsRzG0dpb1fT74Q+8eVB+gYgkup7ACJyD2BkR8KiaEB0Q3Rvwi/v713Z/54itO4BRji46qg+WUFb/pEQ==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@lit-protocol/accs-schemas" "0.0.7"
