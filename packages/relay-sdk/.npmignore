@@ -1,0 +1,5 @@
+# Ignore all files and directories starting with a dot
+.*
+
+# Build related stuff
+node_modules/
