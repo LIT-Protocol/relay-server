@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@lit-protocol/lit-node-client-nodejs": "^6.1.1-datil-test.1",
+    "@lit-protocol/lit-node-client-nodejs": "^6.1.1-datil-test.2",
     "@simplewebauthn/server": "6.2.1",
     "base64url": "^3.0.1",
     "cbor": "^8.1.0",
