@@ -17,8 +17,11 @@ const HABANERO_CONTRACT_ADDRESSES =
 const DATIL_DEV_CONTRACT_ADDRESSES =
 	"https://lit-general-worker.getlit.dev/datil-dev/contracts";
 
+const DATIL_TEST_CONTRACT_ADDRESSES =
+	"https://staging.apis.getlit.dev/datil-test/contracts";
+
 async function getContractFromWorker(
-	network: "manzano" | "habanero" | "datil-dev",
+	network: "manzano" | "habanero" | "datil-dev" | "datil-test",
 	contractName: string,
 	signer?: ethers.Wallet,
 ) {
@@ -34,6 +37,9 @@ async function getContractFromWorker(
 			break;
 		case "datil-dev":
 			contractsDataRes = await fetch(DATIL_DEV_CONTRACT_ADDRESSES);
+			break;
+		case "datil-test":
+			contractsDataRes = await fetch(DATIL_TEST_CONTRACT_ADDRESSES);
 			break;
 		default:
 			throw new Error(`Unsupported network: ${network}`);
@@ -134,6 +140,8 @@ function getPkpHelperContractAbiPath() {
 			return "./contracts/cayenne/PKPHelper.json";
 		case "datil-dev":
 			return "./contracts/datil-dev/PKPHelper.json";
+		case "datil-test":
+			return "./contracts/datil-dev/PKPHelper.json";
 	}
 }
 
@@ -147,6 +155,8 @@ function getPkpNftContractAbiPath() {
 		case "cayenne":
 			return "./contracts/cayenne/PKPNFT.json";
 		case "datil-dev":
+			return "./contracts/datil-dev/PKPNFT.json";
+		case "datil-test":
 			return "./contracts/datil-dev/PKPNFT.json";
 	}
 }
@@ -168,11 +178,9 @@ async function getPkpHelperContract() {
 		case "habanero":
 			return getContractFromWorker("habanero", "PKPHelper");
 		case "datil-dev":
-			// return getContract(
-			// 	getPkpHelperContractAbiPath()!,
-			// 	config?.datilDevContracts?.pkpHelperAddress as string,
-			// );
 			return getContractFromWorker("datil-dev", "PKPHelper");
+		case "datil-test":
+			return getContractFromWorker("datil-test", "PKPHelper");
 	}
 }
 
@@ -193,11 +201,9 @@ async function getPermissionsContract() {
 		case "habanero":
 			return getContractFromWorker("habanero", "PKPPermissions");
 		case "datil-dev":
-			// return getContract(
-			// 	"./contracts/datil-dev/PKPPermissions.json",
-			// 	config?.datilDevContracts?.pkpPermissionsAddress as string,
-			// );
 			return getContractFromWorker("datil-dev", "PKPPermissions");
+		case "datil-test":
+			return getContractFromWorker("datil-test", "PKPPermissions");
 	}
 }
 
@@ -231,11 +237,9 @@ async function getPkpNftContract() {
 		case "habanero":
 			return await getContractFromWorker("habanero", "PKPNFT");
 		case "datil-dev":
-			// return getContract(
-			// 	getPkpNftContractAbiPath()!,
-			// 	config?.datilDevContracts?.pkpNftAddress as string,
-			// );
 			return getContractFromWorker("datil-dev", "PKPNFT");
+		case "datil-test":
+			return getContractFromWorker("datil-test", "PKPNFT");
 	}
 }
 

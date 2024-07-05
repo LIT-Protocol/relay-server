@@ -142,7 +142,7 @@ export interface Config {
 	cayenneContracts?: Contract;
 	datilDevContracts?: Contract;
 	useSoloNet: boolean;
-	network: "serrano" | "cayenne" | "manzano" | "habanero" | "datil-dev";
+	network: "serrano" | "cayenne" | "manzano" | "habanero" | "datil-dev" | 'datil-test';
 }
 
 export enum CapabilityProtocolPrefix {
