@@ -129,6 +129,15 @@ function getAccessControlConditionsContract() {
 	}
 }
 
+function getPkpHelperV2ContractAbiPath() {
+	switch (config.network) {
+		case "serrano":
+			return "./contracts/serrano/PKPHelperV2.json";
+		case "cayenne":
+			return "./contracts/cayenne/PKPHelperV2.json";
+	}
+}
+
 function getPkpHelperContractAbiPath() {
 	if (config.useSoloNet) {
 		return "./contracts/serrano/SoloNetPKPHelper.json";
@@ -159,6 +168,17 @@ function getPkpNftContractAbiPath() {
 		case "datil-test":
 			return "./contracts/datil-dev/PKPNFT.json";
 	}
+}
+
+async function getPkpHelperV2Contract() {
+	switch (config.network) {
+		case "manzano":
+			return getContractFromWorker('manzano', 'PKPHelperV2');
+		case "habanero":
+			return getContractFromWorker('habanero', 'PKPHelperV2');
+	}
+
+	throw new Error(`PKPHelperV2 contract not available for network ${config.network}`);
 }
 
 async function getPkpHelperContract() {
@@ -278,6 +298,61 @@ export async function storeConditionWithSigner(
 		storeConditionRequest.chainId,
 		storeConditionRequest.permanent,
 		utils.getAddress(storeConditionRequest.creatorAddress),
+	);
+	console.log("tx", tx);
+	return tx;
+}
+
+export async function mintPKPV3({
+	keyType,
+	permittedAuthMethodTypes,
+	permittedAuthMethodIds,
+	permittedAuthMethodPubkeys,
+	permittedAuthMethodScopes,
+	addPkpEthAddressAsPermittedAddress,
+	pkpEthAddressScopes,
+	sendPkpToItself,
+	burnPkp,
+}: {
+	keyType: string;
+	permittedAuthMethodTypes: string[];
+	permittedAuthMethodIds: string[];
+	permittedAuthMethodPubkeys: string[];
+	permittedAuthMethodScopes: string[][];
+	addPkpEthAddressAsPermittedAddress: boolean;
+	pkpEthAddressScopes: string[][];
+	sendPkpToItself: boolean;
+	burnPkp: boolean;
+}): Promise<ethers.Transaction> {
+	console.log(
+		"In mintPKPV3",
+		keyType,
+		permittedAuthMethodTypes,
+		permittedAuthMethodIds,
+		permittedAuthMethodPubkeys,
+		permittedAuthMethodScopes,
+		addPkpEthAddressAsPermittedAddress,
+		sendPkpToItself,
+	);
+
+	console.log('config.network:', config.network);
+
+	const pkpHelper = await getPkpHelperV2Contract();
+	const pkpNft = await getPkpNftContract();
+
+	// first get mint cost
+	const mintCost = await pkpNft.mintCost();
+	const tx = await pkpHelper.mintNextAndAddAuthMethods(
+		keyType,
+		permittedAuthMethodTypes,
+		permittedAuthMethodIds,
+		permittedAuthMethodPubkeys,
+		permittedAuthMethodScopes,
+		addPkpEthAddressAsPermittedAddress,
+		pkpEthAddressScopes,
+		sendPkpToItself,
+		burnPkp,
+		{ value: mintCost },
 	);
 	console.log("tx", tx);
 	return tx;
