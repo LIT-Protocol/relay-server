@@ -6,7 +6,7 @@ _This repo was initially made via the instructions from Simple WebAuthn (https:/
 
 Relay Server is a server that is centrally run by the Lit Protocol team to facilitate and subsidize some interactions with the Lit Protocol smart contracts.
 
-The Relay Server hosted by the Lit Protocol team currently only interacts with the smart contracts on the Polygon Mumbai network.
+The Relay Server hosted by the Lit Protocol team currently only interacts with the smart contracts on Lit's [Chronicle Vesuvius](https://developer.litprotocol.com/connecting-to-a-lit-network/lit-blockchains/chronicle-vesuvius) chain.
 
 **If you are to use the contract addresses that are hardcoded into this repo, minting a PKP will work but not storing an encryption condition, as our private key is the only authorized signer to store a condition on behalf of an address.**
 
