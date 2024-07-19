@@ -8,20 +8,17 @@ import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
 import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { CapacityToken } from "lit";
+import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
+import {
+	manzano,
+	datilDev,
+	datilTest,
+	habanero,
+	datil,
+} from "@lit-protocol/contracts";
 
-const MANZANO_CONTRACT_ADDRESSES =
-	"https://lit-general-worker.getlit.dev/manzano-contract-addresses";
-const HABANERO_CONTRACT_ADDRESSES =
-	"https://lit-general-worker.getlit.dev/habanero-contract-addresses";
-
-const DATIL_DEV_CONTRACT_ADDRESSES =
-	"https://lit-general-worker.getlit.dev/datil-dev/contracts";
-
-const DATIL_TEST_CONTRACT_ADDRESSES =
-	"https://staging.apis.getlit.dev/datil-test/contracts";
-
-async function getContractFromWorker(
-	network: "manzano" | "habanero" | "datil-dev" | "datil-test",
+function getContractFromWorker(
+	network: LIT_NETWORK_VALUES,
 	contractName: string,
 	signer?: ethers.Wallet,
 ) {
@@ -30,22 +27,25 @@ async function getContractFromWorker(
 	let contractsDataRes;
 	switch (network) {
 		case "manzano":
-			contractsDataRes = await fetch(MANZANO_CONTRACT_ADDRESSES);
+			contractsDataRes = manzano;
 			break;
 		case "habanero":
-			contractsDataRes = await fetch(HABANERO_CONTRACT_ADDRESSES);
+			contractsDataRes = habanero;
 			break;
 		case "datil-dev":
-			contractsDataRes = await fetch(DATIL_DEV_CONTRACT_ADDRESSES);
+			contractsDataRes = datilDev;
 			break;
 		case "datil-test":
-			contractsDataRes = await fetch(DATIL_TEST_CONTRACT_ADDRESSES);
+			contractsDataRes = datilTest;
+			break;
+		case "datil":
+			contractsDataRes = datil;
 			break;
 		default:
 			throw new Error(`Unsupported network: ${network}`);
 	}
 
-	const contractList = (await contractsDataRes.json()).data;
+	const contractList = contractsDataRes.data;
 
 	console.log(
 		`Attempting to get contract "${contractName} from "${network}"`,
@@ -133,15 +133,12 @@ function getPkpHelperContractAbiPath() {
 	if (config.useSoloNet) {
 		return "./contracts/serrano/SoloNetPKPHelper.json";
 	}
+
 	switch (config.network) {
 		case "serrano":
 			return "./contracts/serrano/PKPHelper.json";
 		case "cayenne":
 			return "./contracts/cayenne/PKPHelper.json";
-		case "datil-dev":
-			return "./contracts/datil-dev/PKPHelper.json";
-		case "datil-test":
-			return "./contracts/datil-dev/PKPHelper.json";
 	}
 }
 
@@ -154,57 +151,73 @@ function getPkpNftContractAbiPath() {
 			return "./contracts/serrano/PKPNFT.json";
 		case "cayenne":
 			return "./contracts/cayenne/PKPNFT.json";
-		case "datil-dev":
-			return "./contracts/datil-dev/PKPNFT.json";
-		case "datil-test":
-			return "./contracts/datil-dev/PKPNFT.json";
 	}
 }
 
 async function getPkpHelperContract() {
+	let contract: ethers.Contract | undefined;
+
 	switch (config.network) {
 		case "serrano":
-			return getContract(
+			contract = getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.serranoContract?.pkpHelperAddress as string,
 			);
 		case "cayenne":
-			return getContract(
+			contract = getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.cayenneContracts?.pkpHelperAddress as string,
 			);
 		case "manzano":
-			return getContractFromWorker("manzano", "PKPHelper");
+			contract = getContractFromWorker("manzano", "PKPHelper");
 		case "habanero":
-			return getContractFromWorker("habanero", "PKPHelper");
+			contract = getContractFromWorker("habanero", "PKPHelper");
 		case "datil-dev":
-			return getContractFromWorker("datil-dev", "PKPHelper");
+			contract = getContractFromWorker("datil-dev", "PKPHelper");
 		case "datil-test":
-			return getContractFromWorker("datil-test", "PKPHelper");
+			contract = getContractFromWorker("datil-test", "PKPHelper");
+		case "datil":
+			contract = getContractFromWorker("datil", "PKPHelper");
 	}
+
+	if (!contract) {
+		throw new Error("PKP Helper contract not available");
+	}
+
+	return contract;
 }
 
 async function getPermissionsContract() {
+	let contract: ethers.Contract | undefined;
+
 	switch (config.network) {
 		case "serrano":
-			return getContract(
+			contract = getContract(
 				"./contracts/serrano/PKPPermissions.json",
 				config?.serranoContract?.pkpPermissionsAddress as string,
 			);
 		case "cayenne":
-			return getContract(
+			contract = getContract(
 				"./contracts/cayenne/PKPPermissions.json",
 				config?.cayenneContracts?.pkpPermissionsAddress as string,
 			);
 		case "manzano":
-			return getContractFromWorker("manzano", "PKPPermissions");
+			contract = getContractFromWorker("manzano", "PKPPermissions");
 		case "habanero":
-			return getContractFromWorker("habanero", "PKPPermissions");
+			contract = getContractFromWorker("habanero", "PKPPermissions");
 		case "datil-dev":
-			return getContractFromWorker("datil-dev", "PKPPermissions");
+			contract = getContractFromWorker("datil-dev", "PKPPermissions");
 		case "datil-test":
-			return getContractFromWorker("datil-test", "PKPPermissions");
+			contract = getContractFromWorker("datil-test", "PKPPermissions");
+		case "datil":
+			contract = getContractFromWorker("datil", "PKPPermissions");
 	}
+
+	if (!contract) {
+		throw new Error("PKPPermissions contract not available");
+	}
+
+	return contract;
 }
 
 async function getPaymentDelegationContract() {
@@ -221,26 +234,36 @@ async function getPaymentDelegationContract() {
 }
 
 async function getPkpNftContract() {
+	let contract: ethers.Contract | undefined;
+
 	switch (config.network) {
 		case "serrano":
-			return getContract(
+			contract = getContract(
 				getPkpNftContractAbiPath()!,
 				config?.serranoContract?.pkpNftAddress as string,
 			);
 		case "cayenne":
-			return getContract(
+			contract = getContract(
 				getPkpNftContractAbiPath()!,
 				config?.cayenneContracts?.pkpNftAddress as string,
 			);
 		case "manzano":
-			return await getContractFromWorker("manzano", "PKPNFT");
+			contract = getContractFromWorker("manzano", "PKPNFT");
 		case "habanero":
-			return await getContractFromWorker("habanero", "PKPNFT");
+			contract = getContractFromWorker("habanero", "PKPNFT");
 		case "datil-dev":
-			return getContractFromWorker("datil-dev", "PKPNFT");
+			contract = getContractFromWorker("datil-dev", "PKPNFT");
 		case "datil-test":
-			return getContractFromWorker("datil-test", "PKPNFT");
+			contract = getContractFromWorker("datil-test", "PKPNFT");
+		case "datil":
+			contract = getContractFromWorker("datil", "PKPNFT");
 	}
+
+	if (!contract) {
+		throw new Error("PKP NFT contract not available");
+	}
+
+	return contract;
 }
 
 function prependHexPrefixIfNeeded(hexStr: string) {
@@ -252,11 +275,13 @@ function prependHexPrefixIfNeeded(hexStr: string) {
 
 export async function getPkpEthAddress(tokenId: string) {
 	const pkpNft = await getPkpNftContract();
+
 	return pkpNft.getEthAddress(tokenId)!;
 }
 
 export async function getPkpPublicKey(tokenId: string) {
 	const pkpNft = await getPkpNftContract();
+
 	return pkpNft.getPubkey(tokenId);
 }
 
@@ -367,6 +392,7 @@ export async function mintPKP({
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
+
 	const sequencer = Sequencer.Instance;
 
 	Sequencer.Wallet = getSigner();

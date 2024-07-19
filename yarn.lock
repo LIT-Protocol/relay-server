@@ -830,6 +830,19 @@
     siwe "^2.0.5"
     tslib "1.14.1"
 
+"@lit-protocol/constants@^6.2.1":
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/constants/-/constants-6.2.1.tgz#21146f35ecc051671610cc6863aa9cef82c0b38a"
+  integrity sha512-qLmfDb6elNUlfnol/RZfCfeAzEZFDHUgu3xj8wVWqKe9OYl3KxpWzTJx2+wmXxsgABfoHspRYeIjmmCIkhtLAA==
+  dependencies:
+    "@ethersproject/abstract-provider" "5.7.0"
+    "@lit-protocol/accs-schemas" "0.0.7"
+    "@lit-protocol/types" "6.2.1"
+    ethers "^5.7.1"
+    jszip "^3.10.1"
+    siwe "^2.0.5"
+    tslib "1.14.1"
+
 "@lit-protocol/contracts-sdk@6.2.0":
   version "6.2.0"
   resolved "https://registry.yarnpkg.com/@lit-protocol/contracts-sdk/-/contracts-sdk-6.2.0.tgz#2ffdfc25488d64fa5ad3e85b8f20e1b9fe076ee3"
@@ -858,6 +871,11 @@
     tslib "1.14.1"
     uint8arrays "^4.0.3"
     util "0.12.5"
+
+"@lit-protocol/contracts@^0.0.25":
+  version "0.0.25"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/contracts/-/contracts-0.0.25.tgz#b8f9b2f96b74a3b63096db8d4c1e609b6c12ada6"
+  integrity sha512-gvvWeRBEC2PIJA4ByuDzW0gqsWb8VR4bUbPcMeQWsBpE8f3bKXTwrzGlp3MKkBZbkeLf2uG3n9axJyCbCWz/ww==
 
 "@lit-protocol/core@6.2.0":
   version "6.2.0"
@@ -1087,6 +1105,18 @@
   version "6.2.0"
   resolved "https://registry.yarnpkg.com/@lit-protocol/types/-/types-6.2.0.tgz#efce4a55d7ad1faff68957c135ba6867f755f840"
   integrity sha512-CU6KBlYEpb1algGk6W924v7+mMshJEXMo/hFElo/ctGooCwXPpsQmFxr/eomQiYuHrs8qw5L7J+ADApe4SW8Mg==
+  dependencies:
+    "@ethersproject/abstract-provider" "5.7.0"
+    "@lit-protocol/accs-schemas" "0.0.7"
+    ethers "^5.7.1"
+    jszip "^3.10.1"
+    siwe "^2.0.5"
+    tslib "1.14.1"
+
+"@lit-protocol/types@6.2.1":
+  version "6.2.1"
+  resolved "https://registry.yarnpkg.com/@lit-protocol/types/-/types-6.2.1.tgz#dbc7fc61b6fc56275daf678a77ac1edb770dd809"
+  integrity sha512-l3RbQlVntCGZjvnWKC9ZJ4+560hfJK8PtIUbWGoE/FSv7iO0lU099ISDZkZzF9qktKvbNnpuWsUHjwjXN4b7Gw==
   dependencies:
     "@ethersproject/abstract-provider" "5.7.0"
     "@lit-protocol/accs-schemas" "0.0.7"

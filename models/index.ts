@@ -1,3 +1,4 @@
+import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
 import type { RegistrationCredentialJSON } from "@simplewebauthn/typescript-types";
 import { ethers } from "ethers";
 
@@ -142,7 +143,7 @@ export interface Config {
 	cayenneContracts?: Contract;
 	datilDevContracts?: Contract;
 	useSoloNet: boolean;
-	network: "serrano" | "cayenne" | "manzano" | "habanero" | "datil-dev" | 'datil-test';
+	network: LIT_NETWORK_VALUES;
 }
 
 export enum CapabilityProtocolPrefix {
