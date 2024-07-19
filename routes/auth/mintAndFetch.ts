@@ -37,7 +37,9 @@ export async function mintNextAndAddAuthMethodsHandler(
 			err,
 		});
 		return res.status(500).json({
-			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP`,
+			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP ${JSON.stringify(
+				err,
+			)}`,
 		});
 	}
 }

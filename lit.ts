@@ -6,16 +6,26 @@ import redisClient from "./lib/redisClient";
 import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
-import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { CapacityToken } from "lit";
 import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
-import {
-	manzano,
-	datilDev,
-	datilTest,
-	habanero,
-	datil,
-} from "@lit-protocol/contracts";
+// import {
+// 	manzano,
+// 	datilDev,
+// 	datilTest,
+// 	habanero,
+// 	datil,
+// } from "@lit-protocol/contracts";
+
+// @ts-ignore
+import datil from "@lit-protocol/contracts/prod/datil.json";
+// @ts-ignore
+import datilDev from "@lit-protocol/contracts/prod/datil-dev.json";
+// @ts-ignore
+import datilTest from "@lit-protocol/contracts/prod/datil-test.json";
+// @ts-ignore
+import habanero from "@lit-protocol/contracts/prod/habanero.json";
+// @ts-ignore
+import manzano from "@lit-protocol/contracts/prod/manzano.json";
 
 function getContractFromWorker(
 	network: LIT_NETWORK_VALUES,
@@ -45,7 +55,7 @@ function getContractFromWorker(
 			throw new Error(`Unsupported network: ${network}`);
 	}
 
-	const contractList = contractsDataRes.data;
+	const contractList = contractsDataRes.data as any;
 
 	console.log(
 		`Attempting to get contract "${contractName} from "${network}"`,
