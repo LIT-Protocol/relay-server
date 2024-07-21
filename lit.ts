@@ -8,6 +8,14 @@ import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
 import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { CapacityToken } from "lit";
+import { VersionStrategy } from "./routes/VersionStrategy";
+import { ThirdWebLib } from "./lib/thirdweb/ThirdWebLib";
+import {MintPKPV2} from "./types/lit";
+
+import { backendWallets } from "./utils/thirdweb/constants";
+import { RoundRobin } from "./utils/thirdweb/roundRobin";
+
+const rr = new RoundRobin(backendWallets);
 
 const MANZANO_CONTRACT_ADDRESSES =
 	"https://lit-general-worker.getlit.dev/manzano-contract-addresses";
@@ -291,6 +299,7 @@ export async function mintPKPV2({
 	permittedAuthMethodScopes,
 	addPkpEthAddressAsPermittedAddress,
 	sendPkpToItself,
+	versionStrategy,
 }: {
 	keyType: string;
 	permittedAuthMethodTypes: string[];
@@ -299,7 +308,8 @@ export async function mintPKPV2({
 	permittedAuthMethodScopes: string[][];
 	addPkpEthAddressAsPermittedAddress: boolean;
 	sendPkpToItself: boolean;
-}): Promise<ethers.Transaction> {
+	versionStrategy?: VersionStrategy,
+}): Promise<MintPKPV2> {
 	console.log(
 		"In mintPKPV2",
 		keyType,
@@ -313,24 +323,91 @@ export async function mintPKPV2({
 
 	console.log("config.network:", config.network);
 
+	// -- contracts to be used
 	const pkpHelper = await getPkpHelperContract();
 	const pkpNft = await getPkpNftContract();
+	
+	// -- contract functions to be called
+	const pkpNftFunctions = {
+		mintCost: 'mintCost',
+	}
 
-	// first get mint cost
-	const mintCost = await pkpNft.mintCost();
+	const pkpHelperFunctions = {
+		mintNextAndAddAuthMethods: 'mintNextAndAddAuthMethods',
+	}
 
-	const tx = await pkpHelper.mintNextAndAddAuthMethods(
-		keyType,
-		permittedAuthMethodTypes,
-		permittedAuthMethodIds,
-		permittedAuthMethodPubkeys,
-		permittedAuthMethodScopes,
-		addPkpEthAddressAsPermittedAddress,
-		sendPkpToItself,
-		{ value: mintCost },
-	);
-	console.log("tx", tx);
-	return tx;
+	// version strategy is required
+	if(!versionStrategy){
+		throw new Error("versionStrategy is required");
+	}
+
+	// must contain the value in the VersionStrategy enum
+	if(!Object.values(VersionStrategy).includes(versionStrategy)){
+		throw new Error(`Invalid version strategy. Must be one of: ${Object.values(VersionStrategy).join(", ")}`);
+	}
+
+	if(versionStrategy === VersionStrategy.DEFAULT){
+			// first get mint cost
+			const mintCost = await pkpNft[pkpNftFunctions.mintCost]();
+			
+			const tx = await pkpHelper[pkpHelperFunctions.mintNextAndAddAuthMethods](
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
+				{ value: mintCost },
+			);
+
+			console.log("PRINT THIS OUT TO SEE THE TX OBJECT");
+			console.log(
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
+				{ value: mintCost }
+			);
+			console.log("tx", tx);
+			return tx;
+	}
+
+	if(versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB){
+		const address = await rr.next();
+		const mintCost = await ThirdWebLib.Contract.read({
+			contractAddress: pkpNft.address,
+			functionName: pkpNftFunctions.mintCost,
+		});
+
+		const res = await ThirdWebLib.Contract.write({
+			contractAddress: pkpHelper.address,
+			functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
+			args: [
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
+			],
+			txOverrides: {
+    			value: mintCost
+  			},
+			// this we have to dynamic using round robin
+			backendWalletAddress: address,
+		});
+
+		console.log("res:", res);
+
+		return res.result;
+	}
+
+	throw new Error("Invalid version strategy");
 }
 
 export async function mintPKP({

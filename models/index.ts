@@ -14,6 +14,7 @@ export interface OTPAuthVerifyRegistrationRequest {
 }
 
 export interface MintNextAndAddAuthMethodsRequest {
+	uuid: string;
 	keyType: string;
 	permittedAuthMethodTypes: string[];
 	permittedAuthMethodIds: string[];
@@ -45,6 +46,7 @@ export interface FetchRequest {
 export interface AuthMethodVerifyRegistrationResponse {
 	requestId?: string;
 	error?: string;
+	queueId?:string;
 }
 
 export interface AuthMethodVerifyToFetchResponse {

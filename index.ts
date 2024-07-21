@@ -12,6 +12,7 @@ import https from "https";
 import base64url from "base64url";
 import dotenv from "dotenv";
 import express from "express";
+import { Server as SocketIOServer } from 'socket.io';
 
 dotenv.config();
 
@@ -68,8 +69,11 @@ import {
 import { mintClaimedKeyId } from "./routes/auth/claim";
 import { registerPayerHandler } from "./routes/delegate/register";
 import { addPayeeHandler } from "./routes/delegate/user";
+import redisClient from "./lib/redisClient";
+import { thirdwebWebHookHandler } from "./routes/webhook/thirdweb";
 
 const app = express();
+let server = http.createServer(app);
 
 const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost" } = process.env;
 
@@ -77,7 +81,47 @@ app.use(express.static("./public/"));
 app.use(express.json());
 app.use(cors());
 
+export const io = new SocketIOServer(server, {
+	cors: {
+	  origin: "*", // Allow all origins, you can restrict this to your client's URL
+	  methods: ["GET", "POST"]
+	}
+  });
+io.on('connection', (socket) => {
+    console.log('New client connected');
+
+    // Store user identifier with the socket ID in Redis
+    socket.on('register', async (userId) => {
+		try {
+			await redisClient.hSet("userSocketMapping", userId, socket.id);
+			console.log(`✅ User ${userId} connected with socket ID ${socket.id}`);
+		}catch(err){
+			console.error('❌ Error storing user ID in Redis:', err);
+		}
+    });
+
+	socket.on('disconnect', async () => {
+        try {
+            const keys = await redisClient.hKeys('userSocketMapping');
+            for (const key of keys) {
+                const socketId = await redisClient.hGet("userSocketMapping", key);
+                if (socketId === socket.id) {
+                    await redisClient.hDel("userSocketMapping", key);
+                    console.log(`🔴 User ${key} disconnected`);
+                    break;
+                }
+            }
+        } catch (err) {
+            console.error('❌ Error handling disconnection:', err);
+        }
+    });
+});
+
 app.use(limiter);
+
+// --- thirdweb webhook
+app.post("/webhook", thirdwebWebHookHandler);
+
 app.use(apiKeyGateAndTracking);
 
 /**
@@ -216,6 +260,9 @@ app.post("/store-condition", storeConditionHandler);
 // --- Mint PKP for authorized account
 app.post("/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
 
+// -- (V2) Mint PKP for authorized account (using ThirdWeb)
+app.post("/api/v2/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
+
 // --- Fetch PKPs tied to authorized account
 app.post("/fetch-pkps-by-auth-method", fetchPKPsHandler);
 
@@ -225,6 +272,8 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 // -- Payment Delegation
 app.post("/register-payer", registerPayerHandler);
 app.post("/add-users", addPayeeHandler);
+
+
 
 // *** Deprecated ***
 
@@ -252,12 +301,11 @@ app.get(
 );
 app.post("/auth/claim", mintClaimedKeyId);
 
-
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
 	const port = 443;
 
-	https
+	server = https
 		.createServer(
 			{
 				/**
@@ -267,15 +315,15 @@ if (ENABLE_HTTPS) {
 				cert: fs.readFileSync(`./${rpID}.crt`),
 			},
 			app,
-		)
-		.listen(port, host, () => {
-			console.log(`🚀 1: Server ready at ${host}:${port}`);
-		});
+		);
+	server.listen(port, host, () => {
+		console.log(`🚀 1: Server ready at ${host}:${port}`);
+	});
 } else {
 	const host = "127.0.0.1";
 	const port = config.port;
-
-	http.createServer(app).listen(port, () => {
+	
+	server.listen(port, () => {
 		console.log(`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} |`);
 	});
 }

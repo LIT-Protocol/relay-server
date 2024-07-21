@@ -1,3 +1,5 @@
+import { ethers } from "ethers";
+
 export type CapacityToken = {
     URI: { description: string; image_data: string; name: string };
     capacity: {
@@ -7,3 +9,8 @@ export type CapacityToken = {
     isExpired: boolean;
     tokenId: number;
 };
+
+
+export interface MintPKPV2 extends ethers.Transaction {
+    queueId: string;
+}
