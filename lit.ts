@@ -10,7 +10,7 @@ import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { CapacityToken } from "lit";
 import { VersionStrategy } from "./routes/VersionStrategy";
 import { ThirdWebLib } from "./lib/thirdweb/ThirdWebLib";
-import {MintPKPV2} from "./types/lit";
+import { MintPKPV2 } from "./types/lit";
 
 import { backendWallets } from "./utils/thirdweb/constants";
 import { RoundRobin } from "./utils/thirdweb/roundRobin";
@@ -326,7 +326,7 @@ export async function mintPKPV2({
 	// -- contracts to be used
 	const pkpHelper = await getPkpHelperContract();
 	const pkpNft = await getPkpNftContract();
-	
+
 	// -- contract functions to be called
 	const pkpNftFunctions = {
 		mintCost: 'mintCost',
@@ -336,52 +336,61 @@ export async function mintPKPV2({
 		mintNextAndAddAuthMethods: 'mintNextAndAddAuthMethods',
 	}
 
+
 	// version strategy is required
-	if(!versionStrategy){
+	if (!versionStrategy) {
 		throw new Error("versionStrategy is required");
 	}
 
 	// must contain the value in the VersionStrategy enum
-	if(!Object.values(VersionStrategy).includes(versionStrategy)){
+	if (!Object.values(VersionStrategy).includes(versionStrategy)) {
 		throw new Error(`Invalid version strategy. Must be one of: ${Object.values(VersionStrategy).join(", ")}`);
 	}
 
-	if(versionStrategy === VersionStrategy.DEFAULT){
-			// first get mint cost
-			const mintCost = await pkpNft[pkpNftFunctions.mintCost]();
-			
-			const tx = await pkpHelper[pkpHelperFunctions.mintNextAndAddAuthMethods](
-				keyType,
-				permittedAuthMethodTypes,
-				permittedAuthMethodIds,
-				permittedAuthMethodPubkeys,
-				permittedAuthMethodScopes,
-				addPkpEthAddressAsPermittedAddress,
-				sendPkpToItself,
-				{ value: mintCost },
-			);
+	// first get mint cost
+	const mintCost = await pkpNft[pkpNftFunctions.mintCost]();
 
-			console.log("PRINT THIS OUT TO SEE THE TX OBJECT");
-			console.log(
-				keyType,
-				permittedAuthMethodTypes,
-				permittedAuthMethodIds,
-				permittedAuthMethodPubkeys,
-				permittedAuthMethodScopes,
-				addPkpEthAddressAsPermittedAddress,
-				sendPkpToItself,
-				{ value: mintCost }
-			);
-			console.log("tx", tx);
-			return tx;
+	const mintTxData =
+		await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
+			keyType,
+			permittedAuthMethodTypes,
+			permittedAuthMethodIds,
+			permittedAuthMethodPubkeys,
+			permittedAuthMethodScopes,
+			addPkpEthAddressAsPermittedAddress,
+			sendPkpToItself,
+			{ value: mintCost },
+		);
+
+	// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
+	const gasLimit = await pkpNft.provider.estimateGas(mintTxData);
+	// since the gas limit is a BigNumber we have to use integer math and multiply by 105 then divide by 100 instead of just multiplying by 1.05
+	const adjustedGasLimit = gasLimit
+		.mul(ethers.BigNumber.from(105))
+		.div(ethers.BigNumber.from(100));
+
+	if (versionStrategy === VersionStrategy.DEFAULT) {
+
+		const tx = await pkpHelper.mintNextAndAddAuthMethods(
+			keyType,
+			permittedAuthMethodTypes,
+			permittedAuthMethodIds,
+			permittedAuthMethodPubkeys,
+			permittedAuthMethodScopes,
+			addPkpEthAddressAsPermittedAddress,
+			sendPkpToItself,
+			{ value: mintCost, gasLimit: adjustedGasLimit },
+		);
+		console.log("tx", tx);
+		return tx;
 	}
 
-	if(versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB){
+	if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
 		const address = await rr.next();
-		const mintCost = await ThirdWebLib.Contract.read({
-			contractAddress: pkpNft.address,
-			functionName: pkpNftFunctions.mintCost,
-		});
+		// const mintCost = await ThirdWebLib.Contract.read({
+		// 	contractAddress: pkpNft.address,
+		// 	functionName: pkpNftFunctions.mintCost,
+		// });
 
 		const res = await ThirdWebLib.Contract.write({
 			contractAddress: pkpHelper.address,
@@ -396,8 +405,9 @@ export async function mintPKPV2({
 				sendPkpToItself,
 			],
 			txOverrides: {
-    			value: mintCost
-  			},
+				value: mintCost,
+				gasLimit: adjustedGasLimit
+			},
 			// this we have to dynamic using round robin
 			backendWalletAddress: address,
 		});

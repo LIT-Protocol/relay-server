@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 // -- thirdweb config
 const THIRDWEB_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
@@ -8,9 +8,9 @@ const AUTH_HEADERS = {
 };
 
 // -- chain config
-const LIT_CHAIN_ID = 175177;
+const LIT_CHAIN_ID = process.env.LIT_CHAIN_ID;
 // const LIT_SLUG = "lit-protocol";
-const LIT_SLUG = "2311";
+// const LIT_SLUG = "2311";
 
 export namespace ThirdWebLib {
 	export namespace Fetch {
@@ -135,7 +135,7 @@ export namespace ThirdWebLib {
 		}> {
 			try {
 				const balance = await Fetch.get(
-					`/backend-wallet/${LIT_SLUG}/${address}/get-balance`,
+					`/backend-wallet/${LIT_CHAIN_ID}/${address}/get-balance`,
 				);
 				return balance;
 			} catch (e: any) {
@@ -162,7 +162,7 @@ export namespace ThirdWebLib {
 		}): Promise<{ queueId: string }> {
 			try {
 				const res = await ThirdWebLib.Fetch.post(
-					`/backend-wallet/${LIT_SLUG}/send-transaction`,
+					`/backend-wallet/${LIT_CHAIN_ID}/send-transaction`,
 					{
 						toAddress: fundee,
 						data: "0x",
@@ -256,7 +256,7 @@ export namespace ThirdWebLib {
 		export async function lit(){
 			try{
 				const res = await ThirdWebLib.Fetch.get(
-					`/contract/${LIT_SLUG}`,
+					`/contract/${LIT_CHAIN_ID}`,
 				);
 				return res;
 			}catch(e: any){
@@ -273,7 +273,7 @@ export namespace ThirdWebLib {
 		}) {
 			try {
 				const res = await ThirdWebLib.Fetch.get(
-					`/contract/${LIT_SLUG}/${contractAddress}/read?functionName=${functionName}`,
+					`/contract/${LIT_CHAIN_ID}/${contractAddress}/read?functionName=${functionName}`,
 				);
 
 				return res;
@@ -294,7 +294,8 @@ export namespace ThirdWebLib {
 			functionName: string;
 			args: any[];
 			txOverrides?:{
-				value: number
+				value: number,
+				gasLimit: BigNumber
 			}
 			backendWalletAddress: string;
 			options?: {
@@ -303,7 +304,7 @@ export namespace ThirdWebLib {
 		}) {
 			try {
 				const res = await ThirdWebLib.Fetch.post(
-					`/contract/${LIT_SLUG}/${contractAddress}/write?chain`,
+					`/contract/${LIT_CHAIN_ID}/${contractAddress}/write?chain`,
 					{
 						functionName,
 						args,
