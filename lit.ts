@@ -405,7 +405,7 @@ export async function mintPKPV2({
 				sendPkpToItself,
 			],
 			txOverrides: {
-				value: mintCost,
+				value: mintCost.toString(),
 				gasLimit: adjustedGasLimit
 			},
 			// this we have to dynamic using round robin
