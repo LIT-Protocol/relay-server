@@ -600,6 +600,7 @@ export async function getPKPsForAuthMethod({
 			}
 			return pkps;
 		} catch (err) {
+			console.log("Unable to get PKPs for auth method", err);
 			throw new Error("Unable to get PKPs for auth method");
 		}
 	} else {
