@@ -326,7 +326,7 @@ export async function mintPKPV2({
 	// -- contracts to be used
 	const pkpHelper = await getPkpHelperContract();
 	const pkpNft = await getPkpNftContract();
-
+	
 	// -- contract functions to be called
 	const pkpNftFunctions = {
 		mintCost: 'mintCost',
