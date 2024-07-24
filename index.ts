@@ -272,6 +272,7 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 // -- Payment Delegation
 app.post("/register-payer", registerPayerHandler);
 app.post("/add-users", addPayeeHandler);
+app.post("/api/v2/add-users", addPayeeHandler);
 
 
 

@@ -144,6 +144,9 @@ export interface Config {
 	cayenneContracts?: Contract;
 	datilDevContracts?: Contract;
 	useSoloNet: boolean;
+	baseUrl: string,
+	apiKey:string,
+	payerSecret: string,
 	network: "serrano" | "cayenne" | "manzano" | "habanero" | "datil-dev" | 'datil-test';
 }
 

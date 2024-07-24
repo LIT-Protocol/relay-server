@@ -9,6 +9,8 @@ import {
 	GetAuthStatusResponse,
 } from "../../models";
 import { getTokenIdFromTransferEvent } from "../../utils/receipt";
+import axios from "axios";
+import config from "../../config";
 
 const safeBlockConfirmations = parseInt(
 	process.env.SAFE_BLOCK_CONFIRMATIONS || "1",
@@ -73,6 +75,14 @@ export async function getAuthStatusHandler(
 		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
 		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
 
+		const data = JSON.stringify([pkpEthAddress]);
+		axios.post(`${config.baseUrl}/add-users`, data, {
+			headers: { 
+				'api-key': config.apiKey, 
+				'payer-secret-key': config.payerSecret, 
+				'Content-Type': 'application/json'
+			}
+		})
 		return res.status(200).json({
 			status: AuthStatus.Succeeded,
 			pkpTokenId: tokenIdFromEvent,

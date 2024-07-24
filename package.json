@@ -16,6 +16,7 @@
     "@lit-protocol/lit-node-client-nodejs": "^6.2.0",
     "@simplewebauthn/server": "6.2.1",
     "async-mutex": "^0.5.0",
+    "axios": "^1.7.2",
     "base64url": "^3.0.1",
     "cbor": "^8.1.0",
     "cors": "^2.8.5",
