@@ -370,8 +370,14 @@ export async function mintPKPV2({
 	const gasLimit = await pkpNft.provider.estimateGas(mintTxData);
 	// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
 	const adjustedGasLimit = gasLimit
-		.mul(ethers.BigNumber.from(200))
+		.mul(
+			ethers.BigNumber.from(
+				process.env["GAS_LIMIT_INCREASE_PERCENTAGE" || 200],
+			),
+		)
 		.div(ethers.BigNumber.from(100));
+
+	console.log("adjustedGasLimit:", adjustedGasLimit);
 
 	const tx = await pkpHelper.mintNextAndAddAuthMethods(
 		keyType,
