@@ -164,10 +164,10 @@ function getPkpNftContractAbiPath() {
 	}
 }
 
-async function getPkpHelperContract() {
+async function getPkpHelperContract(network: string) {
 	let contract: ethers.Contract | undefined;
 
-	switch (config.network) {
+	switch (network) {
 		case "serrano":
 			contract = getContract(
 				getPkpHelperContractAbiPath()!,
@@ -243,10 +243,10 @@ async function getPaymentDelegationContract() {
 	}
 }
 
-async function getPkpNftContract() {
+async function getPkpNftContract(network: string) {
 	let contract: ethers.Contract | undefined;
 
-	switch (config.network) {
+	switch (network) {
 		case "serrano":
 			contract = getContract(
 				getPkpNftContractAbiPath()!,
@@ -284,13 +284,13 @@ function prependHexPrefixIfNeeded(hexStr: string) {
 }
 
 export async function getPkpEthAddress(tokenId: string) {
-	const pkpNft = await getPkpNftContract();
+	const pkpNft = await getPkpNftContract(config.network);
 
 	return pkpNft.getEthAddress(tokenId)!;
 }
 
 export async function getPkpPublicKey(tokenId: string) {
-	const pkpNft = await getPkpNftContract();
+	const pkpNft = await getPkpNftContract(config.network);
 
 	return pkpNft.getPubkey(tokenId);
 }
@@ -346,10 +346,8 @@ export async function mintPKPV2({
 		sendPkpToItself,
 	);
 
-	console.log("config.network:", config.network);
-
-	const pkpHelper = await getPkpHelperContract();
-	const pkpNft = await getPkpNftContract();
+	const pkpHelper = await getPkpHelperContract(config.network);
+	const pkpNft = await getPkpNftContract(config.network);
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
@@ -368,6 +366,7 @@ export async function mintPKPV2({
 
 	// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
 	let gasLimit;
+
 	try {
 		gasLimit = await pkpNft.provider.estimateGas(mintTxData);
 		// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
@@ -382,22 +381,29 @@ export async function mintPKPV2({
 
 		console.log("adjustedGasLimit:", gasLimit);
 	} catch (e) {
-		console.error("❗️ Error while estimating gas, using default", e);
+		console.error("❗️ Error while estimating gas, using default");
 		gasLimit = ethers.utils.hexlify(5000000);
 	}
 
-	const tx = await pkpHelper.mintNextAndAddAuthMethods(
-		keyType,
-		permittedAuthMethodTypes,
-		permittedAuthMethodIds,
-		permittedAuthMethodPubkeys,
-		permittedAuthMethodScopes,
-		addPkpEthAddressAsPermittedAddress,
-		sendPkpToItself,
-		{ value: mintCost, gasLimit },
-	);
-	console.log("tx", tx);
-	return tx;
+	try {
+		const tx = await pkpHelper.mintNextAndAddAuthMethods(
+			keyType,
+			permittedAuthMethodTypes,
+			permittedAuthMethodIds,
+			permittedAuthMethodPubkeys,
+			permittedAuthMethodScopes,
+			addPkpEthAddressAsPermittedAddress,
+			sendPkpToItself,
+			{ value: mintCost, gasLimit: gasLimit },
+		);
+
+		await tx.wait();
+		console.log("tx", tx);
+		return tx;
+	} catch (e: any) {
+		console.log("❗️ Error while minting pkp:", e);
+		throw e;
+	}
 }
 
 export async function mintPKP({
@@ -410,8 +416,8 @@ export async function mintPKP({
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
 	console.log("in mintPKP");
-	const pkpHelper = await getPkpHelperContract();
-	const pkpNft = await getPkpNftContract();
+	const pkpHelper = await getPkpHelperContract(config.network);
+	const pkpNft = await getPkpNftContract(config.network);
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
@@ -488,8 +494,8 @@ export async function claimPKP({
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
 	console.log("in claimPKP");
-	const pkpHelper = await getPkpHelperContract();
-	const pkpNft = await getPkpNftContract();
+	const pkpHelper = await getPkpHelperContract(config.network);
+	const pkpNft = await getPkpNftContract(config.network);
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
