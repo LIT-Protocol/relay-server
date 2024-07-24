@@ -28,6 +28,7 @@ Create a `.env` file at the root of the repo and populate the corresponding envi
 -   `LIT_TXSENDER_PRIVATE_KEY`
 -   `LIT_DELEGATION_ROOT_MNEMONIC`
 -   `LIT_DELEGATION_USES`
+-   `GAS_LIMIT_INCREASE_PERCENTAGE`
 
 Make sure to start your Redis server if you plan to host one locally.
 
