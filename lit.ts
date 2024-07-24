@@ -16,16 +16,13 @@ import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
 // 	datil,
 // } from "@lit-protocol/contracts";
 
-// @ts-ignore
-import datil from "@lit-protocol/contracts/prod/datil.json";
-// @ts-ignore
-import datilDev from "@lit-protocol/contracts/prod/datil-dev.json";
-// @ts-ignore
-import datilTest from "@lit-protocol/contracts/prod/datil-test.json";
-// @ts-ignore
-import habanero from "@lit-protocol/contracts/prod/habanero.json";
-// @ts-ignore
-import manzano from "@lit-protocol/contracts/prod/manzano.json";
+import {
+	datil,
+	datilDev,
+	datilTest,
+	habanero,
+	manzano,
+} from "@lit-protocol/contracts";
 
 function getContractFromWorker(
 	network: LIT_NETWORK_VALUES,
@@ -47,6 +44,7 @@ function getContractFromWorker(
 			break;
 		case "datil-test":
 			contractsDataRes = datilTest;
+
 			break;
 		case "datil":
 			contractsDataRes = datil;
@@ -173,21 +171,30 @@ async function getPkpHelperContract(network: string) {
 				getPkpHelperContractAbiPath()!,
 				config?.serranoContract?.pkpHelperAddress as string,
 			);
+			break;
 		case "cayenne":
 			contract = getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.cayenneContracts?.pkpHelperAddress as string,
 			);
+			break;
 		case "manzano":
 			contract = getContractFromWorker("manzano", "PKPHelper");
+			break;
 		case "habanero":
 			contract = getContractFromWorker("habanero", "PKPHelper");
+			break;
 		case "datil-dev":
 			contract = getContractFromWorker("datil-dev", "PKPHelper");
+			break;
 		case "datil-test":
 			contract = getContractFromWorker("datil-test", "PKPHelper");
+			break;
 		case "datil":
 			contract = getContractFromWorker("datil", "PKPHelper");
+			break;
+		default:
+			throw new Error(`Unsupported network: ${network}`);
 	}
 
 	if (!contract) {
@@ -206,21 +213,30 @@ async function getPermissionsContract() {
 				"./contracts/serrano/PKPPermissions.json",
 				config?.serranoContract?.pkpPermissionsAddress as string,
 			);
+			break;
 		case "cayenne":
 			contract = getContract(
 				"./contracts/cayenne/PKPPermissions.json",
 				config?.cayenneContracts?.pkpPermissionsAddress as string,
 			);
+			break;
 		case "manzano":
 			contract = getContractFromWorker("manzano", "PKPPermissions");
+			break;
 		case "habanero":
 			contract = getContractFromWorker("habanero", "PKPPermissions");
+			break;
 		case "datil-dev":
 			contract = getContractFromWorker("datil-dev", "PKPPermissions");
+			break;
 		case "datil-test":
 			contract = getContractFromWorker("datil-test", "PKPPermissions");
+			break;
 		case "datil":
 			contract = getContractFromWorker("datil", "PKPPermissions");
+			break;
+		default:
+			throw new Error(`Unsupported network: ${config.network}`);
 	}
 
 	if (!contract) {
@@ -252,21 +268,28 @@ async function getPkpNftContract(network: string) {
 				getPkpNftContractAbiPath()!,
 				config?.serranoContract?.pkpNftAddress as string,
 			);
+			break;
 		case "cayenne":
 			contract = getContract(
 				getPkpNftContractAbiPath()!,
 				config?.cayenneContracts?.pkpNftAddress as string,
 			);
+			break;
 		case "manzano":
 			contract = getContractFromWorker("manzano", "PKPNFT");
+			break;
 		case "habanero":
 			contract = getContractFromWorker("habanero", "PKPNFT");
+			break;
 		case "datil-dev":
 			contract = getContractFromWorker("datil-dev", "PKPNFT");
+			break;
 		case "datil-test":
 			contract = getContractFromWorker("datil-test", "PKPNFT");
+			break;
 		case "datil":
 			contract = getContractFromWorker("datil", "PKPNFT");
+			break;
 	}
 
 	if (!contract) {
@@ -347,6 +370,7 @@ export async function mintPKPV2({
 	);
 
 	const pkpHelper = await getPkpHelperContract(config.network);
+
 	const pkpNft = await getPkpNftContract(config.network);
 
 	// first get mint cost
