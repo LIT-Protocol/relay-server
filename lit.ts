@@ -372,7 +372,7 @@ export async function mintPKPV2({
 	const adjustedGasLimit = gasLimit
 		.mul(
 			ethers.BigNumber.from(
-				process.env["GAS_LIMIT_INCREASE_PERCENTAGE" || 200],
+				parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) || 200,
 			),
 		)
 		.div(ethers.BigNumber.from(100));
