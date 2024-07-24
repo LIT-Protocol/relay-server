@@ -76,7 +76,7 @@ export async function getAuthStatusHandler(
 		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
 
 		const data = JSON.stringify([pkpEthAddress]);
-		axios.post(`${config.baseUrl}/add-users`, data, {
+		await axios.post(`${config.baseUrl}/add-users`, data, {
 			headers: { 
 				'api-key': config.apiKey, 
 				'payer-secret-key': config.payerSecret, 
