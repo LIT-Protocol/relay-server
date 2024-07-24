@@ -368,9 +368,9 @@ export async function mintPKPV2({
 
 	// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
 	const gasLimit = await pkpNft.provider.estimateGas(mintTxData);
-	// since the gas limit is a BigNumber we have to use integer math and multiply by 105 then divide by 100 instead of just multiplying by 1.05
+	// since the gas limit is a BigNumber we have to use integer math and multiply by 130 then divide by 100 instead of just multiplying by 1.05
 	const adjustedGasLimit = gasLimit
-		.mul(ethers.BigNumber.from(110))
+		.mul(ethers.BigNumber.from(130))
 		.div(ethers.BigNumber.from(100));
 
 	const tx = await pkpHelper.mintNextAndAddAuthMethods(
