@@ -26,7 +26,7 @@ const DATIL_DEV_CONTRACT_ADDRESSES =
 	"https://lit-general-worker.getlit.dev/datil-dev/contracts";
 
 const DATIL_TEST_CONTRACT_ADDRESSES =
-	"https://staging.apis.getlit.dev/datil-test/contracts";
+	"https://lit-general-worker.getlit.dev/datil-test/contracts";
 
 async function getContractFromWorker(
 	network: "manzano" | "habanero" | "datil-dev" | "datil-test",

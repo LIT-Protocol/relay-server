@@ -32,6 +32,7 @@ export async function thirdwebWebHookHandler(req: Request, res: Response) {
             // Assuming expiration time is 5 minutes (300 seconds)
             throw new Error("Request has expired");
         }
+        console.log(req.body.id);
         const uuid = await redisClient.hGet("userQueueIdMapping",req.body.id);
         if(!uuid) {
             throw new Error("Queue ID not found in redis");
