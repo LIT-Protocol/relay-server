@@ -6,9 +6,16 @@ import redisClient from "./lib/redisClient";
 import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
-import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { CapacityToken } from "lit";
-import { VersionStrategy } from "./routes/VersionStrategy";
+import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
+// import {
+// 	manzano,
+// 	datilDev,
+// 	datilTest,
+// 	habanero,
+// 	datil,
+// } from "@lit-protocol/contracts";
+
 import { ThirdWebLib } from "./lib/thirdweb/ThirdWebLib";
 import { MintPKPV2 } from "./types/lit";
 
@@ -17,19 +24,17 @@ import { RoundRobin } from "./utils/thirdweb/roundRobin";
 
 const rr = new RoundRobin(backendWallets);
 
-const MANZANO_CONTRACT_ADDRESSES =
-	"https://lit-general-worker.getlit.dev/manzano-contract-addresses";
-const HABANERO_CONTRACT_ADDRESSES =
-	"https://lit-general-worker.getlit.dev/habanero-contract-addresses";
+import {
+	datil,
+	datilDev,
+	datilTest,
+	habanero,
+	manzano,
+} from "@lit-protocol/contracts";
+import { VersionStrategy } from "./routes/VersionStrategy";
 
-const DATIL_DEV_CONTRACT_ADDRESSES =
-	"https://lit-general-worker.getlit.dev/datil-dev/contracts";
-
-const DATIL_TEST_CONTRACT_ADDRESSES =
-	"https://lit-general-worker.getlit.dev/datil-test/contracts";
-
-async function getContractFromWorker(
-	network: "manzano" | "habanero" | "datil-dev" | "datil-test",
+function getContractFromWorker(
+	network: LIT_NETWORK_VALUES,
 	contractName: string,
 	signer?: ethers.Wallet,
 ) {
@@ -38,22 +43,26 @@ async function getContractFromWorker(
 	let contractsDataRes;
 	switch (network) {
 		case "manzano":
-			contractsDataRes = await fetch(MANZANO_CONTRACT_ADDRESSES);
+			contractsDataRes = manzano;
 			break;
 		case "habanero":
-			contractsDataRes = await fetch(HABANERO_CONTRACT_ADDRESSES);
+			contractsDataRes = habanero;
 			break;
 		case "datil-dev":
-			contractsDataRes = await fetch(DATIL_DEV_CONTRACT_ADDRESSES);
+			contractsDataRes = datilDev;
 			break;
 		case "datil-test":
-			contractsDataRes = await fetch(DATIL_TEST_CONTRACT_ADDRESSES);
+			contractsDataRes = datilTest;
+
+			break;
+		case "datil":
+			contractsDataRes = datil;
 			break;
 		default:
 			throw new Error(`Unsupported network: ${network}`);
 	}
 
-	const contractList = (await contractsDataRes.json()).data;
+	const contractList = contractsDataRes.data as any;
 
 	console.log(
 		`Attempting to get contract "${contractName} from "${network}"`,
@@ -141,15 +150,12 @@ function getPkpHelperContractAbiPath() {
 	if (config.useSoloNet) {
 		return "./contracts/serrano/SoloNetPKPHelper.json";
 	}
+
 	switch (config.network) {
 		case "serrano":
 			return "./contracts/serrano/PKPHelper.json";
 		case "cayenne":
 			return "./contracts/cayenne/PKPHelper.json";
-		case "datil-dev":
-			return "./contracts/datil-dev/PKPHelper.json";
-		case "datil-test":
-			return "./contracts/datil-dev/PKPHelper.json";
 	}
 }
 
@@ -162,57 +168,91 @@ function getPkpNftContractAbiPath() {
 			return "./contracts/serrano/PKPNFT.json";
 		case "cayenne":
 			return "./contracts/cayenne/PKPNFT.json";
-		case "datil-dev":
-			return "./contracts/datil-dev/PKPNFT.json";
-		case "datil-test":
-			return "./contracts/datil-dev/PKPNFT.json";
 	}
 }
 
-async function getPkpHelperContract() {
-	switch (config.network) {
+async function getPkpHelperContract(network: string) {
+	let contract: ethers.Contract | undefined;
+
+	switch (network) {
 		case "serrano":
-			return getContract(
+			contract = getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.serranoContract?.pkpHelperAddress as string,
 			);
+			break;
 		case "cayenne":
-			return getContract(
+			contract = getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.cayenneContracts?.pkpHelperAddress as string,
 			);
+			break;
 		case "manzano":
-			return getContractFromWorker("manzano", "PKPHelper");
+			contract = getContractFromWorker("manzano", "PKPHelper");
+			break;
 		case "habanero":
-			return getContractFromWorker("habanero", "PKPHelper");
+			contract = getContractFromWorker("habanero", "PKPHelper");
+			break;
 		case "datil-dev":
-			return getContractFromWorker("datil-dev", "PKPHelper");
+			contract = getContractFromWorker("datil-dev", "PKPHelper");
+			break;
 		case "datil-test":
-			return getContractFromWorker("datil-test", "PKPHelper");
+			contract = getContractFromWorker("datil-test", "PKPHelper");
+			break;
+		case "datil":
+			contract = getContractFromWorker("datil", "PKPHelper");
+			break;
+		default:
+			throw new Error(`Unsupported network: ${network}`);
 	}
+
+	if (!contract) {
+		throw new Error("PKP Helper contract not available");
+	}
+
+	return contract;
 }
 
 async function getPermissionsContract() {
+	let contract: ethers.Contract | undefined;
+
 	switch (config.network) {
 		case "serrano":
-			return getContract(
+			contract = getContract(
 				"./contracts/serrano/PKPPermissions.json",
 				config?.serranoContract?.pkpPermissionsAddress as string,
 			);
+			break;
 		case "cayenne":
-			return getContract(
+			contract = getContract(
 				"./contracts/cayenne/PKPPermissions.json",
 				config?.cayenneContracts?.pkpPermissionsAddress as string,
 			);
+			break;
 		case "manzano":
-			return getContractFromWorker("manzano", "PKPPermissions");
+			contract = getContractFromWorker("manzano", "PKPPermissions");
+			break;
 		case "habanero":
-			return getContractFromWorker("habanero", "PKPPermissions");
+			contract = getContractFromWorker("habanero", "PKPPermissions");
+			break;
 		case "datil-dev":
-			return getContractFromWorker("datil-dev", "PKPPermissions");
+			contract = getContractFromWorker("datil-dev", "PKPPermissions");
+			break;
 		case "datil-test":
-			return getContractFromWorker("datil-test", "PKPPermissions");
+			contract = getContractFromWorker("datil-test", "PKPPermissions");
+			break;
+		case "datil":
+			contract = getContractFromWorker("datil", "PKPPermissions");
+			break;
+		default:
+			throw new Error(`Unsupported network: ${config.network}`);
 	}
+
+	if (!contract) {
+		throw new Error("PKPPermissions contract not available");
+	}
+
+	return contract;
 }
 
 async function getPaymentDelegationContract() {
@@ -228,27 +268,44 @@ async function getPaymentDelegationContract() {
 	}
 }
 
-async function getPkpNftContract() {
-	switch (config.network) {
+async function getPkpNftContract(network: string) {
+	let contract: ethers.Contract | undefined;
+
+	switch (network) {
 		case "serrano":
-			return getContract(
+			contract = getContract(
 				getPkpNftContractAbiPath()!,
 				config?.serranoContract?.pkpNftAddress as string,
 			);
+			break;
 		case "cayenne":
-			return getContract(
+			contract = getContract(
 				getPkpNftContractAbiPath()!,
 				config?.cayenneContracts?.pkpNftAddress as string,
 			);
+			break;
 		case "manzano":
-			return await getContractFromWorker("manzano", "PKPNFT");
+			contract = getContractFromWorker("manzano", "PKPNFT");
+			break;
 		case "habanero":
-			return await getContractFromWorker("habanero", "PKPNFT");
+			contract = getContractFromWorker("habanero", "PKPNFT");
+			break;
 		case "datil-dev":
-			return getContractFromWorker("datil-dev", "PKPNFT");
+			contract = getContractFromWorker("datil-dev", "PKPNFT");
+			break;
 		case "datil-test":
-			return getContractFromWorker("datil-test", "PKPNFT");
+			contract = getContractFromWorker("datil-test", "PKPNFT");
+			break;
+		case "datil":
+			contract = getContractFromWorker("datil", "PKPNFT");
+			break;
 	}
+
+	if (!contract) {
+		throw new Error("PKP NFT contract not available");
+	}
+
+	return contract;
 }
 
 function prependHexPrefixIfNeeded(hexStr: string) {
@@ -259,12 +316,14 @@ function prependHexPrefixIfNeeded(hexStr: string) {
 }
 
 export async function getPkpEthAddress(tokenId: string) {
-	const pkpNft = await getPkpNftContract();
+	const pkpNft = await getPkpNftContract(config.network);
+
 	return pkpNft.getEthAddress(tokenId)!;
 }
 
 export async function getPkpPublicKey(tokenId: string) {
-	const pkpNft = await getPkpNftContract();
+	const pkpNft = await getPkpNftContract(config.network);
+
 	return pkpNft.getPubkey(tokenId);
 }
 
@@ -321,13 +380,8 @@ export async function mintPKPV2({
 		sendPkpToItself,
 	);
 
-	console.log("config.network:", config.network);
-
-	// -- contracts to be used
-	const pkpHelper = await getPkpHelperContract();
-	const pkpNft = await getPkpNftContract();
-	
-	// -- contract functions to be called
+	const pkpHelper = await getPkpHelperContract(config.network);
+	const pkpNft = await getPkpNftContract(config.network);
 	const pkpNftFunctions = {
 		mintCost: 'mintCost',
 	}
@@ -347,6 +401,7 @@ export async function mintPKPV2({
 		throw new Error(`Invalid version strategy. Must be one of: ${Object.values(VersionStrategy).join(", ")}`);
 	}
 
+
 	// first get mint cost
 	const mintCost = await pkpNft[pkpNftFunctions.mintCost]();
 
@@ -363,12 +418,29 @@ export async function mintPKPV2({
 		);
 
 	// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
-	const gasLimit = await pkpNft.provider.estimateGas(mintTxData);
-	// since the gas limit is a BigNumber we have to use integer math and multiply by 105 then divide by 100 instead of just multiplying by 1.05
-	const adjustedGasLimit = gasLimit
-		.mul(ethers.BigNumber.from(105))
-		.div(ethers.BigNumber.from(100));
+	let gasLimit;
 
+
+	
+
+
+	try {
+		gasLimit = await pkpNft.provider.estimateGas(mintTxData);
+		// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
+		gasLimit = gasLimit
+			.mul(
+				ethers.BigNumber.from(
+					parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
+						200,
+				),
+			)
+			.div(ethers.BigNumber.from(100));
+
+		console.log("adjustedGasLimit:", gasLimit);
+	} catch (e) {
+		console.error("❗️ Error while estimating gas, using default");
+		gasLimit = ethers.utils.hexlify(5000000);
+	}
 	if (versionStrategy === VersionStrategy.DEFAULT) {
 
 		const tx = await pkpHelper.mintNextAndAddAuthMethods(
@@ -379,45 +451,51 @@ export async function mintPKPV2({
 			permittedAuthMethodScopes,
 			addPkpEthAddressAsPermittedAddress,
 			sendPkpToItself,
-			{ value: mintCost, gasLimit: adjustedGasLimit },
+
+			{ value: mintCost, gasLimit: gasLimit },
 		);
+		await tx.wait();
 		console.log("tx", tx);
 		return tx;
 	}
+if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
+	const address = await rr.next();
+	// const mintCost = await ThirdWebLib.Contract.read({
+	// 	contractAddress: pkpNft.address,
+	// 	functionName: pkpNftFunctions.mintCost,
+	// });
 
-	if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
-		const address = await rr.next();
-		// const mintCost = await ThirdWebLib.Contract.read({
-		// 	contractAddress: pkpNft.address,
-		// 	functionName: pkpNftFunctions.mintCost,
-		// });
+	const res = await ThirdWebLib.Contract.write({
+		contractAddress: pkpHelper.address,
+		functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
+		args: [
+			keyType,
+			permittedAuthMethodTypes,
+			permittedAuthMethodIds,
+			permittedAuthMethodPubkeys,
+			permittedAuthMethodScopes,
+			addPkpEthAddressAsPermittedAddress,
+			sendPkpToItself,
+		],
+		txOverrides: {
+			value: mintCost.toString(),
+			gasLimit: gasLimit
+		},
+		// this we have to dynamic using round robin
+		backendWalletAddress: address,
+	});
 
-		const res = await ThirdWebLib.Contract.write({
-			contractAddress: pkpHelper.address,
-			functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
-			args: [
-				keyType,
-				permittedAuthMethodTypes,
-				permittedAuthMethodIds,
-				permittedAuthMethodPubkeys,
-				permittedAuthMethodScopes,
-				addPkpEthAddressAsPermittedAddress,
-				sendPkpToItself,
-			],
-			txOverrides: {
-				value: mintCost.toString(),
-				gasLimit: adjustedGasLimit
-			},
-			// this we have to dynamic using round robin
-			backendWalletAddress: address,
-		});
+	console.log("res:", res);
 
-		console.log("res:", res);
+	return res.result;
+}
 
-		return res.result;
-	}
+	
 
 	throw new Error("Invalid version strategy");
+
+
+
 }
 
 export async function mintPKP({
@@ -430,11 +508,12 @@ export async function mintPKP({
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
 	console.log("in mintPKP");
-	const pkpHelper = await getPkpHelperContract();
-	const pkpNft = await getPkpNftContract();
+	const pkpHelper = await getPkpHelperContract(config.network);
+	const pkpNft = await getPkpNftContract(config.network);
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
+
 	const sequencer = Sequencer.Instance;
 
 	Sequencer.Wallet = getSigner();
@@ -507,8 +586,8 @@ export async function claimPKP({
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
 	console.log("in claimPKP");
-	const pkpHelper = await getPkpHelperContract();
-	const pkpNft = await getPkpNftContract();
+	const pkpHelper = await getPkpHelperContract(config.network);
+	const pkpNft = await getPkpNftContract(config.network);
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();

@@ -295,7 +295,7 @@ export namespace ThirdWebLib {
 			args: any[];
 			txOverrides?:{
 				value: number,
-				gasLimit: BigNumber
+				gasLimit: string | BigNumber
 			}
 			backendWalletAddress: string;
 			options?: {
