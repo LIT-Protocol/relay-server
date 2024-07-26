@@ -69,6 +69,7 @@ export interface GetAuthStatusResponse {
 	pkpEthAddress?: string;
 	pkpPublicKey?: string;
 	error?: string;
+	queueId?: string;
 }
 
 export enum AuthStatus {

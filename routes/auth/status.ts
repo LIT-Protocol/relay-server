@@ -28,6 +28,7 @@ export async function getAuthStatusHandler(
 ) {
 	// get requestId from params
 	const { requestId } = req.params;
+	const {uuid} = req.query;
 
 	// query the chain using requestId as the txHash.
 	const provider = getProvider();
@@ -75,15 +76,18 @@ export async function getAuthStatusHandler(
 		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
 		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
 
-		const data = JSON.stringify([pkpEthAddress]);
-		await axios.post(`${config.baseUrl}/add-users`, data, {
+		const payeeAddresses = JSON.stringify([pkpEthAddress]);
+		const {data: {queueId}} = await axios.post(`${config.baseUrl}/api/v2/add-users`, {
+			payeeAddresses, uuid
+		}, {
 			headers: { 
 				'api-key': config.apiKey, 
 				'payer-secret-key': config.payerSecret, 
 				'Content-Type': 'application/json'
 			}
-		})
+		});
 		return res.status(200).json({
+			queueId: queueId,
 			status: AuthStatus.Succeeded,
 			pkpTokenId: tokenIdFromEvent,
 			pkpEthAddress,

@@ -865,9 +865,11 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 export async function addPaymentDelegationPayee({
 	wallet,
 	payeeAddresses,
+	versionStrategy
 }: {
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
+	versionStrategy: VersionStrategy
 }) {
 	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(
@@ -910,13 +912,39 @@ export async function addPaymentDelegationPayee({
 		"PaymentDelegation",
 		wallet,
 	);
-
-	const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-		payeeAddresses,
-	);
-	console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-	await tx.wait();
-	return tx;
+	if (versionStrategy === VersionStrategy.DEFAULT) {
+		const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+			payeeAddresses,
+		);
+		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+		await tx.wait();
+		return {tx};
+	}
+	if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
+		const address = await rr.next();
+		// const mintCost = await ThirdWebLib.Contract.read({
+		// 	contractAddress: pkpNft.address,
+		// 	functionName: pkpNftFunctions.mintCost,
+		// });
+	
+		const res = await ThirdWebLib.Contract.write({
+			contractAddress: paymentDelegationContract.address,
+			functionName: 'delegatePaymentsBatch',
+			args: [
+				payeeAddresses
+			],
+			// txOverrides: {
+			// 	value: mintCost.toString(),
+			// 	gasLimit: gasLimit
+			// },
+			// this we have to dynamic using round robin
+			backendWalletAddress: address,
+		});
+	
+		console.log("res:", res);
+	
+		return res.result;
+	}
 }
 
 // export function packAuthData({

@@ -71,6 +71,7 @@ import { registerPayerHandler } from "./routes/delegate/register";
 import { addPayeeHandler } from "./routes/delegate/user";
 import redisClient from "./lib/redisClient";
 import { thirdwebWebHookHandler } from "./routes/webhook/thirdweb";
+import { getTxStatusByQueueId } from "./routes/thirdweb/transaction";
 
 const app = express();
 let server = http.createServer(app);
@@ -301,6 +302,7 @@ app.get(
 	webAuthnGenerateRegistrationOptionsHandler,
 );
 app.post("/auth/claim", mintClaimedKeyId);
+app.get("/transaction/status/:queueId", getTxStatusByQueueId);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";

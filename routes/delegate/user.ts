@@ -1,11 +1,15 @@
 import { Request, Response } from 'express';
 import { deriveWallet } from './register';
 import { addPaymentDelegationPayee } from '../../lit';
+import { getVersionStrategy, VersionStrategy } from '../VersionStrategy';
+import redisClient from '../../lib/redisClient';
 
 export async function addPayeeHandler(req: Request, res: Response) {
-    const payeeAddresses = req.body as string[];
+    const {payeeAddresses, uuid} = req.body;
     const apiKey = req.header('api-key');
     const payerSecret = req.header('payer-secret-key');
+
+    const versionStrategy = getVersionStrategy(req.url);
 
     if (!apiKey || !payerSecret) {
         res.status(400).json({
@@ -24,18 +28,45 @@ export async function addPayeeHandler(req: Request, res: Response) {
         return;
     }
 
+    // version strategy is required
+	if (!versionStrategy) {
+		throw new Error("versionStrategy is required");
+	}
+
+	// must contain the value in the VersionStrategy enum
+	if (!Object.values(VersionStrategy).includes(versionStrategy)) {
+		throw new Error(`Invalid version strategy. Must be one of: ${Object.values(VersionStrategy).join(", ")}`);
+	}
+
     const wallet = await deriveWallet(apiKey, payerSecret);
     let error: string | boolean = false;
 
     try {
-        const tx = await addPaymentDelegationPayee({
+        const res = await addPaymentDelegationPayee({
             wallet,
-            payeeAddresses
+            payeeAddresses,
+            versionStrategy
         });
 
-        if (!tx) {
+        if (!res.tx) {
             throw new Error('Failed to add payee: delegation transaction failed');
         }
+        if (res.tx) {
+			const source = 'lit-relayer';
+			console.info("Minted PKP", {
+				requestId: res.tx,
+				source,
+			});
+		}
+		
+		if (res.queueId) {
+			const queueId = res.queueId;
+			// mapping queueId => uuid for webhook 
+			await redisClient.hSet("userQueueIdMapping", queueId, uuid);
+			return res.status(200).send({
+				queueId
+			});
+		}
     } catch (err) {
         console.error('Failed to add payee', err);
         error = (err as Error).toString();

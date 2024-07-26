@@ -249,6 +249,20 @@ export namespace ThirdWebLib {
 				);
 			}
 		}
+
+		export async function getTxStatusByQueueId(queueId:string) {
+			try {
+				const data = await Fetch.get(
+					`/transaction/status/${queueId}`,
+				);
+				return data;
+			} catch (e: any) {
+				throw new Error(
+					"[ThirdWebLib] Error fetching transactions:",
+					e,
+				);
+			}
+		}
 	}
 
 	export namespace Contract {
