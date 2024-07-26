@@ -107,7 +107,7 @@ io.on('connection', (socket) => {
             for (const key of keys) {
                 const socketId = await redisClient.hGet("userSocketMapping", key);
                 if (socketId === socket.id) {
-                    await redisClient.hDel("userSocketMapping", key);
+                   // await redisClient.hDel("userSocketMapping", key);
                     console.log(`🔴 User ${key} disconnected`);
                     break;
                 }
