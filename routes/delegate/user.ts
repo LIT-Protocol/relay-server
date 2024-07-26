@@ -66,6 +66,8 @@ export async function addPayeeHandler(req: Request, res: Response) {
         if (data.queueId) {
             const queueId = data.queueId;
             // mapping queueId => uuid for webhook 
+            console.log("in delegate uuid", uuid);
+            console.log("queueId in delegate uuid", queueId);
             await redisClient.hSet("userQueueIdMapping", queueId, uuid);
             return res.status(200).send({
                 queueId

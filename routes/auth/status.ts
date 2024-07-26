@@ -29,7 +29,7 @@ export async function getAuthStatusHandler(
 	// get requestId from params
 	const { requestId } = req.params;
 	const {uuid} = req.query;
-
+	console.log("uuid", uuid);
 	// query the chain using requestId as the txHash.
 	const provider = getProvider();
 
