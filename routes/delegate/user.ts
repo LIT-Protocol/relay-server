@@ -5,11 +5,13 @@ import { getVersionStrategy, VersionStrategy } from '../VersionStrategy';
 import redisClient from '../../lib/redisClient';
 
 export async function addPayeeHandler(req: Request, res: Response) {
-    const { payeeAddresses, uuid } = req.body;
+    console.log("helopooo")
+    let { payeeAddresses, uuid } = req.body;
     const apiKey = req.header('api-key');
     const payerSecret = req.header('payer-secret-key');
 
     const versionStrategy = getVersionStrategy(req.url);
+    console.log("addPaymentDelegationPayee...0");
 
     if (!apiKey || !payerSecret) {
         res.status(400).json({
@@ -19,11 +21,16 @@ export async function addPayeeHandler(req: Request, res: Response) {
 
         return;
     }
-
+    payeeAddresses = JSON.parse(payeeAddresses);
+    console.log("addPaymentDelegationPayee...1");
+    console.log(payeeAddresses);
+    console.log(!payeeAddresses);
+    console.log(!Array.isArray(payeeAddresses));
+    console.log(payeeAddresses.length < 1);
     if (!payeeAddresses || !Array.isArray(payeeAddresses) || payeeAddresses.length < 1) {
         res.status(400).json({
             success: false,
-            error: 'Missing or invalid payee addresses'
+            error: 'Missing or invalid payee addresses!'
         });
         return;
     }
@@ -42,6 +49,7 @@ export async function addPayeeHandler(req: Request, res: Response) {
     let error: string | boolean = false;
 
     try {
+        console.log("addPaymentDelegationPayee...");
         const data = await addPaymentDelegationPayee({
             wallet,
             payeeAddresses,

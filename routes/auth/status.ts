@@ -75,8 +75,8 @@ export async function getAuthStatusHandler(
 	try {
 		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
 		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
-
 		const payeeAddresses = JSON.stringify([pkpEthAddress]);
+		console.log("tooooo....");
 		const {data: {queueId}} = await axios.post(`${config.baseUrl}/api/v2/add-users`, {
 			payeeAddresses, uuid
 		}, {
@@ -93,11 +93,12 @@ export async function getAuthStatusHandler(
 			pkpEthAddress,
 			pkpPublicKey,
 		});
-	} catch (err) {
+	} catch (err:any) {
 		console.error("Error fetching PKP information", {
 			tokenIdFromEvent,
 			err,
 		});
+		console.log(err.response.data)
 		return res.status(500).json({
 			error: "Unable to fetch PKP information",
 		});
