@@ -5,7 +5,7 @@ import { getVersionStrategy, VersionStrategy } from '../VersionStrategy';
 import redisClient from '../../lib/redisClient';
 
 export async function addPayeeHandler(req: Request, res: Response) {
-    const {payeeAddresses, uuid} = req.body;
+    const { payeeAddresses, uuid } = req.body;
     const apiKey = req.header('api-key');
     const payerSecret = req.header('payer-secret-key');
 
@@ -29,44 +29,43 @@ export async function addPayeeHandler(req: Request, res: Response) {
     }
 
     // version strategy is required
-	if (!versionStrategy) {
-		throw new Error("versionStrategy is required");
-	}
+    if (!versionStrategy) {
+        throw new Error("versionStrategy is required");
+    }
 
-	// must contain the value in the VersionStrategy enum
-	if (!Object.values(VersionStrategy).includes(versionStrategy)) {
-		throw new Error(`Invalid version strategy. Must be one of: ${Object.values(VersionStrategy).join(", ")}`);
-	}
+    // must contain the value in the VersionStrategy enum
+    if (!Object.values(VersionStrategy).includes(versionStrategy)) {
+        throw new Error(`Invalid version strategy. Must be one of: ${Object.values(VersionStrategy).join(", ")}`);
+    }
 
     const wallet = await deriveWallet(apiKey, payerSecret);
     let error: string | boolean = false;
 
     try {
-        const res = await addPaymentDelegationPayee({
+        const data = await addPaymentDelegationPayee({
             wallet,
             payeeAddresses,
             versionStrategy
         });
-
-        if (!res.tx) {
-            throw new Error('Failed to add payee: delegation transaction failed');
+        if (data.tx) {
+            const source = 'lit-relayer';
+            console.info("Minted PKP", {
+                requestId: data.tx,
+                source,
+            });
         }
-        if (res.tx) {
-			const source = 'lit-relayer';
-			console.info("Minted PKP", {
-				requestId: res.tx,
-				source,
-			});
-		}
-		
-		if (res.queueId) {
-			const queueId = res.queueId;
-			// mapping queueId => uuid for webhook 
-			await redisClient.hSet("userQueueIdMapping", queueId, uuid);
-			return res.status(200).send({
-				queueId
-			});
-		}
+
+        if (data.queueId) {
+            const queueId = data.queueId;
+            // mapping queueId => uuid for webhook 
+            await redisClient.hSet("userQueueIdMapping", queueId, uuid);
+            return res.status(200).send({
+                queueId
+            });
+        }
+
+        throw new Error('Failed to add payee: delegation transaction failed');
+
     } catch (err) {
         console.error('Failed to add payee', err);
         error = (err as Error).toString();
