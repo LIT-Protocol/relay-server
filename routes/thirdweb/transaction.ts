@@ -8,10 +8,23 @@ export async function getTxStatusByQueueId(
 ) {
     const { queueId } = req.params || req.query; 
     try {
-        const data = await ThirdWebLib.Action.getTxStatusByQueueId(queueId);
-        res.status(200).send({data});
-    }catch(err: any){
-        console.log(err)
-        res.status(500).send({success: false, error: err.message});
-    }
+        let data;
+        for (let i = 0; i < 100; i++) {
+          data = await ThirdWebLib.Action.getTxStatusByQueueId(queueId);
+          if (data.status === 'sent') {
+            console.log("transactionHash", data.transactionHash);
+            console.log('i', i);
+            break;
+          }
+        }
+    
+        if (data.status !== 'sent') {
+          return res.status(408).send({ success: false, error: 'Transaction not sent within expected time' });
+        }
+    
+        res.status(200).send({ ...data });
+      } catch (err:any) {
+        console.log(err);
+        res.status(500).send({ success: false, error: err.message });
+      }
 }

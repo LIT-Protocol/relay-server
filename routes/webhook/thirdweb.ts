@@ -44,8 +44,8 @@ export async function thirdwebWebHookHandler(req: Request, res: Response) {
         if(!socketId) {
             throw new Error("socketId not found in redis");
         }
-        io.to(socketId).emit('transactionComplete', {requestId: req.body.transactionHash, queueId: req.body.id});
-        res.status(200).send({requestId: req.body.transactionHash, queueId: req.body.id});
+        io.to(socketId).emit('transactionComplete', {txHash: req.body.transactionHash, queueId: req.body.id});
+        res.status(200).send({txHash: req.body.transactionHash, queueId: req.body.id});
     } catch (err) {
         console.log(err);
 
