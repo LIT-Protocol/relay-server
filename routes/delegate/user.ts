@@ -28,6 +28,9 @@ export async function addPayeeHandler(req: Request, res: Response) {
     console.log(!payeeAddresses);
     console.log(!Array.isArray(payeeAddresses));
     console.log(payeeAddresses.length < 1);
+    if(typeof payeeAddresses === 'string') {
+        payeeAddresses = JSON.parse(payeeAddresses);
+    }
     if (!payeeAddresses || !Array.isArray(payeeAddresses) || payeeAddresses.length < 1) {
         res.status(400).json({
             success: false,
