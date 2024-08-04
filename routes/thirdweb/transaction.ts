@@ -21,9 +21,12 @@ export async function getTxStatusByQueueId(
             console.log("transactionHash", data.transactionHash);
             console.log('i', i);
             return res.status(200).send({ ...data });
+          }else if(data.status === 'errored') {
+            console.log('i', i);
+            return res.status(200).send({ success: false, error: 'Transaction Failed'});
+          }
           }
           await delay(500);
-        }
     
         if (data.status !== 'sent') {
           return res.status(408).send({ success: false, error: 'Transaction not sent within expected time' });
