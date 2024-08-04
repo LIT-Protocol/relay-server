@@ -14,8 +14,10 @@ export async function getTxStatusByQueueId(
     try {
         let data;
         for (let i = 0; i < 100; i++) {
+          console.log('i', i);
           data = await ThirdWebLib.Action.getTxStatusByQueueId(queueId);
-          if (data.status === 'sent') {
+          console.log(data);
+          if (data.status === 'sent' || data.status === 'mined') {
             console.log("transactionHash", data.transactionHash);
             console.log('i', i);
             return res.status(200).send({ ...data });
