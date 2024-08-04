@@ -6,6 +6,7 @@ import { io } from '../..';
 const { WEBHOOK_SECRET } = process.env;
 export async function thirdwebWebHookHandler(req: Request, res: Response) {
     try {
+        // const eventEmitter = req.app.locals.eventEmitter;
         console.log("webhook");
         if (!WEBHOOK_SECRET) {
             throw new Error("WEBHOOK_SECRET Required");
@@ -32,6 +33,9 @@ export async function thirdwebWebHookHandler(req: Request, res: Response) {
             // Assuming expiration time is 5 minutes (300 seconds)
             throw new Error("Request has expired");
         }
+
+        // eventEmitter.emit('thirdwebTxSent', { txHash: req.body.transactionHash, queueId: req.body.id });
+
         console.log("queueId", req.body.id);
         const uuid = await redisClient.hGet("userQueueIdMapping",req.body.id);
         console.log("uuid", uuid);

@@ -8,6 +8,7 @@ export async function addPayeeHandler(req: Request, res: Response) {
     console.log("helopooo")
     let { payeeAddresses, uuid } = req.body;
     const apiKey = req.header('api-key');
+    // const eventEmitter = req.app.locals.eventEmitter;
     const payerSecret = req.header('payer-secret-key');
 
     const versionStrategy = getVersionStrategy(req.url);
@@ -21,7 +22,7 @@ export async function addPayeeHandler(req: Request, res: Response) {
 
         return;
     }
-    payeeAddresses = JSON.parse(payeeAddresses);
+    // payeeAddresses = JSON.parse(payeeAddresses);
     console.log("addPaymentDelegationPayee...1");
     console.log(payeeAddresses);
     console.log(!payeeAddresses);
@@ -53,7 +54,8 @@ export async function addPayeeHandler(req: Request, res: Response) {
         const data = await addPaymentDelegationPayee({
             wallet,
             payeeAddresses,
-            versionStrategy
+            versionStrategy,
+            // eventEmitter
         });
         if (data.tx) {
             const source = 'lit-relayer';

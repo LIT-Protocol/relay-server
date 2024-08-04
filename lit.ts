@@ -32,6 +32,8 @@ import {
 	manzano,
 } from "@lit-protocol/contracts";
 import { VersionStrategy } from "./routes/VersionStrategy";
+import { EventEmitter } from "stream";
+// import { waitForEvent } from "./eventEmitter";
 
 function getContractFromWorker(
 	network: LIT_NETWORK_VALUES,
@@ -732,8 +734,14 @@ export async function sendLitTokens(
 
 export async function mintCapacityCredits({
 	signer,
+	versionStrategy,
+	backendWalletAddress,
+	eventEmitter
 }: {
 	signer: ethers.Wallet;
+	versionStrategy?: VersionStrategy,
+	backendWalletAddress?:string,
+	eventEmitter?: EventEmitter
 }) {
 	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(
@@ -752,7 +760,7 @@ export async function mintCapacityCredits({
 	}
 
 	// set the expiration to midnight, 15 days from now
-	const timestamp = Date.now() + 15 * 24 * 60 * 60 * 1000;
+	const timestamp = Date.now() + 28 * 24 * 60 * 60 * 1000;
 	const futureDate = new Date(timestamp);
 	futureDate.setUTCHours(0, 0, 0, 0);
 
@@ -776,15 +784,39 @@ export async function mintCapacityCredits({
 		return;
 	}
 
-	const tx = await contract.functions.mint(expires, {
-		value: cost.toString(),
-	});
-	console.log("mint tx hash: ", tx.hash);
-	const res = await tx.wait();
 
-	const tokenIdFromEvent = res.events[0].topics[3];
-
-	return { tx, capacityTokenId: tokenIdFromEvent };
+	if(versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
+		console.log("mintCapacityCredits: FORWARD_TO_THIRDWEB");
+		if(!backendWalletAddress) {
+			throw new Error("backendWalletAddress is required for FORWARD_TO_THIRDWEB");
+		}
+		// if(!eventEmitter) {
+		// 	throw new Error("eventEmitter is required for FORWARD_TO_THIRDWEB");
+		// }
+		const response = await ThirdWebLib.Contract.write({
+			contractAddress: contract.address,
+			functionName: 'mint',
+			args: [expires],
+			txOverrides: {
+				value: cost.toString()
+			},
+			backendWalletAddress: backendWalletAddress
+		});
+		const {queueId} = response.result;
+		// const data = await waitForEvent(eventEmitter, 'thirdwebTxSent', 5000, queueId);
+		// console.log("data from EVENT", data);
+		return response;
+	}else {
+		const tx = await contract.functions.mint(expires, {
+			value: cost.toString(),
+		});
+		console.log("mint tx hash: ", tx.hash);
+		const res = await tx.wait();
+	
+		const tokenIdFromEvent = res.events[0].topics[3];
+	
+		return { tx, capacityTokenId: tokenIdFromEvent };
+	}
 }
 
 function normalizeTokenURI(tokenURI: string) {
@@ -809,8 +841,8 @@ function normalizeCapacity(capacity: any) {
 
 async function queryCapacityCredit(
 	contract: ethers.Contract,
-	owner: string,
 	tokenIndexForUser: number,
+	owner?: string,
 ) {
 	console.log(
 		`Querying capacity credit for owner ${owner} at index ${tokenIndexForUser}`,
@@ -842,7 +874,7 @@ async function queryCapacityCredit(
 	}
 }
 
-export async function queryCapacityCredits(signer: ethers.Wallet) {
+export async function queryCapacityCredits(signer: ethers.Wallet | undefined, address?: string) {
 	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(
 			`Payment delegation is not available on ${config.network}`,
@@ -853,11 +885,11 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 		config.network,
 		"RateLimitNFT",
 	);
-	const count = parseInt(await contract.functions.balanceOf(signer.address));
+	const count = parseInt(await contract.functions.balanceOf(signer?.address || address));
 
 	return Promise.all(
 		[...new Array(count)].map((_, i) =>
-			queryCapacityCredit(contract, signer.address, i),
+			queryCapacityCredit(contract, i, signer?.address || address,),
 		),
 	) as Promise<CapacityToken[]>;
 }
@@ -865,20 +897,28 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 export async function addPaymentDelegationPayee({
 	wallet,
 	payeeAddresses,
-	versionStrategy
+	versionStrategy,
+	eventEmitter
 }: {
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
-	versionStrategy: VersionStrategy
+	versionStrategy: VersionStrategy,
+	eventEmitter?: EventEmitter
 }) {
+	const backendWalletAddress = await rr.next();
 	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(
 			`Payment delegation is not available on ${config.network}`,
 		);
 	}
-
+	let capacityTokens: CapacityToken[] = [];
+	if(versionStrategy === VersionStrategy.DEFAULT) {
+		capacityTokens = await queryCapacityCredits(wallet);
+	} else {
+		console.log("queryCapacityCredits", backendWalletAddress);
+		capacityTokens = await queryCapacityCredits(undefined, backendWalletAddress);
+	}
 	// get the first token that is not expired
-	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
 	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
 	const capacityToken = capacityTokens.find((token) => !token.isExpired);
 
@@ -886,7 +926,7 @@ export async function addPaymentDelegationPayee({
 
 	if (!capacityToken) {
 		// mint a new token
-		const minted = await mintCapacityCredits({ signer: wallet });
+		const minted = await mintCapacityCredits({ signer: wallet, versionStrategy,backendWalletAddress: backendWalletAddress,eventEmitter });
 
 		if (!minted) {
 			throw new Error("Failed to mint capacity credits");
@@ -895,15 +935,16 @@ export async function addPaymentDelegationPayee({
 		console.log(
 			"No capacity token found, minted a new one:",
 			minted.capacityTokenId,
+			minted
 		);
 		tokenId = minted.capacityTokenId;
 	} else {
 		tokenId = capacityToken.tokenId;
 	}
 
-	if (!tokenId) {
-		throw new Error("Failed to get ID for capacity token");
-	}
+	// if (!tokenId) {
+	// 	throw new Error("Failed to get ID for capacity token");
+	// }
 
 	// add payer in contract
 	const provider = getProvider();
@@ -921,12 +962,14 @@ export async function addPaymentDelegationPayee({
 		return {tx};
 	}
 	if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
-		const address = await rr.next();
 		// const mintCost = await ThirdWebLib.Contract.read({
 		// 	contractAddress: pkpNft.address,
 		// 	functionName: pkpNftFunctions.mintCost,
 		// });
-	
+		// if(!eventEmitter){
+		// 	throw new Error("Event emitter is required for forward to thirdweb strategy");
+		// }
+		console.log("FORWARD_TO_THIRDWEB", backendWalletAddress);
 		const res = await ThirdWebLib.Contract.write({
 			contractAddress: paymentDelegationContract.address,
 			functionName: 'delegatePaymentsBatch',
@@ -938,10 +981,12 @@ export async function addPaymentDelegationPayee({
 			// 	gasLimit: gasLimit
 			// },
 			// this we have to dynamic using round robin
-			backendWalletAddress: address,
+			backendWalletAddress: backendWalletAddress,
 		});
-	
-		console.log("res:", res);
+		// const {queueId} = res.result;
+		// const data = await waitForEvent(eventEmitter, 'thirdwebTxSent', 5000, queueId);
+		
+		// console.log("res:", res);
 	
 		return res.result;
 	}

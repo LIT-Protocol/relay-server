@@ -13,6 +13,7 @@ import base64url from "base64url";
 import dotenv from "dotenv";
 import express from "express";
 import { Server as SocketIOServer } from 'socket.io';
+// import {eventEmitter} from './eventEmitter';
 
 dotenv.config();
 
@@ -73,8 +74,13 @@ import redisClient from "./lib/redisClient";
 import { thirdwebWebHookHandler } from "./routes/webhook/thirdweb";
 import { getTxStatusByQueueId } from "./routes/thirdweb/transaction";
 
+
+
 const app = express();
 let server = http.createServer(app);
+
+// Store eventEmitter in app.locals
+// app.locals.eventEmitter = eventEmitter;
 
 const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost" } = process.env;
 

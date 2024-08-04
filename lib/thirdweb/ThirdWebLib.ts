@@ -308,8 +308,8 @@ export namespace ThirdWebLib {
 			functionName: string;
 			args: any[];
 			txOverrides?:{
-				value: number,
-				gasLimit: string | BigNumber
+				value?: number,
+				gasLimit?: string | BigNumber
 			}
 			backendWalletAddress: string;
 			options?: {
