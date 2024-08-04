@@ -139,6 +139,7 @@ export namespace ThirdWebLib {
 				);
 				return balance;
 			} catch (e: any) {
+				console.log(e);
 				throw new Error("[ThirdWebLib] Error getting balance:", e);
 			}
 		}
@@ -161,6 +162,11 @@ export namespace ThirdWebLib {
 			amount: string;
 		}): Promise<{ queueId: string }> {
 			try {
+				console.log({
+					funder,
+					fundee,
+					amount,
+				});
 				const res = await ThirdWebLib.Fetch.post(
 					`/backend-wallet/${LIT_CHAIN_ID}/send-transaction`,
 					{
@@ -172,11 +178,12 @@ export namespace ThirdWebLib {
 						"x-backend-wallet-address": funder,
 					},
 				);
-
+				console.log("res",res);
 				return {
 					queueId: res.result.queueId,
 				};
 			} catch (e: any) {
+				console.log(e);
 				throw new Error("[ThirdWebLib] Error funding wallet:", e);
 			}
 		}
@@ -199,7 +206,7 @@ export namespace ThirdWebLib {
 			maxWallets?: number;
 		}): Promise<{ queueId: string }[]> {
 			const wallets = await ThirdWebLib.Action.getAllWallets({
-				limit: maxWallets || 500,
+				limit: maxWallets || 510,
 			});
 
 			// -- get all balances
