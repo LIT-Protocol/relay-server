@@ -57,9 +57,9 @@ export async function thirdwebWebHookHandler(req: Request, res: Response) {
 }
 
 export async function failedTxWebHookHandler(req: Request, res: Response) {
-    const err = new Error("Transaction Failed");
+    const err = new Error(`Transaction Failed: ${req.body.functionName}`);
     Sentry.captureException(err, {
-        data: {
+        extra: {
             ...req.body
         }
     });
