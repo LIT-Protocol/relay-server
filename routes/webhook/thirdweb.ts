@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { isExpired, isValidSignature } from '../../utils/thirdweb/webhook';
 import redisClient from '../../lib/redisClient';
 import { io } from '../..';
-
+import Sentry from "@sentry/node";
 const { WEBHOOK_SECRET } = process.env;
 export async function thirdwebWebHookHandler(req: Request, res: Response) {
     try {
@@ -35,7 +35,7 @@ export async function thirdwebWebHookHandler(req: Request, res: Response) {
         }
 
         // eventEmitter.emit('thirdwebTxSent', { txHash: req.body.transactionHash, queueId: req.body.id });
-
+        console.log("req.body", req.body);
         console.log("queueId", req.body.id);
         const uuid = await redisClient.hGet("userQueueIdMapping",req.body.id);
         console.log("uuid", uuid);
@@ -54,4 +54,13 @@ export async function thirdwebWebHookHandler(req: Request, res: Response) {
         console.log(err);
 
     }
+}
+
+export async function failedTxWebHookHandler(req: Request, res: Response) {
+    const err = new Error("Transaction Failed");
+    Sentry.captureException(err, {
+        data: {
+            ...req.body
+        }
+    });
 }

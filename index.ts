@@ -5,6 +5,7 @@
  * The webpages served from ./public use @simplewebauthn/browser.
  */
 
+import './instrument';
 import fs from "fs";
 import http from "http";
 import https from "https";
@@ -71,7 +72,7 @@ import { mintClaimedKeyId } from "./routes/auth/claim";
 import { registerPayerHandler } from "./routes/delegate/register";
 import { addPayeeHandler } from "./routes/delegate/user";
 import redisClient from "./lib/redisClient";
-import { thirdwebWebHookHandler } from "./routes/webhook/thirdweb";
+import { failedTxWebHookHandler, thirdwebWebHookHandler } from "./routes/webhook/thirdweb";
 import { getTxStatusByQueueId } from "./routes/thirdweb/transaction";
 
 
@@ -128,6 +129,7 @@ app.use(limiter);
 
 // --- thirdweb webhook
 app.post("/webhook", thirdwebWebHookHandler);
+app.post("/failedTx-webhook", failedTxWebHookHandler);
 
 app.use(apiKeyGateAndTracking);
 

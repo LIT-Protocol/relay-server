@@ -16,6 +16,7 @@
 		"@lit-protocol/constants": "^6.2.4",
 		"@lit-protocol/contracts": "^0.0.39",
 		"@lit-protocol/lit-node-client-nodejs": "^6.2.4",
+		"@sentry/node": "^8.23.0",
 		"@simplewebauthn/server": "6.2.1",
 		"@types/bun": "^1.1.6",
 		"async-mutex": "^0.5.0",
