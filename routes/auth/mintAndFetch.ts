@@ -10,6 +10,8 @@ import {
 } from "../../models";
 import { getVersionStrategy } from "../VersionStrategy";
 import redisClient from "../../lib/redisClient";
+import Sentry from "@sentry/node";
+
 
 export async function mintNextAndAddAuthMethodsHandler(
 	req: Request<
@@ -59,6 +61,14 @@ export async function mintNextAndAddAuthMethodsHandler(
 	} catch (err) {
 		console.error("[mintNextAndAddAuthMethodsHandler] Unable to mint PKP", {
 			err,
+		});
+		Sentry.captureException(err, {
+			contexts: {
+				request: {
+				versionStrategy,
+				...req.body
+				},
+			}
 		});
 		return res.status(500).json({
 			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP ${JSON.stringify(

@@ -51,7 +51,7 @@ export async function addPayeeHandler(req: Request, res: Response) {
 
     const wallet = await deriveWallet(apiKey, payerSecret);
     let error: string | boolean = false;
-
+    let queueId;
     try {
         console.log("addPaymentDelegationPayee...");
         const data = await addPaymentDelegationPayee({
@@ -69,7 +69,7 @@ export async function addPayeeHandler(req: Request, res: Response) {
         }
 
         if (data.queueId) {
-            const queueId = data.queueId;
+            queueId = data.queueId;
             // mapping queueId => uuid for webhook 
             console.log("in delegate uuid", uuid);
             console.log("queueId in delegate uuid", queueId);
@@ -82,6 +82,13 @@ export async function addPayeeHandler(req: Request, res: Response) {
         throw new Error('Failed to add payee: delegation transaction failed');
 
     } catch (err) {
+        Sentry.captureException(err, {
+			contexts: {
+				request: {
+					...req.body
+				},
+			}
+		});
         console.error('Failed to add payee', err);
         error = (err as Error).toString();
     }
@@ -93,7 +100,8 @@ export async function addPayeeHandler(req: Request, res: Response) {
         });
     } else {
         res.status(200).json({
-            success: true
+            success: true,
+            queueId: queueId
         });
     }
 }

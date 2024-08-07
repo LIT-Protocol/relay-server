@@ -42,6 +42,13 @@ export async function getAuthStatusHandler(
 		); // 30000ms is the max we will wait for.
 		console.log("mint PKP receipt", { mintReceipt });
 	} catch (err: any) {
+		Sentry.captureException(err, {
+			contexts: {
+				request: {
+					...req.body
+				},
+			}
+		});
 		console.error("Error waiting for transaction hash", {
 			txHash: requestId,
 			err,
@@ -64,6 +71,13 @@ export async function getAuthStatusHandler(
 	try {
 		tokenIdFromEvent = await getTokenIdFromTransferEvent(mintReceipt);
 	} catch (err) {
+		Sentry.captureException(err, {
+			contexts: {
+				request: {
+					...req.body
+				},
+			}
+		});
 		console.error("Error fetching tokenId from receipt", {
 			err,
 		});
@@ -94,6 +108,13 @@ export async function getAuthStatusHandler(
 			pkpPublicKey,
 		});
 	} catch (err:any) {
+		Sentry.captureException(err, {
+			contexts: {
+				request: {
+					...req.body
+				},
+			}
+		});
 		console.error("Error fetching PKP information", {
 			tokenIdFromEvent,
 			err,

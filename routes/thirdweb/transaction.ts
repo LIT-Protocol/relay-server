@@ -13,7 +13,7 @@ export async function getTxStatusByQueueId(
     const { queueId } = req.params || req.query; 
     try {
         let data;
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 50; i++) {
           console.log('i', i);
           data = await ThirdWebLib.Action.getTxStatusByQueueId(queueId);
           console.log(data);
@@ -25,15 +25,29 @@ export async function getTxStatusByQueueId(
             console.log('i', i);
             return res.status(200).send({ success: false, error: 'Transaction Failed'});
           }
-          }
           await delay(500);
+        }
     
         if (data.status !== 'sent') {
+          const err = new Error("Timeout, didn't get any Tx data by queueID within 25 seconds");
+          Sentry.captureException(err, {
+            contexts: {
+              request: {
+                ...req.body
+              },
+            }
+          });
           return res.status(408).send({ success: false, error: 'Transaction not sent within expected time' });
         }
     
       } catch (err:any) {
-        console.log(err);
+        Sentry.captureException(err, {
+          contexts: {
+            request: {
+              ...req.body
+            },
+          }
+        });
         res.status(500).send({ success: false, error: err.message });
       }
 }

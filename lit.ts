@@ -402,30 +402,29 @@ export async function mintPKPV2({
 	if (!Object.values(VersionStrategy).includes(versionStrategy)) {
 		throw new Error(`Invalid version strategy. Must be one of: ${Object.values(VersionStrategy).join(", ")}`);
 	}
-
-
-	// first get mint cost
-	const mintCost = await pkpNft[pkpNftFunctions.mintCost]();
-
-	const mintTxData =
-		await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
-			keyType,
-			permittedAuthMethodTypes,
-			permittedAuthMethodIds,
-			permittedAuthMethodPubkeys,
-			permittedAuthMethodScopes,
-			addPkpEthAddressAsPermittedAddress,
-			sendPkpToItself,
-			{ value: mintCost },
-		);
+	let mintTxData;
+	let mintCost;
+	try {
+		// first get mint cost
+		mintCost = await pkpNft[pkpNftFunctions.mintCost]();
+	
+		mintTxData =
+			await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
+				{ value: mintCost },
+			);
+	}catch(err) {
+		throw err;
+	}
 
 	// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
 	let gasLimit;
-
-
-	
-
-
 	try {
 		gasLimit = await pkpNft.provider.estimateGas(mintTxData);
 		// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
@@ -444,60 +443,60 @@ export async function mintPKPV2({
 		gasLimit = ethers.utils.hexlify(5000000);
 	}
 	if (versionStrategy === VersionStrategy.DEFAULT) {
-
-		const tx = await pkpHelper.mintNextAndAddAuthMethods(
-			keyType,
-			permittedAuthMethodTypes,
-			permittedAuthMethodIds,
-			permittedAuthMethodPubkeys,
-			permittedAuthMethodScopes,
-			addPkpEthAddressAsPermittedAddress,
-			sendPkpToItself,
-
-			{ value: mintCost, gasLimit: gasLimit },
-		);
-		await tx.wait();
-		console.log("tx", tx);
-		return tx;
-	}
-if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
-	const address = await rr.next();
-	// const mintCost = await ThirdWebLib.Contract.read({
-	// 	contractAddress: pkpNft.address,
-	// 	functionName: pkpNftFunctions.mintCost,
-	// });
-
-	const res = await ThirdWebLib.Contract.write({
-		contractAddress: pkpHelper.address,
-		functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
-		args: [
-			keyType,
-			permittedAuthMethodTypes,
-			permittedAuthMethodIds,
-			permittedAuthMethodPubkeys,
-			permittedAuthMethodScopes,
-			addPkpEthAddressAsPermittedAddress,
-			sendPkpToItself,
-		],
-		txOverrides: {
-			value: mintCost.toString(),
-			gasLimit: gasLimit
-		},
-		// this we have to dynamic using round robin
-		backendWalletAddress: address,
-	});
-
-	console.log("res:", res);
-
-	return res.result;
-}
-
+		try {
+			const tx = await pkpHelper.mintNextAndAddAuthMethods(
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
 	
+				{ value: mintCost, gasLimit: gasLimit },
+			);
+			await tx.wait();
+			console.log("tx", tx);
+			return tx;
+		}catch(err) {
+			throw err;
+		}
+	}
+	if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
+		try {
+			const address = await rr.next();
+			// const mintCost = await ThirdWebLib.Contract.read({
+			// 	contractAddress: pkpNft.address,
+			// 	functionName: pkpNftFunctions.mintCost,
+			// });
 
+			const res = await ThirdWebLib.Contract.write({
+				contractAddress: pkpHelper.address,
+				functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
+				args: [
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					sendPkpToItself,
+				],
+				txOverrides: {
+					value: mintCost.toString(),
+					gasLimit: gasLimit
+				},
+				// this we have to dynamic using round robin
+				backendWalletAddress: address,
+			});
+
+			console.log("res:", res);
+			return res.result;
+		}catch(err) {
+			throw err;
+		}
+	}
 	throw new Error("Invalid version strategy");
-
-
-
 }
 
 export async function mintPKP({
