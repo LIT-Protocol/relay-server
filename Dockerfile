@@ -7,4 +7,4 @@ COPY . .
 RUN env NODE_ENV=development yarn install
 RUN env NODE_ENV=production yarn build
 
-CMD yarn start
+CMD ["ash", "start.sh"]
