@@ -3,5 +3,5 @@ node_modules
 dist
 .DS_Store
 *.pem
-.sentryclirc
 .npmrc
+.sentryclirc
