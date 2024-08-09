@@ -3,6 +3,8 @@ import { deriveWallet } from './register';
 import { addPaymentDelegationPayee } from '../../lit';
 import { getVersionStrategy, VersionStrategy } from '../VersionStrategy';
 import redisClient from '../../lib/redisClient';
+import Sentry from "@sentry/node";
+
 
 export async function addPayeeHandler(req: Request, res: Response) {
     console.log("helopooo")

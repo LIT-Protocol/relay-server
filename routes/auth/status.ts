@@ -11,6 +11,7 @@ import {
 import { getTokenIdFromTransferEvent } from "../../utils/receipt";
 import axios from "axios";
 import config from "../../config";
+const Sentry = require("@sentry/node");
 
 const safeBlockConfirmations = parseInt(
 	process.env.SAFE_BLOCK_CONFIRMATIONS || "1",
