@@ -62,10 +62,9 @@ export async function failedTxWebHookHandler(req: Request, res: Response) {
         throw new Error(`Transaction Failed: ${req.body.functionName}`);
     }catch(err) {
         console.log(Sentry.isInitialized());
-        Sentry.captureException(err, {
-            extra: {
-                ...req.body
-            }
+        Sentry.withScope(scope => {
+            scope.setExtra("request_body", req.body);
+            Sentry.captureException(err);
         });
         res.send({status: 'ok'});
     }
