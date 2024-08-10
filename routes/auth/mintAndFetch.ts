@@ -10,7 +10,7 @@ import {
 } from "../../models";
 import { getVersionStrategy } from "../VersionStrategy";
 import redisClient from "../../lib/redisClient";
-import Sentry from "@sentry/node";
+import * as Sentry from "@sentry/node";
 
 
 export async function mintNextAndAddAuthMethodsHandler(

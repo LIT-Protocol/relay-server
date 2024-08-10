@@ -1,7 +1,7 @@
 import { ThirdWebLib } from "../../lib/thirdweb/ThirdWebLib";
 import { Request } from "express";
 import { Response } from "express-serve-static-core";
-import Sentry from "@sentry/node";
+import * as Sentry from "@sentry/node";
 
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));

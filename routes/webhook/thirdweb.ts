@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import { isExpired, isValidSignature } from '../../utils/thirdweb/webhook';
 import redisClient from '../../lib/redisClient';
 import { io } from '../..';
-import Sentry from "@sentry/node";
+import * as Sentry from "@sentry/node";
+
 const { WEBHOOK_SECRET } = process.env;
 export async function thirdwebWebHookHandler(req: Request, res: Response) {
     try {
@@ -57,12 +58,15 @@ export async function thirdwebWebHookHandler(req: Request, res: Response) {
 }
 
 export async function failedTxWebHookHandler(req: Request, res: Response) {
-    const err = new Error(`Transaction Failed: ${req.body.functionName}`);
-    console.log(Sentry.isInitialized());
-    Sentry.captureException(err, {
-        extra: {
-            ...req.body
-        }
-    });
-    res.send({status: 'ok'});
+    try {
+        throw new Error(`Transaction Failed: ${req.body.functionName}`);
+    }catch(err) {
+        console.log(Sentry.isInitialized());
+        Sentry.captureException(err, {
+            extra: {
+                ...req.body
+            }
+        });
+        res.send({status: 'ok'});
+    }
 }
