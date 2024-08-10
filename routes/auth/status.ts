@@ -45,7 +45,7 @@ export async function getAuthStatusHandler(
 	} catch (err: any) {
 		Sentry.captureException(err, {
 			contexts: {
-				request: {
+				request_body: {
 					...req.body
 				},
 			}
@@ -74,7 +74,7 @@ export async function getAuthStatusHandler(
 	} catch (err) {
 		Sentry.captureException(err, {
 			contexts: {
-				request: {
+				request_body: {
 					...req.body
 				},
 			}
@@ -111,7 +111,7 @@ export async function getAuthStatusHandler(
 	} catch (err:any) {
 		Sentry.captureException(err, {
 			contexts: {
-				request: {
+				request_body: {
 					...req.body
 				},
 			}

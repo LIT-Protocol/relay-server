@@ -33,7 +33,7 @@ export async function getTxStatusByQueueId(
           const err = new Error("Timeout, didn't get any Tx data by queueID within 25 seconds");
           Sentry.captureException(err, {
             contexts: {
-              request: {
+              request_body: {
                 ...req.body
               },
             }
@@ -44,7 +44,7 @@ export async function getTxStatusByQueueId(
       } catch (err:any) {
         Sentry.captureException(err, {
           contexts: {
-            request: {
+            request_body: {
               ...req.body
             },
           }

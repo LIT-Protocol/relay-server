@@ -86,7 +86,7 @@ export async function addPayeeHandler(req: Request, res: Response) {
     } catch (err) {
         Sentry.captureException(err, {
 			contexts: {
-				request: {
+				request_body: {
 					...req.body
 				},
 			}
