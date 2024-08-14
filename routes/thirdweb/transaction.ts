@@ -21,10 +21,10 @@ export async function getTxStatusByQueueId(
           if (data.status === 'sent' || data.status === 'mined') {
             console.log("transactionHash", data.transactionHash);
             console.log('i', i);
-            return res.status(200).send({ ...data });
+            return res.status(200).send({success: true, ...data });
           }else if(data.status === 'errored') {
             console.log('i', i);
-            return res.status(200).send({ success: false, error: 'Transaction Failed'});
+            return res.status(200).send({data, success: false, error: 'Transaction Failed'});
           }
           await delay(500);
         }

@@ -92,7 +92,7 @@ export async function getAuthStatusHandler(
 		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
 		const payeeAddresses = JSON.stringify([pkpEthAddress]);
 		console.log("tooooo....");
-		const {data: {queueId}} = await axios.post(`${config.baseUrl}/api/v2/add-users`, {
+		const {data: {queueId}} = await axios.post(`http://localhost:${config.port}/api/v2/add-users`, {
 			payeeAddresses, uuid
 		}, {
 			headers: { 
