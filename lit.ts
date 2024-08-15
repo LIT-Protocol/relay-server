@@ -19,11 +19,6 @@ import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
 import { ThirdWebLib } from "./lib/thirdweb/ThirdWebLib";
 import { MintPKPV2 } from "./types/lit";
 
-import { backendWallets } from "./utils/thirdweb/constants";
-import { RoundRobin } from "./utils/thirdweb/roundRobin";
-
-const rr = new RoundRobin(backendWallets);
-
 import {
 	datil,
 	datilDev,
@@ -33,6 +28,7 @@ import {
 } from "@lit-protocol/contracts";
 import { VersionStrategy } from "./routes/VersionStrategy";
 import { EventEmitter } from "stream";
+import { rr } from ".";
 // import { waitForEvent } from "./eventEmitter";
 
 function getContractFromWorker(

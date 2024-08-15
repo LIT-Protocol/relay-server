@@ -71,15 +71,18 @@ import {
 import { mintClaimedKeyId } from "./routes/auth/claim";
 import { registerPayerHandler } from "./routes/delegate/register";
 import { addPayeeHandler } from "./routes/delegate/user";
-import redisClient from "./lib/redisClient";
+// import redisClient from "./lib/redisClient";
 import { failedTxWebHookHandler, thirdwebWebHookHandler } from "./routes/webhook/thirdweb";
 import { getTxStatusByQueueId } from "./routes/thirdweb/transaction";
+import { RoundRobin } from './utils/thirdweb/roundRobin';
+import { backendWallets } from './utils/thirdweb/constants';
 
 
 
 const app = express();
 let server = http.createServer(app);
 
+export const rr = new RoundRobin(backendWallets);
 // Store eventEmitter in app.locals
 // app.locals.eventEmitter = eventEmitter;
 
@@ -89,41 +92,41 @@ app.use(express.static("./public/"));
 app.use(express.json());
 app.use(cors());
 
-export const io = new SocketIOServer(server, {
-	cors: {
-	  origin: "*", // Allow all origins, you can restrict this to your client's URL
-	  methods: ["GET", "POST"]
-	}
-  });
-io.on('connection', (socket) => {
-    console.log('New client connected');
+// export const io = new SocketIOServer(server, {
+// 	cors: {
+// 	  origin: "*", // Allow all origins, you can restrict this to your client's URL
+// 	  methods: ["GET", "POST"]
+// 	}
+//   });
+// io.on('connection', (socket) => {
+//     console.log('New client connected');
 
-    // Store user identifier with the socket ID in Redis
-    socket.on('register', async (userId) => {
-		try {
-			await redisClient.hSet("userSocketMapping", userId, socket.id);
-			console.log(`✅ User ${userId} connected with socket ID ${socket.id}`);
-		}catch(err){
-			console.error('❌ Error storing user ID in Redis:', err);
-		}
-    });
+//     // Store user identifier with the socket ID in Redis
+//     socket.on('register', async (userId) => {
+// 		try {
+// 			await redisClient.hSet("userSocketMapping", userId, socket.id);
+// 			console.log(`✅ User ${userId} connected with socket ID ${socket.id}`);
+// 		}catch(err){
+// 			console.error('❌ Error storing user ID in Redis:', err);
+// 		}
+//     });
 
-	socket.on('disconnect', async () => {
-        try {
-            const keys = await redisClient.hKeys('userSocketMapping');
-            for (const key of keys) {
-                const socketId = await redisClient.hGet("userSocketMapping", key);
-                if (socketId === socket.id) {
-                   // await redisClient.hDel("userSocketMapping", key);
-                    console.log(`🔴 User ${key} disconnected`);
-                    break;
-                }
-            }
-        } catch (err) {
-            console.error('❌ Error handling disconnection:', err);
-        }
-    });
-});
+// 	socket.on('disconnect', async () => {
+//         try {
+//             const keys = await redisClient.hKeys('userSocketMapping');
+//             for (const key of keys) {
+//                 const socketId = await redisClient.hGet("userSocketMapping", key);
+//                 if (socketId === socket.id) {
+//                    // await redisClient.hDel("userSocketMapping", key);
+//                     console.log(`🔴 User ${key} disconnected`);
+//                     break;
+//                 }
+//             }
+//         } catch (err) {
+//             console.error('❌ Error handling disconnection:', err);
+//         }
+//     });
+// });
 
 app.use(limiter);
 
@@ -327,14 +330,16 @@ if (ENABLE_HTTPS) {
 			},
 			app,
 		);
-	server.listen(port, host, () => {
+	server.listen(port, host, async () => {
+		await rr.init();
 		console.log(`🚀 1: Server ready at ${host}:${port}`);
 	});
 } else {
 	const host = "127.0.0.1";
 	const port = config.port;
 	
-	server.listen(port, () => {
+	server.listen(port, async () => {
+		await rr.init();
 		console.log(`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} |`);
 	});
 }

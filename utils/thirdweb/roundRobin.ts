@@ -1,4 +1,5 @@
 import {Mutex} from "async-mutex";
+import redisClient from "../../lib/redisClient";
 
 export class RoundRobin {
     addresses: string[];
@@ -9,7 +10,14 @@ export class RoundRobin {
         this.index = 0;
         this.mutex = new Mutex();
     }
-
+    async init () {
+        const rr_pointer = await redisClient.get(`${process.env.NODE_ENV}_rr_pointer`);
+        if (rr_pointer) {
+            this.index = parseInt(rr_pointer);
+        }else{
+            await redisClient.set(`${process.env.NODE_ENV}_rr_pointer`, this.index.toString());
+        }
+    }
     async next() {
         const release = await this.mutex.acquire();
         try {

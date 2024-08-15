@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { isExpired, isValidSignature } from '../../utils/thirdweb/webhook';
-import redisClient from '../../lib/redisClient';
-import { io } from '../..';
+// import redisClient from '../../lib/redisClient';
+// import { io } from '../..';
 import * as Sentry from "@sentry/node";
 
 const { WEBHOOK_SECRET } = process.env;
@@ -36,20 +36,20 @@ export async function thirdwebWebHookHandler(req: Request, res: Response) {
         }
 
         // eventEmitter.emit('thirdwebTxSent', { txHash: req.body.transactionHash, queueId: req.body.id });
-        console.log("req.body", req.body);
-        console.log("queueId", req.body.id);
-        const uuid = await redisClient.hGet("userQueueIdMapping",req.body.id);
-        console.log("uuid", uuid);
-        if(!uuid) {
-            throw new Error("Queue ID not found in redis");
-        }
-        //await redisClient.hDel("userQueueIdMapping", req.body.id); 
-        const socketId = await redisClient.hGet("userSocketMapping",uuid);
-        console.log("socketId", socketId);
-        if(!socketId) {
-            throw new Error("socketId not found in redis");
-        }
-        io.to(socketId).emit('transactionComplete', {txHash: req.body.transactionHash, queueId: req.body.id});
+        // console.log("req.body", req.body);
+        // console.log("queueId", req.body.id);
+        // const uuid = await redisClient.hGet("userQueueIdMapping",req.body.id);
+        // console.log("uuid", uuid);
+        // if(!uuid) {
+        //     throw new Error("Queue ID not found in redis");
+        // }
+        // //await redisClient.hDel("userQueueIdMapping", req.body.id); 
+        // const socketId = await redisClient.hGet("userSocketMapping",uuid);
+        // console.log("socketId", socketId);
+        // if(!socketId) {
+        //     throw new Error("socketId not found in redis");
+        // }
+        // io.to(socketId).emit('transactionComplete', {txHash: req.body.transactionHash, queueId: req.body.id});
         res.status(200).send({txHash: req.body.transactionHash, queueId: req.body.id});
     } catch (err) {
         console.log(err);

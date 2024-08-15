@@ -49,7 +49,7 @@ export async function mintNextAndAddAuthMethodsHandler(
 		if (mintTx.queueId) {
 			const queueId = mintTx.queueId;
 			// mapping queueId => uuid for webhook 
-			await redisClient.hSet("userQueueIdMapping", queueId, uuid);
+			// await redisClient.hSet("userQueueIdMapping", queueId, uuid);
 			return res.status(200).json({
 				queueId
 			});

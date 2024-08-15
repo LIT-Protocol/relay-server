@@ -8,7 +8,7 @@ const AUTH_HEADERS = {
 };
 
 // -- chain config
-const LIT_CHAIN_ID = process.env.LIT_CHAIN_ID;
+const LIT_CHAIN_ID = process.env.LIT_CHAIN_ID || '175188';
 // const LIT_SLUG = "lit-protocol";
 // const LIT_SLUG = "2311";
 
