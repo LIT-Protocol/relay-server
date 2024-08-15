@@ -11,11 +11,11 @@ export class RoundRobin {
         this.mutex = new Mutex();
     }
     async init () {
-        const rr_pointer = await redisClient.get(`${process.env.NODE_ENV}_rr_pointer`);
+        const rr_pointer = await redisClient.get(`production_rr_pointer`);
         if (rr_pointer) {
             this.index = parseInt(rr_pointer);
         }else{
-            await redisClient.set(`${process.env.NODE_ENV}_rr_pointer`, this.index.toString());
+            await redisClient.set(`production_rr_pointer`, this.index.toString());
         }
     }
     async next() {
@@ -24,7 +24,7 @@ export class RoundRobin {
             const address = this.addresses[this.index];
             this.index = (this.index + 1) % this.addresses.length;
             console.log("🛑🛑 this.index", this.index);
-            await redisClient.set(`${process.env.NODE_ENV}_rr_pointer`, this.index.toString());
+            await redisClient.set(`production_rr_pointer`, this.index.toString());
             return address;
         } finally {
             release();
