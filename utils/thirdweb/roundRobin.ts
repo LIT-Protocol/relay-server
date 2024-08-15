@@ -23,7 +23,7 @@ export class RoundRobin {
         try {
             const address = this.addresses[this.index];
             this.index = (this.index + 1) % this.addresses.length;
-            console.log("this.index", this.index);
+            console.log("🛑🛑 this.index", this.index);
             await redisClient.set(`${process.env.NODE_ENV}_rr_pointer`, this.index.toString());
             return address;
         } finally {

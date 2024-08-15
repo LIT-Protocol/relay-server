@@ -8,7 +8,7 @@ const { WEBHOOK_SECRET } = process.env;
 export async function thirdwebWebHookHandler(req: Request, res: Response) {
     try {
         // const eventEmitter = req.app.locals.eventEmitter;
-        console.log("webhook");
+        // console.log("webhook");
         if (!WEBHOOK_SECRET) {
             throw new Error("WEBHOOK_SECRET Required");
         }
