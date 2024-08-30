@@ -33,14 +33,16 @@ export async function getAuthStatusHandler(
 	console.log("uuid", uuid);
 	// query the chain using requestId as the txHash.
 	const provider = getProvider();
-
+	console.time("before calling add-user");
 	let mintReceipt: providers.TransactionReceipt;
 	try {
+		console.time("🙂 waitForTransaction");
 		mintReceipt = await provider.waitForTransaction(
 			requestId,
 			safeBlockConfirmations,
 			30000,
 		); // 30000ms is the max we will wait for.
+		console.timeEnd("🙂 waitForTransaction");
 		console.log("mint PKP receipt", { mintReceipt });
 	} catch (err: any) {
 		Sentry.captureException(err, {
@@ -65,7 +67,7 @@ export async function getAuthStatusHandler(
 		});
 	}
 
-	console.debug(mintReceipt.logs);
+	//console.debug(mintReceipt.logs);
 
 	// Once tx hash received, fetch eth adddress from chain
 	let tokenIdFromEvent: string;
@@ -88,21 +90,32 @@ export async function getAuthStatusHandler(
 	}
 
 	try {
-		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
-		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
-		const payeeAddresses = JSON.stringify([pkpEthAddress]);
-		console.log("tooooo....");
-		const {data: {queueId}} = await axios.post(`http://localhost:${config.port}/api/v2/add-users`, {
-			payeeAddresses, uuid
-		}, {
-			headers: { 
-				'api-key': config.apiKey, 
-				'payer-secret-key': config.payerSecret, 
-				'Content-Type': 'application/json'
-			}
-		});
+		console.time("🙂 PKP ETH and PUBLICKEY");
+		const [pkpEthAddress, pkpPublicKey] = await Promise.all([
+			getPkpEthAddress(tokenIdFromEvent),
+			getPkpPublicKey(tokenIdFromEvent),
+		]);		
+		console.timeEnd("🙂 PKP ETH and PUBLICKEY");
+
+		//<---- have to add PKP ethAddress to redis for pushing it to payment DB via cron job ----->
+		
+		//const payeeAddresses = JSON.stringify([pkpEthAddress]);
+		//console.log("tooooo....");
+		// console.time("🙂 add-users");
+		// console.timeEnd("before calling add-user");
+		// const {data: {queueId}} = await axios.post(`http://localhost:${config.port}/api/v2/add-users`, {
+		// 	payeeAddresses, uuid
+		// }, {
+		// 	headers: { 
+		// 		'api-key': config.apiKey, 
+		// 		'payer-secret-key': config.payerSecret, 
+		// 		'Content-Type': 'application/json'
+		// 	}
+		// });
+		// console.timeEnd("🙂 add-users");
+
 		return res.status(200).json({
-			queueId: queueId,
+			//queueId: "queueId",
 			status: AuthStatus.Succeeded,
 			pkpTokenId: tokenIdFromEvent,
 			pkpEthAddress,

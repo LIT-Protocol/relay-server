@@ -1,4 +1,5 @@
 import { BigNumber, ethers } from "ethers";
+const fetch = require('node-fetch');
 
 // -- thirdweb config
 const THIRDWEB_ENGINE_URL = process.env.THIRDWEB_ENGINE_URL;
@@ -20,13 +21,14 @@ export namespace ThirdWebLib {
 		 * @returns A Promise that resolves to the fetched data.
 		 */
 		export async function get(path: string) {
-			const res = await (
+			// const fetch = (await import('node-fetch')).default;
+			const res: any = await (
 				await fetch(`${THIRDWEB_ENGINE_URL}${path}`, {
 					headers: AUTH_HEADERS,
 				})
 			)
 				.json()
-				.catch((err) => {
+				.catch((err:any) => {
 					console.error("Error fetching chain:", err);
 				});
 
@@ -42,6 +44,7 @@ export namespace ThirdWebLib {
 		 * @returns A Promise that resolves to the response data from the server.
 		 */
 		export async function post(path: string, body: any, extraHeaders = {}) {
+			// const fetch = (await import('node-fetch')).default;
 			const res = await (
 				await fetch(`${THIRDWEB_ENGINE_URL}${path}`, {
 					method: "POST",
@@ -54,7 +57,7 @@ export namespace ThirdWebLib {
 				})
 			)
 				.json()
-				.catch((err) => {
+				.catch((err:any) => {
 					console.error("Error fetching chain:", err);
 				});
 
@@ -106,7 +109,7 @@ export namespace ThirdWebLib {
 			status: "success" | "error";
 		}> {
 			try {
-				const res = await ThirdWebLib.Fetch.post(
+				const res: any = await ThirdWebLib.Fetch.post(
 					"/backend-wallet/create",
 					{
 						label: name,
@@ -167,7 +170,7 @@ export namespace ThirdWebLib {
 					fundee,
 					amount,
 				});
-				const res = await ThirdWebLib.Fetch.post(
+				const res:any = await ThirdWebLib.Fetch.post(
 					`/backend-wallet/${LIT_CHAIN_ID}/send-transaction`,
 					{
 						toAddress: fundee,
@@ -338,6 +341,8 @@ export namespace ThirdWebLib {
 
 				return res;
 			} catch (e: any) {
+				console.log("error in thirdweb write", e);
+				console.log("error message in thirdweb write", e.message);
 				throw new Error("[ThirdWebLib] Error writing contract:", e);
 			}
 		}

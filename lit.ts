@@ -466,7 +466,7 @@ export async function mintPKPV2({
 			// 	functionName: pkpNftFunctions.mintCost,
 			// });
 
-			const res = await ThirdWebLib.Contract.write({
+			const res: any = await ThirdWebLib.Contract.write({
 				contractAddress: pkpHelper.address,
 				functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
 				args: [
@@ -788,7 +788,7 @@ export async function mintCapacityCredits({
 		// if(!eventEmitter) {
 		// 	throw new Error("eventEmitter is required for FORWARD_TO_THIRDWEB");
 		// }
-		const response = await ThirdWebLib.Contract.write({
+		const response: any = await ThirdWebLib.Contract.write({
 			contractAddress: contract.address,
 			functionName: 'mint',
 			args: [expires],
@@ -906,43 +906,43 @@ export async function addPaymentDelegationPayee({
 			`Payment delegation is not available on ${config.network}`,
 		);
 	}
-	let capacityTokens: CapacityToken[] = [];
-	if(versionStrategy === VersionStrategy.DEFAULT) {
-		capacityTokens = await queryCapacityCredits(wallet);
-	} else {
-		console.log("queryCapacityCredits", backendWalletAddress);
-		capacityTokens = await queryCapacityCredits(undefined, backendWalletAddress);
-	}
-	// get the first token that is not expired
-	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
-	const capacityToken = capacityTokens.find((token) => !token.isExpired);
+	// let capacityTokens: CapacityToken[] = [];
+	// if(versionStrategy === VersionStrategy.DEFAULT) {
+	// 	capacityTokens = await queryCapacityCredits(wallet);
+	// } else {
+	// 	console.log("queryCapacityCredits", backendWalletAddress);
+	// 	capacityTokens = await queryCapacityCredits(undefined, backendWalletAddress);
+	// }
+	// // get the first token that is not expired
+	// console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
+	// const capacityToken = capacityTokens.find((token) => !token.isExpired);
 
-	let tokenId: number | null = null;
+	// let tokenId: number | null = null;
 
-	if (!capacityToken) {
-		// mint a new token
-		const minted = await mintCapacityCredits({ signer: wallet, versionStrategy,backendWalletAddress: backendWalletAddress,eventEmitter });
+	// if (!capacityToken) {
+	// 	// mint a new token
+	// 	const minted = await mintCapacityCredits({ signer: wallet, versionStrategy,backendWalletAddress: backendWalletAddress,eventEmitter });
 
-		if (!minted) {
-			throw new Error("Failed to mint capacity credits");
-		}
+	// 	if (!minted) {
+	// 		throw new Error("Failed to mint capacity credits");
+	// 	}
 
-		console.log(
-			"No capacity token found, minted a new one:",
-			minted.capacityTokenId,
-			minted
-		);
-		tokenId = minted.capacityTokenId;
-	} else {
-		tokenId = capacityToken.tokenId;
-	}
+	// 	console.log(
+	// 		"No capacity token found, minted a new one:",
+	// 		minted.capacityTokenId,
+	// 		minted
+	// 	);
+	// 	tokenId = minted.capacityTokenId;
+	// } else {
+	// 	tokenId = capacityToken.tokenId;
+	// }
 
 	// if (!tokenId) {
 	// 	throw new Error("Failed to get ID for capacity token");
 	// }
 
 	// add payer in contract
-	const provider = getProvider();
+	//const provider = getProvider();
 	const paymentDelegationContract = await getContractFromWorker(
 		config.network,
 		"PaymentDelegation",
@@ -965,7 +965,8 @@ export async function addPaymentDelegationPayee({
 		// 	throw new Error("Event emitter is required for forward to thirdweb strategy");
 		// }
 		console.log("FORWARD_TO_THIRDWEB", backendWalletAddress);
-		const res = await ThirdWebLib.Contract.write({
+		console.time("😓 😓 ThirdWebCall");
+		const res:any = await ThirdWebLib.Contract.write({
 			contractAddress: paymentDelegationContract.address,
 			functionName: 'delegatePaymentsBatch',
 			args: [
@@ -978,6 +979,7 @@ export async function addPaymentDelegationPayee({
 			// this we have to dynamic using round robin
 			backendWalletAddress: backendWalletAddress,
 		});
+		console.timeEnd("😓 😓 ThirdWebCall");
 		// const {queueId} = res.result;
 		// const data = await waitForEvent(eventEmitter, 'thirdwebTxSent', 5000, queueId);
 		
