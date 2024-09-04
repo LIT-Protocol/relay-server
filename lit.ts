@@ -378,8 +378,10 @@ export async function mintPKPV2({
 		sendPkpToItself,
 	);
 
-	const pkpHelper = await getPkpHelperContract(config.network);
-	const pkpNft = await getPkpNftContract(config.network);
+	const [pkpHelper, pkpNft] = await Promise.all([
+		getPkpHelperContract(config.network),
+		getPkpNftContract(config.network)
+	  ]);
 	const pkpNftFunctions = {
 		mintCost: 'mintCost',
 	}
@@ -402,19 +404,23 @@ export async function mintPKPV2({
 	let mintCost;
 	try {
 		// first get mint cost
-		mintCost = await pkpNft[pkpNftFunctions.mintCost]();
-	
-		mintTxData =
-			await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
-				keyType,
-				permittedAuthMethodTypes,
-				permittedAuthMethodIds,
-				permittedAuthMethodPubkeys,
-				permittedAuthMethodScopes,
-				addPkpEthAddressAsPermittedAddress,
-				sendPkpToItself,
-				{ value: mintCost },
-			);
+		// Start both tasks without awaiting them
+		console.time("😶‍🌫️ get mint cost");
+		const mintCostPromise = pkpNft.mintCost();
+		const mintTxDataPromise = pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
+		keyType,
+		permittedAuthMethodTypes,
+		permittedAuthMethodIds,
+		permittedAuthMethodPubkeys,
+		permittedAuthMethodScopes,
+		addPkpEthAddressAsPermittedAddress,
+		sendPkpToItself,
+		{ value: await mintCostPromise }
+		);
+
+		// Await both promises at the same time
+		[mintCost, mintTxData] = await Promise.all([mintCostPromise, mintTxDataPromise]);
+		console.timeEnd("😶‍🌫️ get mint cost");
 	}catch(err) {
 		throw err;
 	}
@@ -465,7 +471,7 @@ export async function mintPKPV2({
 			// 	contractAddress: pkpNft.address,
 			// 	functionName: pkpNftFunctions.mintCost,
 			// });
-
+			console.time("Thirdweb");
 			const res: any = await ThirdWebLib.Contract.write({
 				contractAddress: pkpHelper.address,
 				functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
@@ -485,7 +491,7 @@ export async function mintPKPV2({
 				// this we have to dynamic using round robin
 				backendWalletAddress: address,
 			});
-
+			console.timeEnd("Thirdweb");
 			console.log("res:", res);
 			return res.result;
 		}catch(err) {

@@ -43,7 +43,7 @@ export async function getAuthStatusHandler(
 			30000,
 		); // 30000ms is the max we will wait for.
 		console.timeEnd("🙂 waitForTransaction");
-		console.log("mint PKP receipt", { mintReceipt });
+		//console.log("mint PKP receipt", { mintReceipt });
 	} catch (err: any) {
 		Sentry.captureException(err, {
 			contexts: {
@@ -98,7 +98,7 @@ export async function getAuthStatusHandler(
 		console.timeEnd("🙂 PKP ETH and PUBLICKEY");
 
 		//<---- have to add PKP ethAddress to redis for pushing it to payment DB via cron job ----->
-		
+
 		//const payeeAddresses = JSON.stringify([pkpEthAddress]);
 		//console.log("tooooo....");
 		// console.time("🙂 add-users");

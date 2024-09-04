@@ -11,22 +11,25 @@ export async function getTxStatusByQueueId(
 	req: Request,
 	res: Response,
 ) {
+    const DELAY = 100;
     const { queueId } = req.params || req.query; 
     try {
         let data;
-        for (let i = 0; i < 50; i++) {
-          console.log('i', i);
+        for (let i = 0; i < 100; i++) {
+          //console.log('i', i);
+          console.time("Thirdweb");
           data = await ThirdWebLib.Action.getTxStatusByQueueId(queueId);
-          console.log(data);
+          console.timeEnd("Thirdweb");
+          //console.log(data);
           if (data.status === 'sent' || data.status === 'mined') {
-            console.log("transactionHash", data.transactionHash);
+            //console.log("transactionHash", data.transactionHash);
             console.log('i', i);
-            return res.status(200).send({success: true, ...data });
+            return res.status(200).send({success: true, transactionHash: data.transactionHash, queueId: data.queueId});
           }else if(data.status === 'errored') {
             console.log('i', i);
             return res.status(200).send({data, success: false, error: 'Transaction Failed'});
           }
-          await delay(500);
+          await delay(DELAY);
         }
     
         if (data.status !== 'sent') {
