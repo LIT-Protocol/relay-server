@@ -21,31 +21,31 @@ import fs from "fs";
 // });
 
 // bun test --test-name-pattern 'create 500 wallets' --timeout 300000
-// test("create 500 wallets", async () => {
-// 	const totalWallets = 500;
-// 	const currentTotalWallets = await ThirdWebLib.Action.getAllWallets();
-// 	console.log("currentTotalWallets",currentTotalWallets.length);
-// 	const addresses = currentTotalWallets.map(currentTotalWallet => currentTotalWallet.address);
-// 	fs.writeFile('wallet_addresses.json', JSON.stringify(addresses, null, 2), (err) => {
-// 		if (err) {
-// 		  console.error('Error writing file:', err);
-// 		} else {
-// 		  console.log('Addresses saved to wallet_addresses.json');
-// 		}
-// 	  });
-// 	// const neededWallets = totalWallets - currentTotalWallets.length;
-// 	// console.log("neededWallets:", neededWallets);
+test("create 500 wallets", async () => {
+	const totalWallets = 500;
+	const currentTotalWallets = await ThirdWebLib.Action.getAllWallets();
+	console.log("currentTotalWallets",currentTotalWallets.length);
+	const addresses = currentTotalWallets.map(currentTotalWallet => currentTotalWallet.address);
+	fs.writeFile('wallet_addresses.json', JSON.stringify(addresses, null, 2), (err) => {
+		if (err) {
+		  console.error('Error writing file:', err);
+		} else {
+		  console.log('Addresses saved to wallet_addresses.json');
+		}
+	  });
+	// const neededWallets = totalWallets - currentTotalWallets.length;
+	// console.log("neededWallets:", neededWallets);
 
 
-// 	// for (let i = currentTotalWallets.length + 1; i <= neededWallets; i++) {
-// 	// 	const label = `testing-wallet-${i}`;
-// 	// 	const res = await ThirdWebLib.Action.createWallet(label);
-// 	// 	console.log(`${label}:`, res);
+	// for (let i = currentTotalWallets.length + 1; i <= neededWallets; i++) {
+	// 	const label = `testing-wallet-${i}`;
+	// 	const res = await ThirdWebLib.Action.createWallet(label);
+	// 	console.log(`${label}:`, res);
 
-// 	// 	expect(res).toHaveProperty("walletAddress");
-// 	// 	expect(res.status).toBe("success");
-// 	// }
-// });
+	// 	expect(res).toHaveProperty("walletAddress");
+	// 	expect(res.status).toBe("success");
+	// }
+});
 
 // Used this to create a master wallet address
 // // bun test --test-name-pattern 'ethers generate private key'

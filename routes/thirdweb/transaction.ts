@@ -11,7 +11,7 @@ export async function getTxStatusByQueueId(
 	req: Request,
 	res: Response,
 ) {
-    const DELAY = 100;
+    const DELAY = 200;
     const { queueId } = req.params || req.query; 
     try {
         let data;
@@ -27,7 +27,7 @@ export async function getTxStatusByQueueId(
             return res.status(200).send({success: true, transactionHash: data.transactionHash, queueId: data.queueId});
           }else if(data.status === 'errored') {
             console.log('i', i);
-            return res.status(200).send({data, success: false, error: 'Transaction Failed'});
+            return res.status(500).send({data, success: false, error: 'Transaction Failed'});
           }
           await delay(DELAY);
         }
