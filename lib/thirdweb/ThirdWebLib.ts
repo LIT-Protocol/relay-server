@@ -45,6 +45,7 @@ export namespace ThirdWebLib {
 		 */
 		export async function post(path: string, body: any, extraHeaders = {}) {
 			// const fetch = (await import('node-fetch')).default;
+			console.log("THIRDWEB POST", {path: path, txBody: JSON.stringify(body)});
 			const res = await (
 				await fetch(`${THIRDWEB_ENGINE_URL}${path}`, {
 					method: "POST",
@@ -209,7 +210,7 @@ export namespace ThirdWebLib {
 			maxWallets?: number;
 		}): Promise<{ queueId: string }[]> {
 			const wallets = await ThirdWebLib.Action.getAllWallets({
-				limit: maxWallets || 510,
+				limit: maxWallets || 502,
 			});
 
 			// -- get all balances
@@ -218,13 +219,16 @@ export namespace ThirdWebLib {
 			});
 
 			const balances = await Promise.all(balancePromises);
-
+			console.log("balances", balances);
 			// -- get all funding promises
 			const fundPromises = balances.map((balance, i) => {
-				const currentBalance = ethers.utils.parseEther(balance.value);
+				const currentBalance = ethers.utils.parseEther(balance.displayValue);
+				console.log(currentBalance.toString());
+				console.log(ethers.utils.parseEther(minimumBalance).toString());
 				const diff = ethers.utils
 					.parseEther(minimumBalance)
 					.sub(currentBalance);
+			//console.log("diff", diff.toString());
 
 				if (diff.gt(0)) {
 					const diffInWei = diff.toString();

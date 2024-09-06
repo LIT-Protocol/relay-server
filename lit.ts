@@ -471,7 +471,27 @@ export async function mintPKPV2({
 			// 	contractAddress: pkpNft.address,
 			// 	functionName: pkpNftFunctions.mintCost,
 			// });
-			console.time("Thirdweb");
+			// console.time("Thirdweb");
+			console.log("THIRDWEB PARAMS");
+			console.log(JSON.stringify({
+				contractAddress: pkpHelper.address,
+				functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
+				args: [
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					sendPkpToItself,
+				],
+				txOverrides: {
+					value: mintCost.toString(),
+					gasLimit: gasLimit
+				},
+				// this we have to dynamic using round robin
+				backendWalletAddress: address,
+			}))
 			const res: any = await ThirdWebLib.Contract.write({
 				contractAddress: pkpHelper.address,
 				functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
@@ -491,7 +511,7 @@ export async function mintPKPV2({
 				// this we have to dynamic using round robin
 				backendWalletAddress: address,
 			});
-			console.timeEnd("Thirdweb");
+			// console.timeEnd("Thirdweb");
 			console.log("res:", res);
 			return res.result;
 		}catch(err) {
