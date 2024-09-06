@@ -19,7 +19,8 @@ const {
 	EXPECTED_ORIGINS,
 	RELAYER_BASE_URL,
 	PAYER_SECRET,
-	API_KEY
+	API_KEY,
+	NODE_ENV
 } = process.env;
 
 const baseConfig = {
@@ -59,7 +60,8 @@ const baseConfig = {
 	expectedOrigins: EXPECTED_ORIGINS?.split(",") || ["http://localhost:3000"],
 	baseUrl: RELAYER_BASE_URL,
 	apiKey: API_KEY,
-	payerSecret: PAYER_SECRET
+	payerSecret: PAYER_SECRET,
+	env: NODE_ENV
 };
 
 export default {

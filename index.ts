@@ -82,7 +82,7 @@ import { backendWallets } from './utils/thirdweb/constants';
 const app = express();
 let server = http.createServer(app);
 
-export const rr = new RoundRobin(backendWallets);
+export const rr = new RoundRobin(backendWallets, config.env);
 // Store eventEmitter in app.locals
 // app.locals.eventEmitter = eventEmitter;
 

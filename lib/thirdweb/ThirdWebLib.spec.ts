@@ -22,30 +22,35 @@ import fs from "fs";
 
 // bun test --test-name-pattern 'create 500 wallets' --timeout 300000
 test("create 500 wallets", async () => {
-	const totalWallets = 500;
+	const totalWallets = 1001; // Desired total number of wallets
 	const currentTotalWallets = await ThirdWebLib.Action.getAllWallets();
-	console.log("currentTotalWallets",currentTotalWallets.length);
+	console.log("currentTotalWallets:", currentTotalWallets.length);
+
 	const addresses = currentTotalWallets.map(currentTotalWallet => currentTotalWallet.address);
-	fs.writeFile('wallet_addresses.json', JSON.stringify(addresses, null, 2), (err) => {
-		if (err) {
-		  console.error('Error writing file:', err);
-		} else {
-		  console.log('Addresses saved to wallet_addresses.json');
-		}
-	  });
+	// fs.writeFile('wallet_addresses.json', JSON.stringify(addresses, null, 2), (err) => {
+	// 	if (err) {
+	// 	  console.error('Error writing file:', err);
+	// 	} else {
+	// 	  console.log('Addresses saved to wallet_addresses.json');
+	// 	}
+	//   });
+
+	// Calculate the number of wallets needed to reach the total desired count
 	// const neededWallets = totalWallets - currentTotalWallets.length;
 	// console.log("neededWallets:", neededWallets);
 
-
-	// for (let i = currentTotalWallets.length + 1; i <= neededWallets; i++) {
-	// 	const label = `testing-wallet-${i}`;
+	// // Correct loop to create the exact number of wallets needed
+	// for (let i = 0; i < neededWallets; i++) {
+	// 	const label = `testing-wallet-${currentTotalWallets.length + i + 1}`; // Properly indexes from current count
 	// 	const res = await ThirdWebLib.Action.createWallet(label);
 	// 	console.log(`${label}:`, res);
 
+	// 	// Ensure the wallet creation response is as expected
 	// 	expect(res).toHaveProperty("walletAddress");
 	// 	expect(res.status).toBe("success");
 	// }
 });
+
 
 // Used this to create a master wallet address
 // // bun test --test-name-pattern 'ethers generate private key'
@@ -86,7 +91,7 @@ test("maintainBalances", async () => {
 	});
 
 	const funded = queueIds.filter((q) => q.queueId === "");
-	const funding = 500 - funded.length;
+	const funding = 1000 - funded.length;
 	console.log("funded:", funded.length);
 	console.log("funding:", funding);
 });

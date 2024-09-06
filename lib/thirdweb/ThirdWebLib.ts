@@ -210,7 +210,7 @@ export namespace ThirdWebLib {
 			maxWallets?: number;
 		}): Promise<{ queueId: string }[]> {
 			const wallets = await ThirdWebLib.Action.getAllWallets({
-				limit: maxWallets || 502,
+				limit: maxWallets || 1000,
 			});
 
 			// -- get all balances
@@ -219,12 +219,12 @@ export namespace ThirdWebLib {
 			});
 
 			const balances = await Promise.all(balancePromises);
-			console.log("balances", balances);
+			//console.log("balances", balances);
 			// -- get all funding promises
 			const fundPromises = balances.map((balance, i) => {
 				const currentBalance = ethers.utils.parseEther(balance.displayValue);
-				console.log(currentBalance.toString());
-				console.log(ethers.utils.parseEther(minimumBalance).toString());
+				//console.log(currentBalance.toString());
+				//console.log(ethers.utils.parseEther(minimumBalance).toString());
 				const diff = ethers.utils
 					.parseEther(minimumBalance)
 					.sub(currentBalance);
@@ -239,9 +239,9 @@ export namespace ThirdWebLib {
 						amount: diffInWei,
 					});
 				} else {
-					console.log(
-						`[${i}]: no need to fund ${balance.walletAddress}`,
-					);
+					// console.log(
+					// 	`[${i}]: no need to fund ${balance.walletAddress}`,
+					// );
 					return Promise.resolve({ queueId: "" });
 				}
 			});

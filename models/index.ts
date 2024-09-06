@@ -150,6 +150,7 @@ export interface Config {
 	baseUrl: string;
 	apiKey:string;
 	payerSecret: string;
+	env: "production" | "staging";
 }
 
 export enum CapabilityProtocolPrefix {

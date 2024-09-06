@@ -1,4 +1,4 @@
-export const backendWallets = [
+[
   "0x0012f2df354a8676a68e5f4587bfa80b67948a7a",
   "0x004d690b928a8f44f059fbbd30f74e10f1427d39",
   "0x00cbf74201f02b3511fd02f81862900e61c525a6",
