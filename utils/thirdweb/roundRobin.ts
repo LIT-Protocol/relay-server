@@ -9,7 +9,7 @@ export class RoundRobin {
 
     constructor(addresses: string[], environment: string) {
         this.addresses = addresses;
-        this.index = environment === "production" ? 1 : 501;
+        this.index = environment === "production" ? 0 : 500;
         this.mutex = new Mutex();
         this.environment = environment;
     }
@@ -26,12 +26,12 @@ export class RoundRobin {
     async next() {
         const release = await this.mutex.acquire();
         try {
-            const address = this.addresses[this.index % this.addresses.length]; // Using modulo to wrap around addresses array
+            const address = this.addresses[this.index]; // Using modulo to wrap around addresses array
             // Adjust index bounds based on environment
             if (this.environment === "production") {
-                this.index = this.index < 500 ? this.index + 1 : 1;
+                this.index = this.index < 499 ? this.index + 1 : 0;
             } else if (this.environment === "staging") {
-                this.index = this.index < 1000 ? this.index + 1 : 501;
+                this.index = this.index < 999 ? this.index + 1 : 500;
             }
             console.log(`🛑🛑 ${this.environment} index`, this.index);
             await redisClient.set(`${this.environment}_rr_pointer`, this.index.toString());

@@ -340,6 +340,6 @@ if (ENABLE_HTTPS) {
 	
 	server.listen(port, async () => {
 		await rr.init();
-		console.log(`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} |`);
+		console.log(`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} | ENV: ${config.env}`);
 	});
 }

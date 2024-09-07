@@ -442,6 +442,20 @@ export async function mintPKPV2({
 		console.log("adjustedGasLimit:", gasLimit);
 	} catch (e) {
 		console.error("❗️ Error while estimating gas, using default");
+		const err = new Error("Error while estimating gas, using default");
+		Sentry.captureException(err, {
+			contexts: {
+				request_body: {
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					sendPkpToItself,
+				},
+			}
+		});
 		gasLimit = ethers.utils.hexlify(5000000);
 	}
 	if (versionStrategy === VersionStrategy.DEFAULT) {
