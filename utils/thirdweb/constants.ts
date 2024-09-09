@@ -1,3 +1,4 @@
+// 999 wallets
 export const backendWallets = [
   "0x0012f2df354a8676a68e5f4587bfa80b67948a7a",
   "0x004d690b928a8f44f059fbbd30f74e10f1427d39",
@@ -765,7 +766,6 @@ export const backendWallets = [
   "0xbf19e4516d6615192c1c9b91c7d2c9c3ddb77602",
   "0xbf21a8825354de9a3af98116ed8dfe0786e251c3",
   "0xbf2c78f49a0cee6f56853801834d215de493d87e",
-  "0xbf678cb0898856da855796c700107d75efe5f534",
   "0xbf9ac7f5a1ee69d15986d6a9331f2fa40ba591d0",
   "0xc0e66d85ac71a3a1b8a1ac6d8ce091006393dece",
   "0xc115eedcd33da07a22eb3895a61d076e54a1aa47",

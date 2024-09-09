@@ -29,9 +29,11 @@ export class RoundRobin {
             const address = this.addresses[this.index]; // Using modulo to wrap around addresses array
             // Adjust index bounds based on environment
             if (this.environment === "production") {
+                // 500 wallets for production index 0 to 499
                 this.index = this.index < 499 ? this.index + 1 : 0;
             } else if (this.environment === "staging") {
-                this.index = this.index < 999 ? this.index + 1 : 500;
+                // 499 wallets for staging/loadtesting index 500 to 998
+                this.index = this.index < 998 ? this.index + 1 : 500;
             }
             console.log(`🛑🛑 ${this.environment} index`, this.index);
             await redisClient.set(`${this.environment}_rr_pointer`, this.index.toString());

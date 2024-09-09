@@ -331,6 +331,18 @@ export namespace ThirdWebLib {
 			};
 		}) {
 			try {
+				if(!LIT_CHAIN_ID || !contractAddress) {
+					const err = new Error("LIT_CHAIN_ID or contractAddress is undefined");
+					Sentry.captureException(err, {
+						contexts: {
+							request_body: {
+								LIT_CHAIN_ID,
+								contractAddress
+							},
+						}
+					});
+					throw err;
+				}
 				const res = await ThirdWebLib.Fetch.post(
 					`/contract/${LIT_CHAIN_ID}/${contractAddress}/write?chain`,
 					{
