@@ -428,17 +428,17 @@ export async function mintPKPV2({
 	// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
 	let gasLimit;
 	try {
-		gasLimit = await pkpNft.provider.estimateGas(mintTxData);
-		// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
-		gasLimit = gasLimit
-			.mul(
-				ethers.BigNumber.from(
-					parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
-						200,
-				),
-			)
-			.div(ethers.BigNumber.from(100));
-
+		// gasLimit = await pkpNft.provider.estimateGas(mintTxData);
+		// // since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
+		// gasLimit = gasLimit
+		// 	.mul(
+		// 		ethers.BigNumber.from(
+		// 			parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
+		// 				200,
+		// 		),
+		// 	)
+		// 	.div(ethers.BigNumber.from(100));
+		gasLimit = ethers.utils.hexlify(5000000);
 		console.log("adjustedGasLimit:", gasLimit);
 	} catch (e) {
 		console.error("❗️ Error while estimating gas, using default");
@@ -520,7 +520,7 @@ export async function mintPKPV2({
 				],
 				txOverrides: {
 					value: mintCost.toString(),
-					gasLimit: gasLimit
+					gasLimit: 5000000
 				},
 				// this we have to dynamic using round robin
 				backendWalletAddress: address,
