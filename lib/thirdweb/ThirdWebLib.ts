@@ -326,7 +326,7 @@ export namespace ThirdWebLib {
 			args: any[];
 			txOverrides?:{
 				value?: number,
-				gasLimit?: number | BigNumber
+				gas?: string | BigNumber
 			}
 			backendWalletAddress: string;
 			options?: {
@@ -346,7 +346,7 @@ export namespace ThirdWebLib {
 					});
 					throw err;
 				}
-				console.log("thirdweb gas", txOverrides?.gasLimit);
+				console.log("thirdweb gas", txOverrides?.gas);
 				const res = await ThirdWebLib.Fetch.post(
 					`/contract/${LIT_CHAIN_ID}/${contractAddress}/write?chain`,
 					{
