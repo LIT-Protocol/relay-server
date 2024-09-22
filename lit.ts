@@ -501,7 +501,7 @@ export async function mintPKPV2({
 				],
 				txOverrides: {
 					value: mintCost.toString(),
-					gasLimit: gasLimit
+					gasLimit: "6000000"
 				},
 				// this we have to dynamic using round robin
 				backendWalletAddress: address,
@@ -520,7 +520,7 @@ export async function mintPKPV2({
 				],
 				txOverrides: {
 					value: mintCost.toString(),
-					gas: "5000000"
+					gas: "6000000"
 				},
 				// this we have to dynamic using round robin
 				backendWalletAddress: address,
