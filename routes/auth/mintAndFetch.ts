@@ -104,6 +104,13 @@ export async function fetchPKPsHandler(
 			pkps: pkps,
 		});
 	} catch (err) {
+		Sentry.captureException(err, {
+			contexts: {
+				request_body: {
+					...req.body
+				},
+			}
+		});
 		console.error(
 			`Unable to fetch PKPs for given auth type ${authMethodType}`,
 			{

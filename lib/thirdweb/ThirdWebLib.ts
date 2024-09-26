@@ -21,7 +21,7 @@ export namespace ThirdWebLib {
 		 * @returns A Promise that resolves to the fetched data.
 		 */
 		export async function get(path: string) {
-			// const fetch = (await import('node-fetch')).default;
+		// const fetch = (await import('node-fetch')).default;
 			const res: any = await (
 				await fetch(`${THIRDWEB_ENGINE_URL}${path}`, {
 					headers: AUTH_HEADERS,
@@ -45,7 +45,7 @@ export namespace ThirdWebLib {
 		 */
 		export async function post(path: string, body: any, extraHeaders = {}) {
 			// const fetch = (await import('node-fetch')).default;
-			console.log("THIRDWEB POST", {path: path, txBody: JSON.stringify(body)});
+			//console.log("THIRDWEB POST", {path: path, txBody: JSON.stringify(body)});
 			const res = await (
 				await fetch(`${THIRDWEB_ENGINE_URL}${path}`, {
 					method: "POST",
@@ -166,11 +166,11 @@ export namespace ThirdWebLib {
 			amount: string;
 		}): Promise<{ queueId: string }> {
 			try {
-				console.log({
-					funder,
-					fundee,
-					amount,
-				});
+				// console.log({
+				// 	funder,
+				// 	fundee,
+				// 	amount,
+				// });
 				const res:any = await ThirdWebLib.Fetch.post(
 					`/backend-wallet/${LIT_CHAIN_ID}/send-transaction`,
 					{
@@ -182,7 +182,7 @@ export namespace ThirdWebLib {
 						"x-backend-wallet-address": funder,
 					},
 				);
-				console.log("res",res);
+				//console.log("res",res);
 				return {
 					queueId: res.result.queueId,
 				};
@@ -219,9 +219,12 @@ export namespace ThirdWebLib {
 			});
 
 			const balances = await Promise.all(balancePromises);
-			//console.log("balances", balances);
+			console.log("balances", balances[0]);
 			// -- get all funding promises
 			const fundPromises = balances.map((balance, i) => {
+				if(balance.displayValue === 'undefined') {
+					console.log("balance",balance)
+				}
 				const currentBalance = ethers.utils.parseEther(balance.displayValue);
 				//console.log(currentBalance.toString());
 				//console.log(ethers.utils.parseEther(minimumBalance).toString());
@@ -323,7 +326,7 @@ export namespace ThirdWebLib {
 			args: any[];
 			txOverrides?:{
 				value?: number,
-				gasLimit?: string | BigNumber
+				gas?: string | BigNumber
 			}
 			backendWalletAddress: string;
 			options?: {
@@ -343,6 +346,7 @@ export namespace ThirdWebLib {
 					});
 					throw err;
 				}
+				console.log("thirdweb gas", txOverrides?.gas);
 				const res = await ThirdWebLib.Fetch.post(
 					`/contract/${LIT_CHAIN_ID}/${contractAddress}/write?chain`,
 					{

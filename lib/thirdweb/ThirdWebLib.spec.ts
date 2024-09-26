@@ -85,7 +85,7 @@ test("maintainBalances", async () => {
 	}
 
 	const queueIds = await ThirdWebLib.Action.maintainBalances({
-		minimumBalance: "0.01",
+		minimumBalance: "0.5",
 		funderAddress: '0xbF678cB0898856da855796C700107d75Efe5f534',
 		// maxWallets: 1
 	});

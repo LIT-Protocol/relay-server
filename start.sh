@@ -6,4 +6,4 @@ if [ -f /mnt/secrets/default ]; then
     cp /mnt/secrets/default /app/.env
 fi
 
-yarn start
+yarn docker:start

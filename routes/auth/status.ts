@@ -11,6 +11,7 @@ import {
 import { getTokenIdFromTransferEvent } from "../../utils/receipt";
 import axios from "axios";
 import config from "../../config";
+import redisClient from "../../lib/redisClient";
 const Sentry = require("@sentry/node");
 
 const safeBlockConfirmations = parseInt(
@@ -98,6 +99,7 @@ export async function getAuthStatusHandler(
 		console.timeEnd("🙂 PKP ETH and PUBLICKEY");
 
 		//<---- have to add PKP ethAddress to redis for pushing it to payment DB via cron job ----->
+		await redisClient.sAdd(`${process.env.NODE_ENV}_PKP_eth_addresses`, pkpEthAddress);
 
 		//const payeeAddresses = JSON.stringify([pkpEthAddress]);
 		//console.log("tooooo....");
