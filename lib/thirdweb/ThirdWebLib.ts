@@ -30,6 +30,7 @@ export namespace ThirdWebLib {
 				.json()
 				.catch((err:any) => {
 					console.error("Error fetching chain:", err);
+					throw err;
 				});
 
 			return res.result;
@@ -60,6 +61,7 @@ export namespace ThirdWebLib {
 				.json()
 				.catch((err:any) => {
 					console.error("Error fetching chain:", err);
+					throw err;
 				});
 
 			return res;
@@ -361,8 +363,8 @@ export namespace ThirdWebLib {
 
 				return res;
 			} catch (e: any) {
-				console.log("error in thirdweb write", e);
-				console.log("error message in thirdweb write", e.message);
+				console.error("error in thirdweb write", e);
+				console.error("error message in thirdweb write", e.message);
 				throw new Error("[ThirdWebLib] Error writing contract:", e);
 			}
 		}
