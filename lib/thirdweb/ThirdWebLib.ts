@@ -274,10 +274,7 @@ export namespace ThirdWebLib {
 				);
 				return data;
 			} catch (e: any) {
-				throw new Error(
-					"[ThirdWebLib] Error fetching transactions:",
-					e,
-				);
+				throw e;
 			}
 		}
 	}
