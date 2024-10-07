@@ -1,11 +1,12 @@
 service := relay-server
-tag := latest
 
 # Default environment is dev
 env := dev
 
 # Define account_id based on environment
-account_id := $(if $(filter $(env),prod),060795900752,$(if $(filter $(env),preprod),047719617191,008971671473))
+account_id := $(if $(filter $(env),prod),060795900752,$(if $(filter $(env),preprod),060795900752,008971671473))
+tag := $(if $(filter $(env),preprod),preprod,latest)
+
 
 # Define variables based on environment
 region := $(if $(filter $(env),prod),us-east-1,$(if $(filter $(env),preprod),us-east-1,ap-south-1))
@@ -34,6 +35,7 @@ release-dev:
 	$(MAKE) release env=dev
 
 release-preprod:
+	$(MAKE) build env=preprod
 	$(MAKE) release env=preprod
 
 release-prod:
