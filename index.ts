@@ -75,11 +75,34 @@ import { addPayeeHandler } from "./routes/delegate/user";
 import { failedTxWebHookHandler, thirdwebWebHookHandler } from "./routes/webhook/thirdweb";
 import { getTxStatusByQueueId } from "./routes/thirdweb/transaction";
 import { RoundRobin } from './utils/thirdweb/roundRobin';
+import { TempRoundRobin } from './utils/tmp/testRoundRobin';
 import { backendWallets } from './utils/thirdweb/constants';
 
 
 
 const app = express();
+
+// API endpoint to get the next address
+const addresses = Array.from({ length: 500 }, (_, i) => `Address_${500 + i}`); // Mock addresses
+const environment = "staging";
+const roundRobin = new TempRoundRobin(addresses, environment);
+roundRobin.init().then(() => {
+	console.log("RoundRobin initialized");
+ }).catch(err => {
+	console.error("Error initializing RoundRobin:", err);
+ });
+ 
+app.get('/api/next', async (req, res) => {
+	try {
+	   const address = await roundRobin.next();
+	   const index = addresses.indexOf(address) + 500; // Map back to index range 500-999
+	   res.json({ index });
+	} catch (err) {
+	   console.error("Error calling RoundRobin next:", err);
+	   res.status(500).json({ error: "Internal server error" });
+	}
+ });
+ 
 let server = http.createServer(app);
 
 export const rr = new RoundRobin(backendWallets, config.env);
@@ -314,6 +337,8 @@ app.get(
 );
 app.post("/auth/claim", mintClaimedKeyId);
 app.get("/transaction/status/:queueId", getTxStatusByQueueId);
+
+
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";

@@ -4,14 +4,14 @@ import redisClient from "../../lib/redisClient";
 export class RoundRobin {
     addresses: string[];
     index: number;
-    mutex: Mutex;
     environment: string;
+    mutex: Mutex;
 
     constructor(addresses: string[], environment: string) {
         this.addresses = addresses;
-        this.index = environment === "production" ? 0 : 500;
-        this.mutex = new Mutex();
         this.environment = environment;
+        this.index = environment === "production" ? 0 : 500;
+        this.mutex = new Mutex(); // Local mutex for critical sections
     }
 
     async init() {
@@ -24,19 +24,27 @@ export class RoundRobin {
     }
 
     async next() {
-        const release = await this.mutex.acquire();
+        const release = await this.mutex.acquire(); // Local mutex for this instance
         try {
-            const address = this.addresses[this.index]; // Using modulo to wrap around addresses array
-            // Adjust index bounds based on environment
+            let address;
+            // Use Redis INCR operation to atomically increment index across instances
+            const rr_pointer_key = `${this.environment}_rr_pointer`;
+
+            const rr_pointer = await redisClient.incr(rr_pointer_key);
+            
             if (this.environment === "production") {
-                // 500 wallets for production index 0 to 499
-                this.index = this.index < 499 ? this.index + 1 : 0;
+                // Wrap around between 0 and 499 for production
+                this.index = rr_pointer % 500;
             } else if (this.environment === "staging") {
-                // 499 wallets for staging/loadtesting index 500 to 998
-                this.index = this.index < 998 ? this.index + 1 : 500;
+                // Wrap around between 500 and 998 for staging
+                this.index = (rr_pointer % 499) + 500;
             }
+
+            address = this.addresses[this.index];
+
             console.log(`🛑🛑 ${this.environment} index`, this.index);
-            await redisClient.set(`${this.environment}_rr_pointer`, this.index.toString());
+            // No need to manually set the index since Redis INCR handles that
+
             return address;
         } finally {
             release();
