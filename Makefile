@@ -4,7 +4,10 @@ service := relay-server
 env := dev
 
 # Define account_id based on environment
-account_id := $(if $(filter $(env),prod),060795900752,$(if $(filter $(env),preprod),060795900752,008971671473))
+account_id := $(if $(filter $(env),prod),060795900752, \
+              $(if $(filter $(env),preprod),060795900752, \
+              $(if $(filter $(env),dev),535002881389, \
+              008971671473)))
 tag := $(if $(filter $(env),preprod),preprod,latest)
 
 
@@ -34,6 +37,9 @@ deploy-k8s:
 release-dev:
 	$(MAKE) release env=dev
 
+release-test:
+	$(MAKE) release env=test
+
 release-preprod:
 	$(MAKE) build env=preprod
 	$(MAKE) release env=preprod
@@ -43,6 +49,9 @@ release-prod:
 
 deploy-k8s-dev:
 	$(MAKE) deploy-k8s env=dev
+
+deploy-k8s-test:
+	$(MAKE) deploy-k8s env=test
 
 deploy-k8s-preprod:
 	$(MAKE) deploy-k8s env=preprod

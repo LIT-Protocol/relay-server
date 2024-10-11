@@ -21,3 +21,16 @@ make release
 # deploy sample service into DEV env
 make deploy-k8s-dev
 ```
+
+```
+# TEST env
+# build sample service docker image
+make build
+
+# push docker image into AWS dev ecr
+make release-test
+
+# deploy sample service into DEV env
+make deploy-k8s-test
+```
+
