@@ -12,7 +12,7 @@ tag := $(if $(filter $(env),preprod),preprod,latest)
 
 
 # Define variables based on environment
-region := $(if $(filter $(env),prod),us-east-1,$(if $(filter $(env),preprod),us-east-1,ap-south-1))
+region := $(if $(filter $(env),dev),ap-south-1, us-east-1)
 namespace := $(if $(filter $(env),prod),tria-prod,$(if $(filter $(env),preprod),tria-preprod,tria-dev))
 
 # Docker settings
