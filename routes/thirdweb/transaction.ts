@@ -8,50 +8,53 @@ function delay(ms: number) {
 }
 
 export async function getTxStatusByQueueId(
-	req: Request,
-	res: Response,
+  req: Request,
+  res: Response,
 ) {
-    const DELAY = 200;
-    const { queueId } = req.params || req.query; 
-    try {
-        let data;
-        for (let i = 0; i < 100; i++) {
-          //console.log('i', i);
-          console.time("Thirdweb");
-          data = await ThirdWebLib.Action.getTxStatusByQueueId(queueId);
-          console.timeEnd("Thirdweb");
-          //console.log(data);
-          if (data.status === 'sent' || data.status === 'mined') {
-            //console.log("transactionHash", data.transactionHash);
-            console.log('i', i);
-            return res.status(200).send({success: true, transactionHash: data.transactionHash, queueId: data.queueId});
-          }else if(data.status === 'errored') {
-            console.log('i', i);
-            return res.status(500).send({data, success: false, error: 'Transaction Failed'});
-          }
-          await delay(DELAY);
-        }
-    
-        if (data.status !== 'sent') {
-          const err = new Error("Timeout, didn't get any Tx data by queueID within 25 seconds");
-          Sentry.captureException(err, {
-            contexts: {
-              request_body: {
-                ...req.body
-              },
-            }
-          });
-          return res.status(408).send({ success: false, error: 'Transaction not sent within expected time' });
-        }
-    
-      } catch (err:any) {
-        Sentry.captureException(err, {
-          contexts: {
-            request_body: {
-              ...req.body
-            },
-          }
-        });
-        res.status(500).send({ success: false, error: err.message });
+  const DELAY = 400;
+  const { queueId } = req.params || req.query;
+  let index;
+  try {
+    let data;
+    for (let i = 0; i < 100; i++) {
+      //console.log('i', i);
+      console.time("Thirdweb");
+      data = await ThirdWebLib.Action.getTxStatusByQueueId(queueId);
+      console.timeEnd("Thirdweb");
+      //console.log(data);
+      if (data.status === 'sent' || data.status === 'mined') {
+        //console.log("transactionHash", data.transactionHash);
+        console.log('i', i);
+        index = i;
+        return res.status(200).send({ success: true, transactionHash: data.transactionHash, queueId: data.queueId, index });
+      } else if (data.status === 'errored') {
+        console.log('i', i);
+        index = i;
+        return res.status(500).send({ isErrored: true, errorMessage: data.errorMessage, success: false, error: 'Transaction Failed', index });
       }
+      await delay(DELAY);
+    }
+
+    if (data.status !== 'sent') {
+      const err = new Error("Timeout, didn't get any Tx data by queueID within 25 seconds");
+      Sentry.captureException(err, {
+        contexts: {
+          request_body: {
+            ...req.body
+          },
+        }
+      });
+      return res.status(408).send({ success: false, error: 'Transaction not sent within expected time' });
+    }
+
+  } catch (err: any) {
+    Sentry.captureException(err, {
+      contexts: {
+        request_body: {
+          ...req.body
+        },
+      }
+    });
+    return res.status(500).send({ success: false, error: err.message, index });
+  }
 }
