@@ -6,13 +6,13 @@ env := dev
 # Define account_id based on environment
 account_id := $(if $(filter $(env),prod),060795900752, \
               $(if $(filter $(env),preprod),060795900752, \
-              $(if $(filter $(env),dev),535002881389, \
+              $(if $(filter $(env),test),535002881389, \
               008971671473)))
 tag := $(if $(filter $(env),preprod),preprod,latest)
 
 
 # Define variables based on environment
-region := $(if $(filter $(env),dev),ap-south-1, us-east-1)
+region := $(if $(filter $(env),dev),ap-south-1,us-east-1)
 namespace := $(if $(filter $(env),prod),tria-prod,$(if $(filter $(env),preprod),tria-preprod,tria-dev))
 
 # Docker settings
