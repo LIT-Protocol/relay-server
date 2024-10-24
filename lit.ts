@@ -147,6 +147,8 @@ function getPkpHelperContractAbiPath() {
 			return "./contracts/serrano/PKPHelper.json";
 		case "cayenne":
 			return "./contracts/cayenne/PKPHelper.json";
+		case "localchain":
+			return "./contracts/localchain/PKPHelper.json";
 	}
 }
 
@@ -159,6 +161,8 @@ function getPkpNftContractAbiPath() {
 			return "./contracts/serrano/PKPNFT.json";
 		case "cayenne":
 			return "./contracts/cayenne/PKPNFT.json";
+		case "localchain":
+			return "./contracts/localchain/PKPNFT.json";
 	}
 }
 
@@ -176,6 +180,12 @@ async function getPkpHelperContract(network: string) {
 			contract = getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.cayenneContracts?.pkpHelperAddress as string,
+			);
+			break;
+		case "localchain":
+			contract = getContract(
+				getPkpHelperContractAbiPath()!,
+				config?.localChainContracts?.pkpHelperAddress as string,
 			);
 			break;
 		case "manzano":
@@ -218,6 +228,12 @@ async function getPermissionsContract() {
 			contract = getContract(
 				"./contracts/cayenne/PKPPermissions.json",
 				config?.cayenneContracts?.pkpPermissionsAddress as string,
+			);
+			break;
+		case "localchain":
+			contract = getContract(
+				"./contracts/localchain/PKPPermissions.json",
+				config?.localChainContracts?.pkpPermissionsAddress as string,
 			);
 			break;
 		case "manzano":
@@ -273,6 +289,12 @@ async function getPkpNftContract(network: string) {
 			contract = getContract(
 				getPkpNftContractAbiPath()!,
 				config?.cayenneContracts?.pkpNftAddress as string,
+			);
+			break;
+		case "localchain":
+			contract = getContract(
+				getPkpNftContractAbiPath()!,
+				config?.localChainContracts?.pkpNftAddress as string,
 			);
 			break;
 		case "manzano":
@@ -567,7 +589,13 @@ export async function claimPKP({
 		let tx = await sequencer.wait({
 			action: pkpHelper.claimAndMintNextAndAddAuthMethods,
 			params: [
-				[2, `0x${keyId}`, signatures],
+				[
+					2,
+					`0x${keyId}`,
+					signatures,
+					// TODO: Fix before PRing
+					"0xa6e99A4ED7498b3cdDCBB61a6A607a4925Faa1B7",
+				],
 				[
 					2,
 					[],
@@ -578,6 +606,8 @@ export async function claimPKP({
 					[`0x${authMethodId}`],
 					[authMethodPubkey],
 					[[ethers.BigNumber.from(1)]],
+					true,
+					false,
 				],
 			],
 			transactionData: { value: mintCost },
