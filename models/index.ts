@@ -15,6 +15,7 @@ export interface OTPAuthVerifyRegistrationRequest {
 }
 
 export interface MintNextAndAddAuthMethodsRequest {
+	uuid: string;
 	keyType: string;
 	permittedAuthMethodTypes: string[];
 	permittedAuthMethodIds: string[];
@@ -46,6 +47,7 @@ export interface FetchRequest {
 export interface AuthMethodVerifyRegistrationResponse {
 	requestId?: string;
 	error?: string;
+	queueId?:string;
 }
 
 export interface AuthMethodVerifyToFetchResponse {
@@ -67,6 +69,7 @@ export interface GetAuthStatusResponse {
 	pkpEthAddress?: string;
 	pkpPublicKey?: string;
 	error?: string;
+	queueId?: string;
 }
 
 export enum AuthStatus {
@@ -144,6 +147,10 @@ export interface Config {
 	datilDevContracts?: Contract;
 	useSoloNet: boolean;
 	network: LIT_NETWORK_VALUES;
+	baseUrl: string;
+	apiKey:string;
+	payerSecret: string;
+	env: "production" | "staging";
 }
 
 export enum CapabilityProtocolPrefix {

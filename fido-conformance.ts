@@ -71,7 +71,7 @@ fetch("https://mds3.certinfra.fidoalliance.org/getEndpoints", {
 	headers: { "Content-Type": "application/json" },
 })
 	.then((resp) => resp.json())
-	.then((json) => {
+	.then((json:any) => {
 		const mdsServers: string[] = json.result;
 
 		return MetadataService.initialize({

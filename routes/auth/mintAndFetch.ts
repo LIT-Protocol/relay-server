@@ -8,6 +8,10 @@ import {
 	MintNextAndAddAuthMethodsRequest,
 	MintNextAndAddAuthMethodsResponse,
 } from "../../models";
+import { getVersionStrategy } from "../VersionStrategy";
+import redisClient from "../../lib/redisClient";
+import * as Sentry from "@sentry/node";
+
 
 export async function mintNextAndAddAuthMethodsHandler(
 	req: Request<
@@ -23,18 +27,48 @@ export async function mintNextAndAddAuthMethodsHandler(
 		number
 	>,
 ) {
+	const versionStrategy = getVersionStrategy(req.url);
+	const { uuid } = req.body;
 	// mint PKP for user
 	try {
-		const mintTx = await mintPKPV2(req.body);
-		console.info("Minted PKP", {
-			requestId: mintTx.hash,
+		const mintTx = await mintPKPV2({
+			...req.body,
+			versionStrategy,
 		});
-		return res.status(200).json({
-			requestId: mintTx.hash,
+
+		console.log("mintTx:", mintTx);
+
+		if (mintTx.hash) {
+			const source = 'lit-relayer';
+			console.info("Minted PKP", {
+				requestId: mintTx.hash,
+				source,
+			});
+		}
+		
+		if (mintTx.queueId) {
+			const queueId = mintTx.queueId;
+			// mapping queueId => uuid for webhook 
+			// await redisClient.hSet("userQueueIdMapping", queueId, uuid);
+			return res.status(200).json({
+				queueId
+			});
+		}
+		
+		return res.status(500).json({
+			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP`,
 		});
 	} catch (err) {
 		console.error("[mintNextAndAddAuthMethodsHandler] Unable to mint PKP", {
 			err,
+		});
+		Sentry.captureException(err, {
+			contexts: {
+				request: {
+				versionStrategy,
+				...req.body
+				},
+			}
 		});
 		return res.status(500).json({
 			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP ${JSON.stringify(
@@ -70,6 +104,13 @@ export async function fetchPKPsHandler(
 			pkps: pkps,
 		});
 	} catch (err) {
+		Sentry.captureException(err, {
+			contexts: {
+				request_body: {
+					...req.body
+				},
+			}
+		});
 		console.error(
 			`Unable to fetch PKPs for given auth type ${authMethodType}`,
 			{

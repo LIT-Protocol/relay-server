@@ -9,7 +9,7 @@ import {
 	OtpVerificationPayload,
 } from "../../models";
 import { getPKPsForAuthMethod, mintPKP } from "../../lit";
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 

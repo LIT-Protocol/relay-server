@@ -1,0 +1,48 @@
+name: Docker Build
+
+on:
+  push:
+    branches:
+      - thirdweb-dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Docker (if it's not already set up)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Set up AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ${{ secrets.AWS_REGION_DEV }}
+      
+       # Install necessary dependencies if needed (like gcc, make, etc.)
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential  
+
+      - name: Authenticate with npm
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+      
+      - name: Authenticate with sentry
+        run: echo "[auth]\ntoken=${{ secrets.SENTRY_TOKEN }}" > .sentryclirc
+
+      - name: Build Docker Image
+        run: make build
+      
+      - name: Push Docker Image
+        run: make release
+      
+      - name: Deploy K8S
+        run: |
+          aws eks update-kubeconfig --region ap-south-1 --name tf-tria-dev
+          make deploy-k8s-dev

@@ -17,6 +17,10 @@ const {
 	NETWORK,
 	USE_SOLO_NET,
 	EXPECTED_ORIGINS,
+	RELAYER_BASE_URL,
+	PAYER_SECRET,
+	API_KEY,
+	NODE_ENV
 } = process.env;
 
 const baseConfig = {
@@ -54,6 +58,10 @@ const baseConfig = {
 	network: NETWORK || "cayenne",
 	useSoloNet: USE_SOLO_NET === "true",
 	expectedOrigins: EXPECTED_ORIGINS?.split(",") || ["http://localhost:3000"],
+	baseUrl: RELAYER_BASE_URL,
+	apiKey: API_KEY,
+	payerSecret: PAYER_SECRET,
+	env: NODE_ENV
 };
 
 export default {

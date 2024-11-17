@@ -23,12 +23,13 @@ export function generatePayerSecret(): string {
 }
 
 export async function deriveWallet(apiKey: string, payerSecret: string) {
-    const mnemonic = process.env.LIT_DELEGATION_ROOT_MNEMONIC;
+    const mnemonic = 'wife hard height bubble cluster number bike fortune scene oak smart van';
+    // const mnemonic = process.env.LIT_DELEGATION_ROOT_MNEMONIC;
 
     if (!mnemonic) {
         throw new Error("Mnemonic not set");
     }
-
+    console.log("mnemonic", mnemonic);
     const hdWallet = utils.HDNode.fromMnemonic(mnemonic);
     const userPath = `m/44'/60'/0'/0/${normalizeApiKey(apiKey + payerSecret) % 2147483647}`;
 

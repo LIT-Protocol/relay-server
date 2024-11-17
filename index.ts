@@ -5,6 +5,7 @@
  * The webpages served from ./public use @simplewebauthn/browser.
  */
 
+import './instrument';
 import fs from "fs";
 import http from "http";
 import https from "https";
@@ -12,6 +13,8 @@ import https from "https";
 import base64url from "base64url";
 import dotenv from "dotenv";
 import express from "express";
+import { Server as SocketIOServer } from 'socket.io';
+// import {eventEmitter} from './eventEmitter';
 
 dotenv.config();
 
@@ -68,8 +71,43 @@ import {
 import { mintClaimedKeyId } from "./routes/auth/claim";
 import { registerPayerHandler } from "./routes/delegate/register";
 import { addPayeeHandler } from "./routes/delegate/user";
+// import redisClient from "./lib/redisClient";
+import { failedTxWebHookHandler, thirdwebWebHookHandler } from "./routes/webhook/thirdweb";
+import { getTxStatusByQueueId } from "./routes/thirdweb/transaction";
+import { RoundRobin } from './utils/thirdweb/roundRobin';
+import { TempRoundRobin } from './utils/tmp/testRoundRobin';
+import { backendWallets } from './utils/thirdweb/constants';
+
+
 
 const app = express();
+
+// API endpoint to get the next address
+const addresses = Array.from({ length: 500 }, (_, i) => `Address_${500 + i}`); // Mock addresses
+const environment = "staging";
+const roundRobin = new TempRoundRobin(addresses, environment);
+roundRobin.init().then(() => {
+	console.log("RoundRobin initialized");
+ }).catch(err => {
+	console.error("Error initializing RoundRobin:", err);
+ });
+ 
+app.get('/api/next', async (req, res) => {
+	try {
+	   const address = await roundRobin.next();
+	   const index = addresses.indexOf(address) + 500; // Map back to index range 500-999
+	   res.json({ index });
+	} catch (err) {
+	   console.error("Error calling RoundRobin next:", err);
+	   res.status(500).json({ error: "Internal server error" });
+	}
+ });
+ 
+let server = http.createServer(app);
+
+export const rr = new RoundRobin(backendWallets, config.env);
+// Store eventEmitter in app.locals
+// app.locals.eventEmitter = eventEmitter;
 
 const { ENABLE_CONFORMANCE, ENABLE_HTTPS, RP_ID = "localhost" } = process.env;
 
@@ -77,7 +115,48 @@ app.use(express.static("./public/"));
 app.use(express.json());
 app.use(cors());
 
+// export const io = new SocketIOServer(server, {
+// 	cors: {
+// 	  origin: "*", // Allow all origins, you can restrict this to your client's URL
+// 	  methods: ["GET", "POST"]
+// 	}
+//   });
+// io.on('connection', (socket) => {
+//     console.log('New client connected');
+
+//     // Store user identifier with the socket ID in Redis
+//     socket.on('register', async (userId) => {
+// 		try {
+// 			await redisClient.hSet("userSocketMapping", userId, socket.id);
+// 			console.log(`✅ User ${userId} connected with socket ID ${socket.id}`);
+// 		}catch(err){
+// 			console.error('❌ Error storing user ID in Redis:', err);
+// 		}
+//     });
+
+// 	socket.on('disconnect', async () => {
+//         try {
+//             const keys = await redisClient.hKeys('userSocketMapping');
+//             for (const key of keys) {
+//                 const socketId = await redisClient.hGet("userSocketMapping", key);
+//                 if (socketId === socket.id) {
+//                    // await redisClient.hDel("userSocketMapping", key);
+//                     console.log(`🔴 User ${key} disconnected`);
+//                     break;
+//                 }
+//             }
+//         } catch (err) {
+//             console.error('❌ Error handling disconnection:', err);
+//         }
+//     });
+// });
+
 app.use(limiter);
+
+// --- thirdweb webhook
+app.post("/webhook", thirdwebWebHookHandler);
+app.post("/failedTx-webhook", failedTxWebHookHandler);
+
 app.use(apiKeyGateAndTracking);
 
 /**
@@ -216,6 +295,9 @@ app.post("/store-condition", storeConditionHandler);
 // --- Mint PKP for authorized account
 app.post("/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
 
+// -- (V2) Mint PKP for authorized account (using ThirdWeb)
+app.post("/api/v2/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
+
 // --- Fetch PKPs tied to authorized account
 app.post("/fetch-pkps-by-auth-method", fetchPKPsHandler);
 
@@ -225,6 +307,9 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 // -- Payment Delegation
 app.post("/register-payer", registerPayerHandler);
 app.post("/add-users", addPayeeHandler);
+app.post("/api/v2/add-users", addPayeeHandler);
+
+
 
 // *** Deprecated ***
 
@@ -251,13 +336,15 @@ app.get(
 	webAuthnGenerateRegistrationOptionsHandler,
 );
 app.post("/auth/claim", mintClaimedKeyId);
+app.get("/transaction/status/:queueId", getTxStatusByQueueId);
+
 
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
 	const port = 443;
 
-	https
+	server = https
 		.createServer(
 			{
 				/**
@@ -267,15 +354,17 @@ if (ENABLE_HTTPS) {
 				cert: fs.readFileSync(`./${rpID}.crt`),
 			},
 			app,
-		)
-		.listen(port, host, () => {
-			console.log(`🚀 1: Server ready at ${host}:${port}`);
-		});
+		);
+	server.listen(port, host, async () => {
+		await rr.init();
+		console.log(`🚀 1: Server ready at ${host}:${port}`);
+	});
 } else {
 	const host = "127.0.0.1";
 	const port = config.port;
-
-	http.createServer(app).listen(port, () => {
-		console.log(`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} |`);
+	
+	server.listen(port, async () => {
+		await rr.init();
+		console.log(`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} | ENV: ${config.env}`);
 	});
 }

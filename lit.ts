@@ -16,6 +16,9 @@ import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
 // 	datil,
 // } from "@lit-protocol/contracts";
 
+import { ThirdWebLib } from "./lib/thirdweb/ThirdWebLib";
+import { MintPKPV2 } from "./types/lit";
+
 import {
 	datil,
 	datilDev,
@@ -23,6 +26,10 @@ import {
 	habanero,
 	manzano,
 } from "@lit-protocol/contracts";
+import { VersionStrategy } from "./routes/VersionStrategy";
+import { EventEmitter } from "stream";
+import { rr } from ".";
+// import { waitForEvent } from "./eventEmitter";
 
 function getContractFromWorker(
 	network: LIT_NETWORK_VALUES,
@@ -349,6 +356,7 @@ export async function mintPKPV2({
 	permittedAuthMethodScopes,
 	addPkpEthAddressAsPermittedAddress,
 	sendPkpToItself,
+	versionStrategy,
 }: {
 	keyType: string;
 	permittedAuthMethodTypes: string[];
@@ -357,7 +365,8 @@ export async function mintPKPV2({
 	permittedAuthMethodScopes: string[][];
 	addPkpEthAddressAsPermittedAddress: boolean;
 	sendPkpToItself: boolean;
-}): Promise<ethers.Transaction> {
+	versionStrategy?: VersionStrategy,
+}): Promise<MintPKPV2> {
 	console.log(
 		"In mintPKPV2",
 		keyType,
@@ -369,65 +378,161 @@ export async function mintPKPV2({
 		sendPkpToItself,
 	);
 
-	const pkpHelper = await getPkpHelperContract(config.network);
+	const [pkpHelper, pkpNft] = await Promise.all([
+		getPkpHelperContract(config.network),
+		getPkpNftContract(config.network)
+	  ]);
+	const pkpNftFunctions = {
+		mintCost: 'mintCost',
+	}
 
-	const pkpNft = await getPkpNftContract(config.network);
+	const pkpHelperFunctions = {
+		mintNextAndAddAuthMethods: 'mintNextAndAddAuthMethods',
+	}
 
-	// first get mint cost
-	const mintCost = await pkpNft.mintCost();
 
-	const mintTxData =
-		await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
-			keyType,
-			permittedAuthMethodTypes,
-			permittedAuthMethodIds,
-			permittedAuthMethodPubkeys,
-			permittedAuthMethodScopes,
-			addPkpEthAddressAsPermittedAddress,
-			sendPkpToItself,
-			{ value: mintCost },
+	// version strategy is required
+	if (!versionStrategy) {
+		throw new Error("versionStrategy is required");
+	}
+
+	// must contain the value in the VersionStrategy enum
+	if (!Object.values(VersionStrategy).includes(versionStrategy)) {
+		throw new Error(`Invalid version strategy. Must be one of: ${Object.values(VersionStrategy).join(", ")}`);
+	}
+	let mintTxData;
+	let mintCost;
+	try {
+		// first get mint cost
+		// Start both tasks without awaiting them
+		console.time("😶‍🌫️ get mint cost");
+		const mintCostPromise = pkpNft.mintCost();
+		const mintTxDataPromise = pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
+		keyType,
+		permittedAuthMethodTypes,
+		permittedAuthMethodIds,
+		permittedAuthMethodPubkeys,
+		permittedAuthMethodScopes,
+		addPkpEthAddressAsPermittedAddress,
+		sendPkpToItself,
+		{ value: await mintCostPromise }
 		);
+
+		// Await both promises at the same time
+		[mintCost, mintTxData] = await Promise.all([mintCostPromise, mintTxDataPromise]);
+		console.timeEnd("😶‍🌫️ get mint cost");
+	}catch(err) {
+		throw err;
+	}
 
 	// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
 	let gasLimit;
-
 	try {
-		gasLimit = await pkpNft.provider.estimateGas(mintTxData);
-		// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
-		gasLimit = gasLimit
-			.mul(
-				ethers.BigNumber.from(
-					parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
-						200,
-				),
-			)
-			.div(ethers.BigNumber.from(100));
-
+		// gasLimit = await pkpNft.provider.estimateGas(mintTxData);
+		// // since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
+		// gasLimit = gasLimit
+		// 	.mul(
+		// 		ethers.BigNumber.from(
+		// 			parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
+		// 				200,
+		// 		),
+		// 	)
+		// 	.div(ethers.BigNumber.from(100));
+		gasLimit = ethers.utils.hexlify(5000000);
 		console.log("adjustedGasLimit:", gasLimit);
 	} catch (e) {
 		console.error("❗️ Error while estimating gas, using default");
+		const err = new Error("Error while estimating gas, using default");
+		Sentry.captureException(err, {
+			contexts: {
+				request_body: {
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					sendPkpToItself,
+				},
+			}
+		});
 		gasLimit = ethers.utils.hexlify(5000000);
 	}
-
-	try {
-		const tx = await pkpHelper.mintNextAndAddAuthMethods(
-			keyType,
-			permittedAuthMethodTypes,
-			permittedAuthMethodIds,
-			permittedAuthMethodPubkeys,
-			permittedAuthMethodScopes,
-			addPkpEthAddressAsPermittedAddress,
-			sendPkpToItself,
-			{ value: mintCost, gasLimit: gasLimit },
-		);
-
-		await tx.wait();
-		console.log("tx", tx);
-		return tx;
-	} catch (e: any) {
-		console.log("❗️ Error while minting pkp:", e);
-		throw e;
+	if (versionStrategy === VersionStrategy.DEFAULT) {
+		try {
+			const tx = await pkpHelper.mintNextAndAddAuthMethods(
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
+	
+				{ value: mintCost, gasLimit: gasLimit },
+			);
+			await tx.wait();
+			console.log("tx", tx);
+			return tx;
+		}catch(err) {
+			throw err;
+		}
 	}
+	if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
+		try {
+			const address = await rr.next();
+			// const mintCost = await ThirdWebLib.Contract.read({
+			// 	contractAddress: pkpNft.address,
+			// 	functionName: pkpNftFunctions.mintCost,
+			// });
+			// console.time("Thirdweb");
+			console.log("THIRDWEB PARAMS");
+			console.log(JSON.stringify({
+				contractAddress: pkpHelper.address,
+				functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
+				args: [
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					sendPkpToItself,
+				],
+				txOverrides: {
+					value: mintCost.toString(),
+					gasLimit: "6000000"
+				},
+				// this we have to dynamic using round robin
+				backendWalletAddress: address,
+			}))
+			const res: any = await ThirdWebLib.Contract.write({
+				contractAddress: pkpHelper.address,
+				functionName: pkpHelperFunctions.mintNextAndAddAuthMethods,
+				args: [
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					sendPkpToItself,
+				],
+				txOverrides: {
+					value: mintCost.toString(),
+					gas: "6000000"
+				},
+				// this we have to dynamic using round robin
+				backendWalletAddress: address,
+			});
+			// console.timeEnd("Thirdweb");
+			console.log("res:", res);
+			return res.result;
+		}catch(err) {
+			throw err;
+		}
+	}
+	throw new Error("Invalid version strategy");
 }
 
 export async function mintPKP({
@@ -621,6 +726,7 @@ export async function getPKPsForAuthMethod({
 			}
 			return pkps;
 		} catch (err) {
+			console.log("Unable to get PKPs for auth method", err);
 			throw new Error("Unable to get PKPs for auth method");
 		}
 	} else {
@@ -663,8 +769,14 @@ export async function sendLitTokens(
 
 export async function mintCapacityCredits({
 	signer,
+	versionStrategy,
+	backendWalletAddress,
+	eventEmitter
 }: {
 	signer: ethers.Wallet;
+	versionStrategy?: VersionStrategy,
+	backendWalletAddress?:string,
+	eventEmitter?: EventEmitter
 }) {
 	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(
@@ -683,7 +795,7 @@ export async function mintCapacityCredits({
 	}
 
 	// set the expiration to midnight, 15 days from now
-	const timestamp = Date.now() + 15 * 24 * 60 * 60 * 1000;
+	const timestamp = Date.now() + 28 * 24 * 60 * 60 * 1000;
 	const futureDate = new Date(timestamp);
 	futureDate.setUTCHours(0, 0, 0, 0);
 
@@ -707,15 +819,39 @@ export async function mintCapacityCredits({
 		return;
 	}
 
-	const tx = await contract.functions.mint(expires, {
-		value: cost.toString(),
-	});
-	console.log("mint tx hash: ", tx.hash);
-	const res = await tx.wait();
 
-	const tokenIdFromEvent = res.events[0].topics[3];
-
-	return { tx, capacityTokenId: tokenIdFromEvent };
+	if(versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
+		console.log("mintCapacityCredits: FORWARD_TO_THIRDWEB");
+		if(!backendWalletAddress) {
+			throw new Error("backendWalletAddress is required for FORWARD_TO_THIRDWEB");
+		}
+		// if(!eventEmitter) {
+		// 	throw new Error("eventEmitter is required for FORWARD_TO_THIRDWEB");
+		// }
+		const response: any = await ThirdWebLib.Contract.write({
+			contractAddress: contract.address,
+			functionName: 'mint',
+			args: [expires],
+			txOverrides: {
+				value: cost.toString()
+			},
+			backendWalletAddress: backendWalletAddress
+		});
+		const {queueId} = response.result;
+		// const data = await waitForEvent(eventEmitter, 'thirdwebTxSent', 5000, queueId);
+		// console.log("data from EVENT", data);
+		return response;
+	}else {
+		const tx = await contract.functions.mint(expires, {
+			value: cost.toString(),
+		});
+		console.log("mint tx hash: ", tx.hash);
+		const res = await tx.wait();
+	
+		const tokenIdFromEvent = res.events[0].topics[3];
+	
+		return { tx, capacityTokenId: tokenIdFromEvent };
+	}
 }
 
 function normalizeTokenURI(tokenURI: string) {
@@ -740,8 +876,8 @@ function normalizeCapacity(capacity: any) {
 
 async function queryCapacityCredit(
 	contract: ethers.Contract,
-	owner: string,
 	tokenIndexForUser: number,
+	owner?: string,
 ) {
 	console.log(
 		`Querying capacity credit for owner ${owner} at index ${tokenIndexForUser}`,
@@ -773,7 +909,7 @@ async function queryCapacityCredit(
 	}
 }
 
-export async function queryCapacityCredits(signer: ethers.Wallet) {
+export async function queryCapacityCredits(signer: ethers.Wallet | undefined, address?: string) {
 	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(
 			`Payment delegation is not available on ${config.network}`,
@@ -784,11 +920,11 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 		config.network,
 		"RateLimitNFT",
 	);
-	const count = parseInt(await contract.functions.balanceOf(signer.address));
+	const count = parseInt(await contract.functions.balanceOf(signer?.address || address));
 
 	return Promise.all(
 		[...new Array(count)].map((_, i) =>
-			queryCapacityCredit(contract, signer.address, i),
+			queryCapacityCredit(contract, i, signer?.address || address,),
 		),
 	) as Promise<CapacityToken[]>;
 }
@@ -796,58 +932,101 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 export async function addPaymentDelegationPayee({
 	wallet,
 	payeeAddresses,
+	versionStrategy,
+	eventEmitter
 }: {
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
+	versionStrategy: VersionStrategy,
+	eventEmitter?: EventEmitter
 }) {
+	const backendWalletAddress = await rr.next();
 	if (config.network === "serrano" || config.network === "cayenne") {
 		throw new Error(
 			`Payment delegation is not available on ${config.network}`,
 		);
 	}
+	// let capacityTokens: CapacityToken[] = [];
+	// if(versionStrategy === VersionStrategy.DEFAULT) {
+	// 	capacityTokens = await queryCapacityCredits(wallet);
+	// } else {
+	// 	console.log("queryCapacityCredits", backendWalletAddress);
+	// 	capacityTokens = await queryCapacityCredits(undefined, backendWalletAddress);
+	// }
+	// // get the first token that is not expired
+	// console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
+	// const capacityToken = capacityTokens.find((token) => !token.isExpired);
 
-	// get the first token that is not expired
-	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
-	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
-	const capacityToken = capacityTokens.find((token) => !token.isExpired);
+	// let tokenId: number | null = null;
 
-	let tokenId: number | null = null;
+	// if (!capacityToken) {
+	// 	// mint a new token
+	// 	const minted = await mintCapacityCredits({ signer: wallet, versionStrategy,backendWalletAddress: backendWalletAddress,eventEmitter });
 
-	if (!capacityToken) {
-		// mint a new token
-		const minted = await mintCapacityCredits({ signer: wallet });
+	// 	if (!minted) {
+	// 		throw new Error("Failed to mint capacity credits");
+	// 	}
 
-		if (!minted) {
-			throw new Error("Failed to mint capacity credits");
-		}
+	// 	console.log(
+	// 		"No capacity token found, minted a new one:",
+	// 		minted.capacityTokenId,
+	// 		minted
+	// 	);
+	// 	tokenId = minted.capacityTokenId;
+	// } else {
+	// 	tokenId = capacityToken.tokenId;
+	// }
 
-		console.log(
-			"No capacity token found, minted a new one:",
-			minted.capacityTokenId,
-		);
-		tokenId = minted.capacityTokenId;
-	} else {
-		tokenId = capacityToken.tokenId;
-	}
-
-	if (!tokenId) {
-		throw new Error("Failed to get ID for capacity token");
-	}
+	// if (!tokenId) {
+	// 	throw new Error("Failed to get ID for capacity token");
+	// }
 
 	// add payer in contract
-	const provider = getProvider();
+	//const provider = getProvider();
 	const paymentDelegationContract = await getContractFromWorker(
 		config.network,
 		"PaymentDelegation",
 		wallet,
 	);
-
-	const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-		payeeAddresses,
-	);
-	console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-	await tx.wait();
-	return tx;
+	if (versionStrategy === VersionStrategy.DEFAULT) {
+		const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+			payeeAddresses,
+		);
+		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+		await tx.wait();
+		return {tx};
+	}
+	if (versionStrategy === VersionStrategy.FORWARD_TO_THIRDWEB) {
+		// const mintCost = await ThirdWebLib.Contract.read({
+		// 	contractAddress: pkpNft.address,
+		// 	functionName: pkpNftFunctions.mintCost,
+		// });
+		// if(!eventEmitter){
+		// 	throw new Error("Event emitter is required for forward to thirdweb strategy");
+		// }
+		console.log("FORWARD_TO_THIRDWEB", backendWalletAddress);
+		console.time("😓 😓 ThirdWebCall");
+		const res:any = await ThirdWebLib.Contract.write({
+			contractAddress: paymentDelegationContract.address,
+			functionName: 'delegatePaymentsBatch',
+			args: [
+				payeeAddresses
+			],
+			// txOverrides: {
+			// 	value: mintCost.toString(),
+			// 	gasLimit: gasLimit
+			// },
+			// this we have to dynamic using round robin
+			backendWalletAddress: backendWalletAddress,
+		});
+		console.timeEnd("😓 😓 ThirdWebCall");
+		// const {queueId} = res.result;
+		// const data = await waitForEvent(eventEmitter, 'thirdwebTxSent', 5000, queueId);
+		
+		// console.log("res:", res);
+	
+		return res.result;
+	}
 }
 
 // export function packAuthData({

@@ -7,8 +7,10 @@ const limiter = rateLimit({
 	store: new RedisStore({
 		sendCommand: (...args: string[]) => redisClient.sendCommand(args),
 	}),
-	max: 10, // Limit each IP to 10 requests per `window`
-	windowMs: 10 * 1000, // 10s
+	max: 1000, // Limit each IP to 1000 requests per `window`
+	windowMs: 1000, // 1 second
+	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
 export default limiter;
