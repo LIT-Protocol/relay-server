@@ -3,7 +3,7 @@ name: Docker Build
 on:
   push:
     branches:
-      - thirdweb-dev
+      - thirdweb-main
 
 jobs:
   build:
@@ -22,9 +22,9 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
-          aws-region: ${{ secrets.AWS_REGION_DEV }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ secrets.AWS_REGION_PROD }}
       
        # Install necessary dependencies if needed (like gcc, make, etc.)
       - name: Install dependencies
@@ -40,9 +40,9 @@ jobs:
         run: make build
       
       - name: Push Docker Image
-        run: make release
+        run: make release-prod
       
       - name: Deploy K8S
         run: |
-          aws eks update-kubeconfig --region ap-south-1 --name tf-tria-dev
-          make deploy-k8s-dev
+          aws eks update-kubeconfig --region us-east-1 --name tf-tria-prod
+          make deploy-k8s-prod
