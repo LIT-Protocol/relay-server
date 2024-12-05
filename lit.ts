@@ -398,7 +398,7 @@ export async function mintPKPV2({
 			.mul(
 				ethers.BigNumber.from(
 					parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
-						200,
+					200,
 				),
 			)
 			.div(ethers.BigNumber.from(100));
@@ -620,8 +620,8 @@ export async function getPKPsForAuthMethod({
 				}
 			}
 			return pkps;
-		} catch (err) {
-			throw new Error("Unable to get PKPs for auth method");
+		} catch (err: unknown) {
+			throw new Error(`Unable to get PKPs for auth method: ${(err as Error).message}`);
 		}
 	} else {
 		throw new Error("Unable to connect to PKP Permissions contract");
