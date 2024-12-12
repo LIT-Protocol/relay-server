@@ -141,6 +141,7 @@ export interface Config {
 	expectedOrigins: string[];
 	serranoContract?: Contract;
 	cayenneContracts?: Contract;
+	localChainContracts?: Contract;
 	datilDevContracts?: Contract;
 	useSoloNet: boolean;
 	network: LIT_NETWORK_VALUES;
