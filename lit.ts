@@ -431,7 +431,7 @@ export async function mintPKPV2({
 	}
 }
 
-export async function mintPKP({
+export async function mintPKPWithSingleAuthMethod({
 	authMethodType,
 	authMethodId,
 	authMethodPubkey,
@@ -440,7 +440,7 @@ export async function mintPKP({
 	authMethodId: string;
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
-	console.log("in mintPKP");
+	console.log("in mintPKPWithSingleAuthMethod");
 	const pkpHelper = await getPkpHelperContract(config.network);
 	const pkpNft = await getPkpNftContract(config.network);
 
@@ -451,58 +451,27 @@ export async function mintPKP({
 
 	Sequencer.Wallet = getSigner();
 	// then, mint PKP using helper
-	if (config.useSoloNet) {
-		console.info("Minting PKP against SoloNet PKPHelper contract", {
-			authMethodType,
-			authMethodId,
-			authMethodPubkey,
-		});
 
-		// Get next unminted PKP pubkey.
-		const pkpPubkeyForPkpNft = await getNextAvailablePkpPubkey(redisClient);
-
-		const tx = await sequencer
-			.wait({
-				action: pkpHelper.mintAndAddAuthMethods,
-				params: [
-					pkpPubkeyForPkpNft, // In SoloNet, we choose which PKP pubkey we would like to attach to the minted PKP.
-					[authMethodType],
-					[authMethodId],
-					[authMethodPubkey],
-					[[ethers.BigNumber.from(1)]],
-					true,
-					false,
-				],
-				transactionData: { value: mintCost },
-			})
-			.catch((e) => {
-				console.error("Error while minting pkp", e);
-			});
-
-		console.log("tx", tx);
-		return tx;
-	} else {
-		console.info("Minting PKP against PKPHelper contract", {
-			authMethodType,
-			authMethodId,
-			authMethodPubkey,
-		});
-		const tx = await sequencer.wait({
-			action: pkpHelper.mintNextAndAddAuthMethods,
-			params: [
-				2,
-				[authMethodType],
-				[authMethodId],
-				[authMethodPubkey],
-				[[ethers.BigNumber.from(1)]],
-				true,
-				true,
-			],
-			transactionData: { value: mintCost },
-		});
-		console.log("tx", tx);
-		return tx;
-	}
+	console.info("Minting PKP against PKPHelper contract", {
+		authMethodType,
+		authMethodId,
+		authMethodPubkey,
+	});
+	const tx = await sequencer.wait({
+		action: pkpHelper.mintNextAndAddAuthMethods,
+		params: [
+			2,
+			[authMethodType],
+			[authMethodId],
+			[authMethodPubkey],
+			[[ethers.BigNumber.from(1)]],
+			true,
+			true,
+		],
+		transactionData: { value: mintCost },
+	});
+	console.log("tx", tx);
+	return tx;
 }
 
 export async function claimPKP({

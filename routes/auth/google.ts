@@ -10,7 +10,7 @@ import {
 import { OAuth2Client, TokenPayload } from "google-auth-library";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
-import { mintPKP, getPKPsForAuthMethod } from "../../lit";
+import { mintPKPWithSingleAuthMethod, getPKPsForAuthMethod } from "../../lit";
 
 const CLIENT_ID =
 	process.env.GOOGLE_CLIENT_ID ||
@@ -63,7 +63,7 @@ export async function googleOAuthVerifyToMintHandler(
 		const authMethodId = utils.keccak256(
 			toUtf8Bytes(`${tokenPayload.sub}:${tokenPayload.aud}`),
 		);
-		const mintTx = await mintPKP({
+		const mintTx = await mintPKPWithSingleAuthMethod({
 			authMethodType: AuthMethodType.GoogleJwt,
 			authMethodId,
 			authMethodPubkey: "0x",
@@ -75,7 +75,9 @@ export async function googleOAuthVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("[Google] Unable to mint PKP for given Google account", { err });
+		console.error("[Google] Unable to mint PKP for given Google account", {
+			err,
+		});
 		return res.status(500).json({
 			error: "[Google] Unable to mint PKP for given Google account",
 		});

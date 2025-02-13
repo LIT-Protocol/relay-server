@@ -8,14 +8,15 @@ import {
 	OTPAuthVerifyRegistrationRequest,
 	OtpVerificationPayload,
 } from "../../models";
-import { getPKPsForAuthMethod, mintPKP } from "../../lit";
+import { getPKPsForAuthMethod, mintPKPWithSingleAuthMethod } from "../../lit";
 import fetch from "node-fetch";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
 
 // TODO: UPDATE TO DEPLOYED DOMAIN
 const AUTH_SERVER_URL =
-	process.env.AUTH_SERVER_URL || "https://auth-api.litgateway.com/api/otp/verify";
+	process.env.AUTH_SERVER_URL ||
+	"https://auth-api.litgateway.com/api/otp/verify";
 
 async function verifyOtpJWT(jwt: string): Promise<OtpVerificationPayload> {
 	const res = await fetch(AUTH_SERVER_URL, {
@@ -23,7 +24,7 @@ async function verifyOtpJWT(jwt: string): Promise<OtpVerificationPayload> {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
-			'api-key': '67e55044-10b1-426f-9247-bb680e5fe0c8_relayer'
+			"api-key": "67e55044-10b1-426f-9247-bb680e5fe0c8_relayer",
 		},
 		body: JSON.stringify({
 			token: jwt,
@@ -53,7 +54,7 @@ export async function otpVerifyToMintHandler(
 ) {
 	const { accessToken } = req.body;
 	let payload: OtpVerificationPayload | null;
-	
+
 	const tmpToken = (" " + accessToken).slice(1);
 	let userId;
 	let tokenBody: Record<string, unknown>;
@@ -61,11 +62,13 @@ export async function otpVerifyToMintHandler(
 	try {
 		tokenBody = parseJWT(tmpToken);
 		orgId = (tokenBody.orgId as string).toLowerCase();
-		let message: string = tokenBody['extraData'] as string;
+		let message: string = tokenBody["extraData"] as string;
 		let contents = message.split("|");
 
 		if (contents.length !== 2) {
-			throw new Error("invalid message format in token message aborting op");
+			throw new Error(
+				"invalid message format in token message aborting op",
+			);
 		}
 
 		userId = contents[0];
@@ -87,7 +90,7 @@ export async function otpVerifyToMintHandler(
 	// mint PKP for user
 	try {
 		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId}:${orgId}`));
-		const mintTx = await mintPKP({
+		const mintTx = await mintPKPWithSingleAuthMethod({
 			authMethodType: AuthMethodType.OTP,
 			authMethodId,
 			authMethodPubkey: "0x",
@@ -99,7 +102,9 @@ export async function otpVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("[OTP] Unable to mint PKP for given OTP request", { err });
+		console.error("[OTP] Unable to mint PKP for given OTP request", {
+			err,
+		});
 		return res.status(500).json({
 			error: "[OTP] Unable to mint PKP for given OTP request",
 		});
@@ -180,8 +185,10 @@ function parseJWT(jwt: string): Record<string, unknown> {
 	if (parts.length !== 3) {
 		throw new Error("Invalid token length");
 	}
-	let body =  Buffer.from(parts[1], 'base64');
-	let parsedBody: Record<string, unknown> = JSON.parse(body.toString('ascii'));
+	let body = Buffer.from(parts[1], "base64");
+	let parsedBody: Record<string, unknown> = JSON.parse(
+		body.toString("ascii"),
+	);
 	console.log("JWT body: ", parsedBody);
 	return parsedBody;
 }
