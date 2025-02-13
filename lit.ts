@@ -1,20 +1,16 @@
 import { ethers, utils } from "ethers";
 import fs from "fs";
-import { RedisClientType } from "redis";
 import config from "./config";
-import redisClient from "./lib/redisClient";
-import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
+import {
+	AuthMethodType,
+	MintNextAndAddAuthMethodsRequest,
+	PKP,
+	StoreConditionWithSigner,
+} from "./models";
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
 import { CapacityToken } from "lit";
 import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
-// import {
-// 	manzano,
-// 	datilDev,
-// 	datilTest,
-// 	habanero,
-// 	datil,
-// } from "@lit-protocol/contracts";
 
 import {
 	datil,
@@ -24,7 +20,7 @@ import {
 	manzano,
 } from "@lit-protocol/contracts";
 
-function getContractFromWorker(
+function getContractFromJsSdk(
 	network: LIT_NETWORK_VALUES,
 	contractName: string,
 	signer?: ethers.Wallet,
@@ -179,19 +175,19 @@ async function getPkpHelperContract(network: string) {
 			);
 			break;
 		case "manzano":
-			contract = getContractFromWorker("manzano", "PKPHelper");
+			contract = getContractFromJsSdk("manzano", "PKPHelper");
 			break;
 		case "habanero":
-			contract = getContractFromWorker("habanero", "PKPHelper");
+			contract = getContractFromJsSdk("habanero", "PKPHelper");
 			break;
 		case "datil-dev":
-			contract = getContractFromWorker("datil-dev", "PKPHelper");
+			contract = getContractFromJsSdk("datil-dev", "PKPHelper");
 			break;
 		case "datil-test":
-			contract = getContractFromWorker("datil-test", "PKPHelper");
+			contract = getContractFromJsSdk("datil-test", "PKPHelper");
 			break;
 		case "datil":
-			contract = getContractFromWorker("datil", "PKPHelper");
+			contract = getContractFromJsSdk("datil", "PKPHelper");
 			break;
 		default:
 			throw new Error(`Unsupported network: ${network}`);
@@ -221,19 +217,19 @@ async function getPermissionsContract() {
 			);
 			break;
 		case "manzano":
-			contract = getContractFromWorker("manzano", "PKPPermissions");
+			contract = getContractFromJsSdk("manzano", "PKPPermissions");
 			break;
 		case "habanero":
-			contract = getContractFromWorker("habanero", "PKPPermissions");
+			contract = getContractFromJsSdk("habanero", "PKPPermissions");
 			break;
 		case "datil-dev":
-			contract = getContractFromWorker("datil-dev", "PKPPermissions");
+			contract = getContractFromJsSdk("datil-dev", "PKPPermissions");
 			break;
 		case "datil-test":
-			contract = getContractFromWorker("datil-test", "PKPPermissions");
+			contract = getContractFromJsSdk("datil-test", "PKPPermissions");
 			break;
 		case "datil":
-			contract = getContractFromWorker("datil", "PKPPermissions");
+			contract = getContractFromJsSdk("datil", "PKPPermissions");
 			break;
 		default:
 			throw new Error(`Unsupported network: ${config.network}`);
@@ -249,9 +245,9 @@ async function getPermissionsContract() {
 async function getPaymentDelegationContract() {
 	switch (config.network) {
 		case "manzano":
-			return getContractFromWorker("manzano", "PaymentDelegation");
+			return getContractFromJsSdk("manzano", "PaymentDelegation");
 		case "habanero":
-			return getContractFromWorker("habanero", "PaymentDelegation");
+			return getContractFromJsSdk("habanero", "PaymentDelegation");
 		default:
 			throw new Error(
 				"PaymentDelegation contract not available for this network",
@@ -276,19 +272,19 @@ async function getPkpNftContract(network: string) {
 			);
 			break;
 		case "manzano":
-			contract = getContractFromWorker("manzano", "PKPNFT");
+			contract = getContractFromJsSdk("manzano", "PKPNFT");
 			break;
 		case "habanero":
-			contract = getContractFromWorker("habanero", "PKPNFT");
+			contract = getContractFromJsSdk("habanero", "PKPNFT");
 			break;
 		case "datil-dev":
-			contract = getContractFromWorker("datil-dev", "PKPNFT");
+			contract = getContractFromJsSdk("datil-dev", "PKPNFT");
 			break;
 		case "datil-test":
-			contract = getContractFromWorker("datil-test", "PKPNFT");
+			contract = getContractFromJsSdk("datil-test", "PKPNFT");
 			break;
 		case "datil":
-			contract = getContractFromWorker("datil", "PKPNFT");
+			contract = getContractFromJsSdk("datil", "PKPNFT");
 			break;
 	}
 
@@ -341,7 +337,7 @@ export async function storeConditionWithSigner(
 	return tx;
 }
 
-export async function mintPKPV2({
+export async function mintPKP({
 	keyType,
 	permittedAuthMethodTypes,
 	permittedAuthMethodIds,
@@ -349,17 +345,10 @@ export async function mintPKPV2({
 	permittedAuthMethodScopes,
 	addPkpEthAddressAsPermittedAddress,
 	sendPkpToItself,
-}: {
-	keyType: string;
-	permittedAuthMethodTypes: string[];
-	permittedAuthMethodIds: string[];
-	permittedAuthMethodPubkeys: string[];
-	permittedAuthMethodScopes: string[][];
-	addPkpEthAddressAsPermittedAddress: boolean;
-	sendPkpToItself: boolean;
-}): Promise<ethers.Transaction> {
-	console.log(
-		"In mintPKPV2",
+	burnPkp = false,
+	sendToAddressAfterMinting = ethers.constants.AddressZero,
+}: MintNextAndAddAuthMethodsRequest): Promise<ethers.Transaction> {
+	console.log("Minting PKP with params:", {
 		keyType,
 		permittedAuthMethodTypes,
 		permittedAuthMethodIds,
@@ -367,7 +356,9 @@ export async function mintPKPV2({
 		permittedAuthMethodScopes,
 		addPkpEthAddressAsPermittedAddress,
 		sendPkpToItself,
-	);
+		burnPkp,
+		sendToAddressAfterMinting,
+	});
 
 	const pkpHelper = await getPkpHelperContract(config.network);
 
@@ -398,30 +389,37 @@ export async function mintPKPV2({
 			.mul(
 				ethers.BigNumber.from(
 					parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
-					200,
+						200,
 				),
 			)
 			.div(ethers.BigNumber.from(100));
 
 		console.log("adjustedGasLimit:", gasLimit);
 	} catch (e) {
-		console.error("❗️ Error while estimating gas, using default");
-		gasLimit = ethers.utils.hexlify(5000000);
+		console.error("❗️ Error while estimating gas!");
+		// gasLimit = ethers.utils.hexlify(5000000);
+		throw e;
 	}
 
 	try {
-		const tx = await pkpHelper.mintNextAndAddAuthMethods(
-			keyType,
-			permittedAuthMethodTypes,
-			permittedAuthMethodIds,
-			permittedAuthMethodPubkeys,
-			permittedAuthMethodScopes,
-			addPkpEthAddressAsPermittedAddress,
-			sendPkpToItself,
-			{ value: mintCost, gasLimit: gasLimit },
-		);
+		const sequencer = Sequencer.Instance;
 
-		await tx.wait();
+		Sequencer.Wallet = getSigner();
+
+		const tx = await sequencer.wait({
+			action: pkpHelper.mintNextAndAddAuthMethods,
+			params: [
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
+			],
+			transactionData: { value: mintCost, gasLimit },
+		});
+
 		console.log("tx", tx);
 		return tx;
 	} catch (e: any) {
@@ -430,7 +428,7 @@ export async function mintPKPV2({
 	}
 }
 
-export async function mintPKP({
+export async function mintPKPWithSingleAuthMethod({
 	authMethodType,
 	authMethodId,
 	authMethodPubkey,
@@ -439,69 +437,15 @@ export async function mintPKP({
 	authMethodId: string;
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
-	console.log("in mintPKP");
-	const pkpHelper = await getPkpHelperContract(config.network);
-	const pkpNft = await getPkpNftContract(config.network);
-
-	// first get mint cost
-	const mintCost = await pkpNft.mintCost();
-
-	const sequencer = Sequencer.Instance;
-
-	Sequencer.Wallet = getSigner();
-	// then, mint PKP using helper
-	if (config.useSoloNet) {
-		console.info("Minting PKP against SoloNet PKPHelper contract", {
-			authMethodType,
-			authMethodId,
-			authMethodPubkey,
-		});
-
-		// Get next unminted PKP pubkey.
-		const pkpPubkeyForPkpNft = await getNextAvailablePkpPubkey(redisClient);
-
-		const tx = await sequencer
-			.wait({
-				action: pkpHelper.mintAndAddAuthMethods,
-				params: [
-					pkpPubkeyForPkpNft, // In SoloNet, we choose which PKP pubkey we would like to attach to the minted PKP.
-					[authMethodType],
-					[authMethodId],
-					[authMethodPubkey],
-					[[ethers.BigNumber.from(1)]],
-					true,
-					false,
-				],
-				transactionData: { value: mintCost },
-			})
-			.catch((e) => {
-				console.error("Error while minting pkp", e);
-			});
-
-		console.log("tx", tx);
-		return tx;
-	} else {
-		console.info("Minting PKP against PKPHelper contract", {
-			authMethodType,
-			authMethodId,
-			authMethodPubkey,
-		});
-		const tx = await sequencer.wait({
-			action: pkpHelper.mintNextAndAddAuthMethods,
-			params: [
-				2,
-				[authMethodType],
-				[authMethodId],
-				[authMethodPubkey],
-				[[ethers.BigNumber.from(1)]],
-				true,
-				true,
-			],
-			transactionData: { value: mintCost },
-		});
-		console.log("tx", tx);
-		return tx;
-	}
+	return mintPKP({
+		keyType: "2",
+		permittedAuthMethodTypes: [authMethodType.toString()],
+		permittedAuthMethodIds: [authMethodId],
+		permittedAuthMethodPubkeys: [authMethodPubkey],
+		permittedAuthMethodScopes: [["1"]],
+		addPkpEthAddressAsPermittedAddress: true,
+		sendPkpToItself: true,
+	});
 }
 
 export async function claimPKP({
@@ -527,64 +471,31 @@ export async function claimPKP({
 
 	Sequencer.Wallet = getSigner();
 
-	// then, mint PKP using helper
-	if (config.useSoloNet) {
-		console.info("Minting PKP against SoloNet PKPHelper contract", {
-			authMethodType,
-			authMethodId,
-			authMethodPubkey,
-		});
-
-		// Get next unminted PKP pubkey.
-		const pkpPubkeyForPkpNft = await getNextAvailablePkpPubkey(redisClient);
-
-		const tx = await sequencer
-			.wait({
-				action: pkpHelper.mintAndAddAuthMethods,
-				params: [
-					pkpPubkeyForPkpNft, // In SoloNet, we choose which PKP pubkey we would like to attach to the minted PKP.
-					[authMethodType],
-					[authMethodId],
-					[authMethodPubkey],
-					[[ethers.BigNumber.from("1")]],
-					true,
-					false,
-				],
-				transactionData: { value: mintCost },
-			})
-			.catch((e) => {
-				console.error("Error while minting pkp", e);
-			});
-
-		console.log("tx", tx);
-		return tx;
-	} else {
-		console.info("Minting PKP against PKPHelper contract", {
-			authMethodType,
-			authMethodId,
-			authMethodPubkey,
-		});
-		let tx = await sequencer.wait({
-			action: pkpHelper.claimAndMintNextAndAddAuthMethods,
-			params: [
-				[2, `0x${keyId}`, signatures],
-				[
-					2,
-					[],
-					[],
-					[],
-					[],
-					[authMethodType],
-					[`0x${authMethodId}`],
-					[authMethodPubkey],
-					[[ethers.BigNumber.from(1)]],
-				],
+	console.info("Minting PKP against PKPHelper contract", {
+		authMethodType,
+		authMethodId,
+		authMethodPubkey,
+	});
+	let tx = await sequencer.wait({
+		action: pkpHelper.claimAndMintNextAndAddAuthMethods,
+		params: [
+			[2, `0x${keyId}`, signatures],
+			[
+				2,
+				[],
+				[],
+				[],
+				[],
+				[authMethodType],
+				[`0x${authMethodId}`],
+				[authMethodPubkey],
+				[[ethers.BigNumber.from(1)]],
 			],
-			transactionData: { value: mintCost },
-		});
-		console.log("tx", tx);
-		return tx;
-	}
+		],
+		transactionData: { value: mintCost },
+	});
+	console.log("tx", tx);
+	return tx;
 }
 
 export async function getPKPsForAuthMethod({
@@ -621,7 +532,9 @@ export async function getPKPsForAuthMethod({
 			}
 			return pkps;
 		} catch (err: unknown) {
-			throw new Error(`Unable to get PKPs for auth method: ${(err as Error).message}`);
+			throw new Error(
+				`Unable to get PKPs for auth method: ${(err as Error).message}`,
+			);
 		}
 	} else {
 		throw new Error("Unable to connect to PKP Permissions contract");
@@ -672,7 +585,7 @@ export async function mintCapacityCredits({
 		);
 	}
 
-	const contract = await getContractFromWorker(
+	const contract = await getContractFromJsSdk(
 		config.network,
 		"RateLimitNFT",
 		signer,
@@ -780,10 +693,7 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 		);
 	}
 
-	const contract = await getContractFromWorker(
-		config.network,
-		"RateLimitNFT",
-	);
+	const contract = await getContractFromJsSdk(config.network, "RateLimitNFT");
 	const count = parseInt(await contract.functions.balanceOf(signer.address));
 
 	return Promise.all(
@@ -836,7 +746,7 @@ export async function addPaymentDelegationPayee({
 
 	// add payer in contract
 	const provider = getProvider();
-	const paymentDelegationContract = await getContractFromWorker(
+	const paymentDelegationContract = await getContractFromJsSdk(
 		config.network,
 		"PaymentDelegation",
 		wallet,
@@ -871,41 +781,3 @@ export async function addPaymentDelegationPayee({
 //   console.log("packed", packed);
 //   return packed;
 // }
-
-/**
- * This function returns the next available PKP that can be minted. Specifically,
- *
- * 1. Gets 1 unminted PKP from the data store - eg. ZRANGEBYSCORE myzset 0 0 LIMIT 0 1
- *    (assuming all unminted PKPs have a score of 0)
- * 2. Sets the score of the PKP to 1 to mark it as "used", optimistically - eg. ZADD myzset 1 0x1234
- * 3. Returns the PKP public key.
- */
-export async function getNextAvailablePkpPubkey(redisClient: RedisClientType) {
-	// 1. Get 1 unminted PKP from the data store
-	const unmintedPkpPubkey = await redisClient.zRangeByScore(
-		"pkp_public_keys",
-		0,
-		0,
-		{
-			LIMIT: {
-				offset: 0,
-				count: 1,
-			},
-		},
-	);
-
-	if (unmintedPkpPubkey.length === 0) {
-		throw new Error("No more PKPs available");
-	}
-
-	const unmintedPkpPubkeyToUse = unmintedPkpPubkey[0];
-
-	// 2. Set the score of the PKP to 1 to mark it as "used", optimistically
-	await redisClient.zAdd("pkp_public_keys", {
-		score: 1,
-		value: unmintedPkpPubkeyToUse,
-	});
-
-	// 3. Return the PKP public key
-	return unmintedPkpPubkeyToUse;
-}

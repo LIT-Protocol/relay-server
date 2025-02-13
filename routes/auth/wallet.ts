@@ -8,7 +8,7 @@ import {
 	AuthMethodVerifyToFetchResponse,
 } from "../../models";
 import { ethers, utils } from "ethers";
-import { mintPKP, getPKPsForAuthMethod } from "../../lit";
+import { mintPKPWithSingleAuthMethod, getPKPsForAuthMethod } from "../../lit";
 import { toUint8Array } from "js-base64";
 
 // Check that the message has been signed by the given address
@@ -56,8 +56,10 @@ export async function walletVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = ethers.utils.keccak256(toUint8Array(`${authSig.address}:lit`));
-		const mintTx = await mintPKP({
+		const authMethodId = ethers.utils.keccak256(
+			toUint8Array(`${authSig.address}:lit`),
+		);
+		const mintTx = await mintPKPWithSingleAuthMethod({
 			authMethodType: AuthMethodType.EthWallet,
 			authMethodId,
 			authMethodPubkey: "0x",
@@ -69,7 +71,9 @@ export async function walletVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("[Wallet] Unable to mint PKP for given Eth wallet", { err });
+		console.error("[Wallet] Unable to mint PKP for given Eth wallet", {
+			err,
+		});
 		return res.status(500).json({
 			error: "[Wallet] Unable to mint PKP for given Eth wallet",
 		});
@@ -107,7 +111,9 @@ export async function walletVerifyToFetchPKPsHandler(
 
 	// fetch PKP for user
 	try {
-		const idForAuthMethod = ethers.utils.keccak256(toUint8Array(`${authSig.address}:lit`));
+		const idForAuthMethod = ethers.utils.keccak256(
+			toUint8Array(`${authSig.address}:lit`),
+		);
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.EthWallet,
 			idForAuthMethod,

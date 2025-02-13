@@ -6,11 +6,11 @@ import {
 	DiscordOAuthVerifyRegistrationRequest,
 	AuthMethodVerifyRegistrationResponse,
 	AuthMethodVerifyToFetchResponse,
-	ResolvedAuthMethod
+	ResolvedAuthMethod,
 } from "../../models";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
-import { mintPKP, getPKPsForAuthMethod } from "../../lit";
+import { mintPKPWithSingleAuthMethod, getPKPsForAuthMethod } from "../../lit";
 
 // Verify Discord access token by fetching current user info
 async function verifyAndFetchDiscordAppIdAndUserId(
@@ -55,10 +55,15 @@ export async function discordOAuthVerifyToMintHandler(
 	let userId: string;
 	let appId: string;
 	try {
-		let resolvedAuthMethod = await verifyAndFetchDiscordAppIdAndUserId(accessToken);
+		let resolvedAuthMethod = await verifyAndFetchDiscordAppIdAndUserId(
+			accessToken,
+		);
 		userId = resolvedAuthMethod.userId;
 		appId = resolvedAuthMethod.appId;
-		console.info("Successfully verified Discord account", resolvedAuthMethod);
+		console.info(
+			"Successfully verified Discord account",
+			resolvedAuthMethod,
+		);
 	} catch (err) {
 		return res.status(400).json({
 			error: "Unable to verify Discord account",
@@ -67,10 +72,8 @@ export async function discordOAuthVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = utils.keccak256(
-			toUtf8Bytes(`${userId}:${appId}`),
-		);
-		const mintTx = await mintPKP({
+		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId}:${appId}`));
+		const mintTx = await mintPKPWithSingleAuthMethod({
 			authMethodType: AuthMethodType.Discord,
 			authMethodId,
 			authMethodPubkey: "0x",
@@ -82,7 +85,10 @@ export async function discordOAuthVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("[Discord] Unable to mint PKP for given Discord account", { err });
+		console.error(
+			"[Discord] Unable to mint PKP for given Discord account",
+			{ err },
+		);
 		return res.status(500).json({
 			error: "[Discord] Unable to mint PKP for given Discord account",
 		});
@@ -107,7 +113,9 @@ export async function discordOAuthVerifyToFetchPKPsHandler(
 	let userId: string;
 	let appId: string;
 	try {
-		const resolvedAuthMethod = await verifyAndFetchDiscordAppIdAndUserId(accessToken);
+		const resolvedAuthMethod = await verifyAndFetchDiscordAppIdAndUserId(
+			accessToken,
+		);
 		userId = resolvedAuthMethod.userId;
 		appId = resolvedAuthMethod.appId;
 		console.info("Successfully verified Discord account", {

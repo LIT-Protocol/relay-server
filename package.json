@@ -7,7 +7,10 @@
 		"dev": "nodemon index.ts",
 		"start": "node dist/index.js",
 		"build": "tsc",
-		"postinstall": "cp patch/ethersCompat.d.ts node_modules/siwe/dist/ethersCompat.d.ts"
+		"postinstall": "cp patch/ethersCompat.d.ts node_modules/siwe/dist/ethersCompat.d.ts",
+		"test": "jest --detectOpenHandles",
+		"test:watch": "jest --watch",
+		"test:coverage": "jest --coverage"
 	},
 	"keywords": [],
 	"author": "",
@@ -41,10 +44,15 @@
 		"@types/cors": "^2.8.12",
 		"@types/elliptic": "^6.4.14",
 		"@types/express": "^4.17.13",
+		"@types/jest": "^29.5.14",
 		"@types/jwk-to-pem": "^2.0.1",
 		"@types/node": "^16.7.4",
 		"@types/node-fetch": "^2.5.12",
+		"@types/supertest": "^6.0.2",
+		"jest": "^29.7.0",
 		"nodemon": "^2.0.12",
+		"supertest": "^7.0.0",
+		"ts-jest": "^29.2.5",
 		"ts-node": "^10.2.1",
 		"typescript": "^4.4.2"
 	}

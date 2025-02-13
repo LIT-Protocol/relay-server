@@ -51,7 +51,7 @@ const baseConfig = {
 			CAYENNE_PKP_PERMISSIONS_ADDRESS ||
 			"0x9a0a6DD9D229eEfa5119cEB237c90D843d5e1003",
 	},
-	network: NETWORK || "cayenne",
+	network: NETWORK || "datil-dev",
 	useSoloNet: USE_SOLO_NET === "true",
 	expectedOrigins: EXPECTED_ORIGINS?.split(",") || ["http://localhost:3000"],
 };

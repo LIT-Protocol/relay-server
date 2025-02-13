@@ -8,7 +8,7 @@ import {
 	OTPAuthVerifyRegistrationRequest,
 	OtpVerificationPayload,
 } from "../../models";
-import { getPKPsForAuthMethod, mintPKP } from "../../lit";
+import { getPKPsForAuthMethod, mintPKPWithSingleAuthMethod } from "../../lit";
 import fetch from "node-fetch";
 import { utils } from "ethers";
 import { toUtf8Bytes } from "ethers/lib/utils";
@@ -34,7 +34,7 @@ export async function stytchOtpVerifyToMintHandler(
 	let orgId: string;
 	try {
 		tokenBody = parseJWT(tmpToken);
-		const audience = (tokenBody['aud'] as string[])[0];
+		const audience = (tokenBody["aud"] as string[])[0];
 		if (!audience) {
 			return res.status(401).json({
 				error: "Unable to parse project Id from token",
@@ -42,8 +42,8 @@ export async function stytchOtpVerifyToMintHandler(
 		}
 		orgId = audience;
 
-		if (tokenBody['sub']) {
-			userId = tokenBody['sub'] as string;
+		if (tokenBody["sub"]) {
+			userId = tokenBody["sub"] as string;
 		} else {
 			return res.status(401).json({
 				error: "Unable to parse user Id from token",
@@ -58,8 +58,10 @@ export async function stytchOtpVerifyToMintHandler(
 
 	// mint PKP for user
 	try {
-		const authMethodId = utils.keccak256(toUtf8Bytes(`${userId.toLowerCase()}:${orgId.toLowerCase()}`));
-		const mintTx = await mintPKP({
+		const authMethodId = utils.keccak256(
+			toUtf8Bytes(`${userId.toLowerCase()}:${orgId.toLowerCase()}`),
+		);
+		const mintTx = await mintPKPWithSingleAuthMethod({
 			authMethodType: AuthMethodType.StytchOtp,
 			authMethodId,
 			authMethodPubkey: "0x",
@@ -71,7 +73,9 @@ export async function stytchOtpVerifyToMintHandler(
 			requestId: mintTx.hash,
 		});
 	} catch (err) {
-		console.error("[Stytch OTP] Unable to mint PKP for given OTP request", { err });
+		console.error("[Stytch OTP] Unable to mint PKP for given OTP request", {
+			err,
+		});
 		return res.status(500).json({
 			error: "[Stytch OTP] Unable to mint PKP for given OTP request",
 		});
@@ -95,17 +99,16 @@ export async function stytchOtpVerifyToFetchPKPsHandler(
 	let orgId: string;
 	let tokenBody: Record<string, unknown>;
 	try {
-
 		tokenBody = parseJWT(tmpToken);
-		const audience = (tokenBody['aud'] as string[])[0];
+		const audience = (tokenBody["aud"] as string[])[0];
 		if (!audience) {
 			return res.status(401).json({
 				error: "Unable to parse project Id from token",
 			});
 		}
 		orgId = audience;
-		if (tokenBody['sub']) {
-			userId = tokenBody['sub'] as string;
+		if (tokenBody["sub"]) {
+			userId = tokenBody["sub"] as string;
 		} else {
 			return res.status(401).json({
 				error: "Unable to parse user Id from token",
@@ -120,8 +123,10 @@ export async function stytchOtpVerifyToFetchPKPsHandler(
 
 	// fetch PKPs for user
 	try {
-		let idForAuthMethod: string;	
-		idForAuthMethod = utils.keccak256(toUtf8Bytes(`${userId.toLowerCase()}:${orgId.toLowerCase()}`));
+		let idForAuthMethod: string;
+		idForAuthMethod = utils.keccak256(
+			toUtf8Bytes(`${userId.toLowerCase()}:${orgId.toLowerCase()}`),
+		);
 		const pkps = await getPKPsForAuthMethod({
 			authMethodType: AuthMethodType.StytchOtp,
 			idForAuthMethod,
@@ -150,8 +155,10 @@ function parseJWT(jwt: string): Record<string, unknown> {
 	if (parts.length !== 3) {
 		throw new Error("Invalid token length");
 	}
-	let body =  Buffer.from(parts[1], 'base64');
-	let parsedBody: Record<string, unknown> = JSON.parse(body.toString('ascii'));
+	let body = Buffer.from(parts[1], "base64");
+	let parsedBody: Record<string, unknown> = JSON.parse(
+		body.toString("ascii"),
+	);
 	console.log("JWT body: ", parsedBody);
 	return parsedBody;
 }
