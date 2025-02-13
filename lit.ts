@@ -354,8 +354,8 @@ export async function mintPKP({
 	permittedAuthMethodScopes,
 	addPkpEthAddressAsPermittedAddress,
 	sendPkpToItself,
-	burnPkp,
-	sendToAddressAfterMinting,
+	burnPkp = false,
+	sendToAddressAfterMinting = ethers.constants.AddressZero,
 }: MintNextAndAddAuthMethodsRequest): Promise<ethers.Transaction> {
 	console.log(
 		"In mintPKP",
@@ -411,18 +411,24 @@ export async function mintPKP({
 	}
 
 	try {
-		const tx = await pkpHelper.mintNextAndAddAuthMethods(
-			keyType,
-			permittedAuthMethodTypes,
-			permittedAuthMethodIds,
-			permittedAuthMethodPubkeys,
-			permittedAuthMethodScopes,
-			addPkpEthAddressAsPermittedAddress,
-			sendPkpToItself,
-			{ value: mintCost, gasLimit: gasLimit },
-		);
+		const sequencer = Sequencer.Instance;
 
-		await tx.wait();
+		Sequencer.Wallet = getSigner();
+
+		const tx = await sequencer.wait({
+			action: pkpHelper.mintNextAndAddAuthMethods,
+			params: [
+				keyType,
+				permittedAuthMethodTypes,
+				permittedAuthMethodIds,
+				permittedAuthMethodPubkeys,
+				permittedAuthMethodScopes,
+				addPkpEthAddressAsPermittedAddress,
+				sendPkpToItself,
+			],
+			transactionData: { value: mintCost, gasLimit },
+		});
+
 		console.log("tx", tx);
 		return tx;
 	} catch (e: any) {
@@ -440,38 +446,15 @@ export async function mintPKPWithSingleAuthMethod({
 	authMethodId: string;
 	authMethodPubkey: string;
 }): Promise<ethers.Transaction> {
-	console.log("in mintPKPWithSingleAuthMethod");
-	const pkpHelper = await getPkpHelperContract(config.network);
-	const pkpNft = await getPkpNftContract(config.network);
-
-	// first get mint cost
-	const mintCost = await pkpNft.mintCost();
-
-	const sequencer = Sequencer.Instance;
-
-	Sequencer.Wallet = getSigner();
-	// then, mint PKP using helper
-
-	console.info("Minting PKP against PKPHelper contract", {
-		authMethodType,
-		authMethodId,
-		authMethodPubkey,
+	return mintPKP({
+		keyType: "2",
+		permittedAuthMethodTypes: [authMethodType.toString()],
+		permittedAuthMethodIds: [authMethodId],
+		permittedAuthMethodPubkeys: [authMethodPubkey],
+		permittedAuthMethodScopes: [["1"]],
+		addPkpEthAddressAsPermittedAddress: true,
+		sendPkpToItself: true,
 	});
-	const tx = await sequencer.wait({
-		action: pkpHelper.mintNextAndAddAuthMethods,
-		params: [
-			2,
-			[authMethodType],
-			[authMethodId],
-			[authMethodPubkey],
-			[[ethers.BigNumber.from(1)]],
-			true,
-			true,
-		],
-		transactionData: { value: mintCost },
-	});
-	console.log("tx", tx);
-	return tx;
 }
 
 export async function claimPKP({
