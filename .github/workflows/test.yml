@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        services:
+            redis:
+                image: redis
+                ports:
+                    - 6379:6379
+                options: >-
+                    --health-cmd "redis-cli ping"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Use Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "18"
+                  cache: "npm"
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Create env file
+              run: |
+                  echo "PORT=8080" >> .env
+                  echo "REDIS_URL=redis://localhost:6379" >> .env
+                  echo "LIT_TXSENDER_RPC_URL=${{ secrets.LIT_TXSENDER_RPC_URL }}" >> .env
+                  echo "LIT_TXSENDER_ADDRESS=${{ secrets.LIT_TXSENDER_ADDRESS }}" >> .env
+                  echo "LIT_TXSENDER_PRIVATE_KEY=${{ secrets.LIT_TXSENDER_PRIVATE_KEY }}" >> .env
+                  echo "NETWORK=datil-dev" >> .env
+
+            - name: Run tests
+              run: npm test
