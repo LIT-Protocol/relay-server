@@ -346,7 +346,7 @@ export async function storeConditionWithSigner(
 	return tx;
 }
 
-export async function mintPKPV2({
+export async function mintPKP({
 	keyType,
 	permittedAuthMethodTypes,
 	permittedAuthMethodIds,
@@ -358,7 +358,7 @@ export async function mintPKPV2({
 	sendToAddressAfterMinting,
 }: MintNextAndAddAuthMethodsRequest): Promise<ethers.Transaction> {
 	console.log(
-		"In mintPKPV2",
+		"In mintPKP",
 		keyType,
 		permittedAuthMethodTypes,
 		permittedAuthMethodIds,

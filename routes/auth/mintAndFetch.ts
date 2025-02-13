@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
-import { getPKPsForAuthMethod, mintPKPV2 } from "../../lit";
+import { getPKPsForAuthMethod, mintPKP } from "../../lit";
 import {
 	AuthMethodVerifyToFetchResponse,
 	FetchRequest,
