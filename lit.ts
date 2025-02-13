@@ -3,7 +3,12 @@ import fs from "fs";
 import { RedisClientType } from "redis";
 import config from "./config";
 import redisClient from "./lib/redisClient";
-import { AuthMethodType, PKP, StoreConditionWithSigner } from "./models";
+import {
+	AuthMethodType,
+	MintNextAndAddAuthMethodsRequest,
+	PKP,
+	StoreConditionWithSigner,
+} from "./models";
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
 import { CapacityToken } from "lit";
@@ -349,15 +354,9 @@ export async function mintPKPV2({
 	permittedAuthMethodScopes,
 	addPkpEthAddressAsPermittedAddress,
 	sendPkpToItself,
-}: {
-	keyType: string;
-	permittedAuthMethodTypes: string[];
-	permittedAuthMethodIds: string[];
-	permittedAuthMethodPubkeys: string[];
-	permittedAuthMethodScopes: string[][];
-	addPkpEthAddressAsPermittedAddress: boolean;
-	sendPkpToItself: boolean;
-}): Promise<ethers.Transaction> {
+	burnPkp,
+	sendToAddressAfterMinting,
+}: MintNextAndAddAuthMethodsRequest): Promise<ethers.Transaction> {
 	console.log(
 		"In mintPKPV2",
 		keyType,
@@ -367,6 +366,8 @@ export async function mintPKPV2({
 		permittedAuthMethodScopes,
 		addPkpEthAddressAsPermittedAddress,
 		sendPkpToItself,
+		burnPkp,
+		sendToAddressAfterMinting,
 	);
 
 	const pkpHelper = await getPkpHelperContract(config.network);
@@ -398,7 +399,7 @@ export async function mintPKPV2({
 			.mul(
 				ethers.BigNumber.from(
 					parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
-					200,
+						200,
 				),
 			)
 			.div(ethers.BigNumber.from(100));
@@ -621,7 +622,9 @@ export async function getPKPsForAuthMethod({
 			}
 			return pkps;
 		} catch (err: unknown) {
-			throw new Error(`Unable to get PKPs for auth method: ${(err as Error).message}`);
+			throw new Error(
+				`Unable to get PKPs for auth method: ${(err as Error).message}`,
+			);
 		}
 	} else {
 		throw new Error("Unable to connect to PKP Permissions contract");
