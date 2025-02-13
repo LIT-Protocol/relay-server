@@ -25,7 +25,7 @@ export async function mintNextAndAddAuthMethodsHandler(
 ) {
 	// mint PKP for user
 	try {
-		const mintTx = await mintPKPV2(req.body);
+		const mintTx = await mintPKP(req.body);
 		console.info("Minted PKP", {
 			requestId: mintTx.hash,
 		});
