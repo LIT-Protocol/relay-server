@@ -76,7 +76,7 @@ export class Sequencer {
 		});
 
 		this._actionIndex[id] = prms;
-		
+
 		if (!this._running) this.start();
 
 		return prms;
@@ -85,6 +85,11 @@ export class Sequencer {
 	public async start(): Promise<void> {
 		this._running = true;
 		this._doStartQueueListener();
+	}
+
+	public async stop() {
+		this._running = false;
+		this._pollingPromise = undefined;
 	}
 
 	private _doStartQueueListener(): Promise<void> {
@@ -104,7 +109,7 @@ export class Sequencer {
 						this._nonce === -1
 							? //@ts-ignore
 							  await Sequencer._wallet.getTransactionCount()
-							: this._nonce += 1;
+							: (this._nonce += 1);
 					console.log("Nonce for tx: ", nonce);
 					let params = next.action.params;
 					let transactionData = next.action.transactionData

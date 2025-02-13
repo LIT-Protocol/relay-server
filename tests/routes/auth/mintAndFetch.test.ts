@@ -2,46 +2,45 @@ import request from "supertest";
 import express from "express";
 import { mintNextAndAddAuthMethodsHandler } from "../../../routes/auth/mintAndFetch";
 import { ethers } from "ethers";
+import { getProvider, setSequencerWallet } from "../../../lit";
+import cors from "cors";
 import { Sequencer } from "../../../lib/sequencer";
-
-// Mock the dependencies
-jest.mock("../../../lit", () => ({
-	mintPKP: jest.fn(),
-}));
-
-jest.mock("../../../lib/sequencer", () => ({
-	Sequencer: {
-		Instance: {
-			wait: jest.fn(),
-		},
-		Wallet: null,
-	},
-}));
 
 describe("mintNextAndAddAuthMethods Integration Tests", () => {
 	let app: express.Application;
+	let provider: ethers.providers.JsonRpcProvider;
+	let signer: ethers.Wallet;
+
+	beforeAll(async () => {
+		// Set up provider and signer
+		provider = getProvider();
+		const privateKey = process.env.LIT_TXSENDER_PRIVATE_KEY!;
+		signer = new ethers.Wallet(privateKey, provider);
+
+		// Set up sequencer wallet
+		await setSequencerWallet(signer);
+	});
+
+	afterAll(async () => {
+		// // Clean up provider and connections
+		if (provider) {
+			provider.removeAllListeners();
+		}
+
+		Sequencer.Instance.stop();
+	});
 
 	beforeEach(() => {
 		app = express();
 		app.use(express.json());
+		app.use(cors());
 		app.post(
 			"/mint-next-and-add-auth-methods",
 			mintNextAndAddAuthMethodsHandler,
 		);
 	});
 
-	afterEach(() => {
-		jest.clearAllMocks();
-	});
-
 	it("should successfully mint a PKP and return a request ID", async () => {
-		const mockTxHash = "0x123456789";
-		const mockTx = { hash: mockTxHash };
-
-		// Mock the mintPKP function to return a successful transaction
-		const { mintPKP } = require("../../../lit");
-		(mintPKP as jest.Mock).mockResolvedValueOnce(mockTx);
-
 		const requestBody = {
 			keyType: "2",
 			permittedAuthMethodTypes: ["2"],
@@ -60,22 +59,20 @@ describe("mintNextAndAddAuthMethods Integration Tests", () => {
 			.expect("Content-Type", /json/)
 			.expect(200);
 
-		expect(response.body).toEqual({
-			requestId: mockTxHash,
-		});
-		expect(mintPKP).toHaveBeenCalledWith(requestBody);
-	});
+		expect(response.body).toHaveProperty("requestId");
+		expect(response.body.requestId).toMatch(/^0x[a-fA-F0-9]{64}$/); // Should be a transaction hash
 
-	it("should handle errors when minting fails", async () => {
-		const errorMessage = "Minting failed";
+		// Wait for transaction to be mined
+		const txReceipt = await provider.waitForTransaction(
+			response.body.requestId,
+		);
+		expect(txReceipt.status).toBe(1); // Transaction should be successful
+	}, 30000); // Increase timeout to 30s since we're waiting for real transactions
 
-		// Mock the mintPKP function to throw an error
-		const { mintPKP } = require("../../../lit");
-		(mintPKP as jest.Mock).mockRejectedValueOnce(new Error(errorMessage));
-
-		const requestBody = {
+	it("should handle errors with invalid parameters", async () => {
+		const invalidRequestBody = {
 			keyType: "2",
-			permittedAuthMethodTypes: ["2"],
+			permittedAuthMethodTypes: [], // non matching array lengths. this should have 1 element but it has none.
 			permittedAuthMethodIds: [
 				"0x170d13600caea2933912f39a0334eca3d22e472be203f937c4bad0213d92ed71",
 			],
@@ -87,15 +84,11 @@ describe("mintNextAndAddAuthMethods Integration Tests", () => {
 
 		const response = await request(app)
 			.post("/mint-next-and-add-auth-methods")
-			.send(requestBody)
+			.send(invalidRequestBody)
 			.expect("Content-Type", /json/)
 			.expect(500);
 
 		expect(response.body).toHaveProperty("error");
-		expect(response.body.error).toContain(
-			"[mintNextAndAddAuthMethodsHandler] Unable to mint PKP",
-		);
-		expect(mintPKP).toHaveBeenCalledWith(requestBody);
 	});
 
 	it("should validate required request body parameters", async () => {
