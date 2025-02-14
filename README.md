@@ -1,77 +1,213 @@
-# Relay Server
+# Lit Protocol Relay Server
 
-_⚠️ NOTE: This repo is a work in progress._
+A relay server for managing Programmable Key Pairs (PKPs) in the Lit Protocol ecosystem. This server handles PKP minting, authentication, and management operations.
 
-_This repo was initially made via the instructions from Simple WebAuthn (https://simplewebauthn.dev/docs/advanced/example-project) and provides a fully-functional reference implementation of **@simplewebauthn/server** and **@simplewebauthn/browser**._
+## Architecture
 
-Relay Server is a server that is centrally run by the Lit Protocol team to facilitate and subsidize some interactions with the Lit Protocol smart contracts.
+```mermaid
+graph TD
+    subgraph Client
+        client[Client Application]
+    end
 
-The Relay Server hosted by the Lit Protocol team currently only interacts with the smart contracts on Lit's [Chronicle Vesuvius](https://developer.litprotocol.com/connecting-to-a-lit-network/lit-blockchains/chronicle-vesuvius) chain.
+    subgraph Relay Server
+        server[Express Server]
+        
+        subgraph Middleware
+            rate[Rate Limiter]
+            apikey[API Key Gate]
+        end
+        
+        subgraph Routes
+            auth[Auth Router]
+            webauthn[WebAuthn Router]
+            pkp[PKP Router]
+        end
+        
+        subgraph Services
+            lit[Lit Protocol Service]
+            contracts[Contract Service]
+        end
+        
+        subgraph Infrastructure
+            redis[(Redis Cache)]
+            env[Environment Config]
+        end
+    end
 
-**If you are to use the contract addresses that are hardcoded into this repo, minting a PKP will work but not storing an encryption condition, as our private key is the only authorized signer to store a condition on behalf of an address.**
+    subgraph External
+        blockchain[Blockchain]
+        litprotocol[Lit Protocol]
+    end
 
-## Running The Server
+    %% Client connections
+    client -->|HTTP Requests| server
+    
+    %% Server middleware
+    server --> rate
+    server --> apikey
+    
+    %% Route handling
+    server -->|/auth routes| auth
+    server -->|/auth/webauthn routes| webauthn
+    server -->|/pkp routes| pkp
+    
+    %% Service dependencies
+    auth --> lit
+    webauthn --> lit
+    pkp --> lit
+    lit --> contracts
+    
+    %% Infrastructure connections
+    lit --> redis
+    contracts --> env
+    
+    %% External connections
+    contracts -->|RPC Calls| blockchain
+    lit -->|Protocol Interactions| litprotocol
 
-### Prerequisites
+    %% Styling
+    classDef service fill:#f9f,stroke:#333,stroke-width:2px
+    classDef infrastructure fill:#bbf,stroke:#333,stroke-width:2px
+    classDef external fill:#bfb,stroke:#333,stroke-width:2px
+    
+    class lit,contracts service
+    class redis,env infrastructure
+    class blockchain,litprotocol external
+```
 
--   Install Redis and have a valid connection to it
--   Have access to a valid RPC service endpoint for the network you plan to interact with
--   Have access to a ECDSA private key, with its corresponding wallet containing some funds on the network you plan to interact with
+## Features
 
-### Instructions
+- PKP (Programmable Key Pair) minting and management
+- WebAuthn authentication integration
+- Rate limiting and API key validation
+- Redis-based caching
+- Blockchain contract interactions
 
-Create a `.env` file at the root of the repo and populate the corresponding environment variables:
+## API Documentation
 
--   `REDIS_URL`
--   `PORT`
--   `LIT_TXSENDER_RPC_URL`
--   `LIT_TXSENDER_PRIVATE_KEY`
--   `LIT_DELEGATION_ROOT_MNEMONIC`
--   `LIT_DELEGATION_USES`
--   `GAS_LIMIT_INCREASE_PERCENTAGE`
+### Authentication Routes (`/auth`)
 
-Make sure to start your Redis server if you plan to host one locally.
+#### GET `/auth/status/:requestId`
+Get the status of a PKP minting request.
+- **Parameters**: `requestId` (string)
+- **Response**: 
+  ```typescript
+  {
+    status: "InProgress" | "Succeeded" | "Failed"
+    error?: string
+  }
+  ```
 
-Run `yarn install` to install the dependencies.
+### WebAuthn Routes (`/auth/webauthn`)
 
-Run `yarn start` to start the server.
+#### POST `/auth/webauthn/generate-registration-options`
+Generate options for WebAuthn registration.
+- **Response**: Registration options for WebAuthn authentication
 
-</br>
+#### POST `/auth/webauthn/verify-registration`
+Verify WebAuthn registration and mint a PKP.
+- **Body**:
+  ```typescript
+  {
+    credential: RegistrationCredential
+  }
+  ```
+- **Response**:
+  ```typescript
+  {
+    requestId?: string
+    error?: string
+  }
+  ```
 
-## Available Endpoints
+### PKP Routes (`/`)
 
-Staging instance of the relay server is live at https://relay-server-staging.herokuapp.com. Check out the [demo app](https://github.com/LIT-Protocol/oauth-pkp-signup-example) for an example of how to use the relay server.
+#### POST `/fetch-pkps-by-auth-method`
+Fetch PKPs associated with an authentication method.
+- **Body**:
+  ```typescript
+  {
+    authMethodType: AuthMethodType
+    authMethodId: string
+  }
+  ```
+- **Response**:
+  ```typescript
+  {
+    pkps?: Array<{
+      tokenId: string
+      publicKey: string
+      ethAddress: string
+    }>
+    error?: string
+  }
+  ```
 
-### Minting PKPs
+## Authentication Methods
 
-| HTTP Verb | Path                                         | Description                                                    |
-| --------- | -------------------------------------------- | -------------------------------------------------------------- |
-| POST      | /auth/google                                 | Mint PKP for authorized Google account                         |
-| POST      | /auth/discord                                | Mint PKP for authorized Discord account                        |
-| POST      | /auth/wallet                                 | Mint PKP for verified Eth wallet account                       |
-| GET       | /auth/webauthn/generate-registration-options | Register (i.e., create an account) via supported authenticator |
-| POST      | /auth/webauthn/verify-registration           | Verify the authenticator's response                            |
-| GET       | /auth/status/:requestId                      | Poll status of minting PKP transaction                         |
+The server supports various authentication methods:
+- EthWallet (1)
+- LitAction (2)
+- WebAuthn (3)
+- Discord (4)
+- Google (5)
+- GoogleJwt (6)
+- OTP (7)
+- StytchOtp (9)
 
-</br>
+## Setup & Development
 
-### Fetching PKPs
+1. Install dependencies:
+   ```bash
+   bun install
+   ```
 
-| HTTP Verb | Path                    | Description                                            |
-| --------- | ----------------------- | ------------------------------------------------------ |
-| POST      | /auth/google/userinfo   | Fetch PKPs associated with authorized Google account   |
-| POST      | /auth/discord/userinfo  | Fetch PKPs associated with authorized Discord account  |
-| POST      | /auth/wallet/userinfo   | Fetch PKPs associated with verified Eth wallet account |
-| POST      | /auth/webauthn/userinfo | Fetch PKPs associated with WebAuthn credential         |
+2. Set up environment variables:
+   - Copy `.env.example` to `.env`
+   - Fill in required environment variables
 
-</br>
+3. Start development server:
+   ```bash
+   bun run dev
+   ```
 
-\*Note: WebAuthn implementation is still a work in progress.
+4. Build for production:
+   ```bash
+   bun run build
+   ```
 
-</br>
+5. Start production server:
+   ```bash
+   bun run start
+   ```
 
-### Storing Conditions (only available on Serrano and Cayenne)
+## Environment Variables
 
-| HTTP Verb | Path             | Description                          |
-| --------- | ---------------- | ------------------------------------ |
-| POST      | /store-condition | Write encryption conditions to chain |
+Required environment variables:
+- `REDIS_URL`: Redis connection URL
+- `API_KEY`: API key for authentication
+- Network configuration (based on environment)
+- Contract addresses
+- Rate limiting configuration
+
+## Security
+
+The server implements several security measures:
+- Rate limiting to prevent abuse
+- API key validation for all requests
+- WebAuthn security for authentication
+- Redis-based request tracking
+
+## Dependencies
+
+Major dependencies:
+- Express.js for API server
+- Redis for caching and rate limiting
+- @lit-protocol packages for Lit Protocol integration
+- @simplewebauthn for WebAuthn support
+- ethers.js for blockchain interactions
+
+## License
+
+[Add your license information here]
