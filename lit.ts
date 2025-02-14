@@ -158,88 +158,58 @@ function getPkpNftContractAbiPath() {
 	}
 }
 
-async function getPkpHelperContract(network: string) {
-	let contract: ethers.Contract | undefined;
-
+function getPkpHelperContract(network: string): ethers.Contract {
 	switch (network) {
 		case "serrano":
-			contract = getContract(
+			return getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.serranoContract?.pkpHelperAddress as string,
 			);
-			break;
 		case "cayenne":
-			contract = getContract(
+			return getContract(
 				getPkpHelperContractAbiPath()!,
 				config?.cayenneContracts?.pkpHelperAddress as string,
 			);
-			break;
 		case "manzano":
-			contract = getContractFromJsSdk("manzano", "PKPHelper");
-			break;
+			return getContractFromJsSdk("manzano", "PKPHelper");
 		case "habanero":
-			contract = getContractFromJsSdk("habanero", "PKPHelper");
-			break;
+			return getContractFromJsSdk("habanero", "PKPHelper");
 		case "datil-dev":
-			contract = getContractFromJsSdk("datil-dev", "PKPHelper");
-			break;
+			return getContractFromJsSdk("datil-dev", "PKPHelper");
 		case "datil-test":
-			contract = getContractFromJsSdk("datil-test", "PKPHelper");
-			break;
+			return getContractFromJsSdk("datil-test", "PKPHelper");
 		case "datil":
-			contract = getContractFromJsSdk("datil", "PKPHelper");
-			break;
+			return getContractFromJsSdk("datil", "PKPHelper");
 		default:
 			throw new Error(`Unsupported network: ${network}`);
 	}
-
-	if (!contract) {
-		throw new Error("PKP Helper contract not available");
-	}
-
-	return contract;
 }
 
-async function getPermissionsContract() {
-	let contract: ethers.Contract | undefined;
-
+function getPermissionsContract(): ethers.Contract {
 	switch (config.network) {
 		case "serrano":
-			contract = getContract(
+			return getContract(
 				"./contracts/serrano/PKPPermissions.json",
 				config?.serranoContract?.pkpPermissionsAddress as string,
 			);
-			break;
 		case "cayenne":
-			contract = getContract(
+			return getContract(
 				"./contracts/cayenne/PKPPermissions.json",
 				config?.cayenneContracts?.pkpPermissionsAddress as string,
 			);
-			break;
 		case "manzano":
-			contract = getContractFromJsSdk("manzano", "PKPPermissions");
-			break;
+			return getContractFromJsSdk("manzano", "PKPPermissions");
 		case "habanero":
-			contract = getContractFromJsSdk("habanero", "PKPPermissions");
-			break;
+			return getContractFromJsSdk("habanero", "PKPPermissions");
 		case "datil-dev":
-			contract = getContractFromJsSdk("datil-dev", "PKPPermissions");
-			break;
+			return getContractFromJsSdk("datil-dev", "PKPPermissions");
 		case "datil-test":
-			contract = getContractFromJsSdk("datil-test", "PKPPermissions");
-			break;
+			return getContractFromJsSdk("datil-test", "PKPPermissions");
 		case "datil":
-			contract = getContractFromJsSdk("datil", "PKPPermissions");
-			break;
+			return getContractFromJsSdk("datil", "PKPPermissions");
 		default:
 			throw new Error(`Unsupported network: ${config.network}`);
 	}
-
-	if (!contract) {
-		throw new Error("PKPPermissions contract not available");
-	}
-
-	return contract;
 }
 
 async function getPaymentDelegationContract() {
@@ -255,44 +225,31 @@ async function getPaymentDelegationContract() {
 	}
 }
 
-async function getPkpNftContract(network: string) {
-	let contract: ethers.Contract | undefined;
-
+export function getPkpNftContract(network: string): ethers.Contract {
 	switch (network) {
 		case "serrano":
-			contract = getContract(
+			return getContract(
 				getPkpNftContractAbiPath()!,
 				config?.serranoContract?.pkpNftAddress as string,
 			);
-			break;
 		case "cayenne":
-			contract = getContract(
+			return getContract(
 				getPkpNftContractAbiPath()!,
 				config?.cayenneContracts?.pkpNftAddress as string,
 			);
-			break;
 		case "manzano":
-			contract = getContractFromJsSdk("manzano", "PKPNFT");
-			break;
+			return getContractFromJsSdk("manzano", "PKPNFT");
 		case "habanero":
-			contract = getContractFromJsSdk("habanero", "PKPNFT");
-			break;
+			return getContractFromJsSdk("habanero", "PKPNFT");
 		case "datil-dev":
-			contract = getContractFromJsSdk("datil-dev", "PKPNFT");
-			break;
+			return getContractFromJsSdk("datil-dev", "PKPNFT");
 		case "datil-test":
-			contract = getContractFromJsSdk("datil-test", "PKPNFT");
-			break;
+			return getContractFromJsSdk("datil-test", "PKPNFT");
 		case "datil":
-			contract = getContractFromJsSdk("datil", "PKPNFT");
-			break;
+			return getContractFromJsSdk("datil", "PKPNFT");
+		default:
+			throw new Error(`Unsupported network: ${network}`);
 	}
-
-	if (!contract) {
-		throw new Error("PKP NFT contract not available");
-	}
-
-	return contract;
 }
 
 function prependHexPrefixIfNeeded(hexStr: string) {
@@ -347,6 +304,7 @@ export async function mintPKP({
 	sendPkpToItself,
 	burnPkp = false,
 	sendToAddressAfterMinting = ethers.constants.AddressZero,
+	pkpEthAddressScopes = [],
 }: MintNextAndAddAuthMethodsRequest): Promise<ethers.Transaction> {
 	console.log("Minting PKP with params:", {
 		keyType,
@@ -360,55 +318,97 @@ export async function mintPKP({
 		sendToAddressAfterMinting,
 	});
 
-	const pkpHelper = await getPkpHelperContract(config.network);
-
-	const pkpNft = await getPkpNftContract(config.network);
+	const pkpNft = getPkpNftContract(config.network);
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
 
-	const mintTxData =
-		await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
-			keyType,
-			permittedAuthMethodTypes,
-			permittedAuthMethodIds,
-			permittedAuthMethodPubkeys,
-			permittedAuthMethodScopes,
-			addPkpEthAddressAsPermittedAddress,
-			sendPkpToItself,
-			{ value: mintCost },
+	if (config.network === "datil-dev") {
+		// use PKP helper v2
+		const abiJson = JSON.parse(
+			fs.readFileSync("./contracts/datil-dev/PKPHelperV2.json", "utf8"),
 		);
+		const contractAddress = "0x82b48Ddb284cfd9627BA9A29E9Dc605fE654B805";
+		const pkpHelper = new ethers.Contract(
+			contractAddress,
+			abiJson.abi,
+			getSigner(),
+		);
+		const mintTxData =
+			await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
+				{
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					pkpEthAddressScopes,
+					sendPkpToItself,
+					burnPkp,
+					sendToAddressAfterMinting,
+				},
+				{ value: mintCost },
+			);
 
-	// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
-	let gasLimit;
+		// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
+		let gasLimit;
 
-	try {
-		gasLimit = await pkpNft.provider.estimateGas(mintTxData);
-		// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
-		gasLimit = gasLimit
-			.mul(
-				ethers.BigNumber.from(
-					parseInt(process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!) ||
-						200,
-				),
-			)
-			.div(ethers.BigNumber.from(100));
+		try {
+			gasLimit = await pkpNft.provider.estimateGas(mintTxData);
+			// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
+			gasLimit = gasLimit
+				.mul(
+					ethers.BigNumber.from(
+						parseInt(
+							process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!,
+						) || 200,
+					),
+				)
+				.div(ethers.BigNumber.from(100));
 
-		console.log("adjustedGasLimit:", gasLimit);
-	} catch (e) {
-		console.error("❗️ Error while estimating gas!");
-		// gasLimit = ethers.utils.hexlify(5000000);
-		throw e;
-	}
+			console.log("adjustedGasLimit:", gasLimit);
+		} catch (e) {
+			console.error("❗️ Error while estimating gas!");
+			// gasLimit = ethers.utils.hexlify(5000000);
+			throw e;
+		}
 
-	try {
-		const sequencer = Sequencer.Instance;
+		try {
+			const sequencer = Sequencer.Instance;
 
-		Sequencer.Wallet = getSigner();
+			Sequencer.Wallet = getSigner();
 
-		const tx = await sequencer.wait({
-			action: pkpHelper.mintNextAndAddAuthMethods,
-			params: [
+			const tx = await sequencer.wait({
+				action: pkpHelper.mintNextAndAddAuthMethods,
+				params: [
+					{
+						keyType,
+						permittedAuthMethodTypes,
+						permittedAuthMethodIds,
+						permittedAuthMethodPubkeys,
+						permittedAuthMethodScopes,
+						addPkpEthAddressAsPermittedAddress,
+						pkpEthAddressScopes,
+						sendPkpToItself,
+						burnPkp,
+						sendToAddressAfterMinting,
+					},
+				],
+				transactionData: { value: mintCost, gasLimit },
+			});
+
+			console.log("tx", tx);
+			return tx;
+		} catch (e: any) {
+			console.log("❗️ Error while minting pkp:", e);
+			throw e;
+		}
+	} else {
+		// PKP helper v1
+		const pkpHelper = getPkpHelperContract(config.network);
+		const mintTxData =
+			await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
 				keyType,
 				permittedAuthMethodTypes,
 				permittedAuthMethodIds,
@@ -416,15 +416,57 @@ export async function mintPKP({
 				permittedAuthMethodScopes,
 				addPkpEthAddressAsPermittedAddress,
 				sendPkpToItself,
-			],
-			transactionData: { value: mintCost, gasLimit },
-		});
+				{ value: mintCost },
+			);
 
-		console.log("tx", tx);
-		return tx;
-	} catch (e: any) {
-		console.log("❗️ Error while minting pkp:", e);
-		throw e;
+		// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
+		let gasLimit;
+
+		try {
+			gasLimit = await pkpNft.provider.estimateGas(mintTxData);
+			// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
+			gasLimit = gasLimit
+				.mul(
+					ethers.BigNumber.from(
+						parseInt(
+							process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!,
+						) || 200,
+					),
+				)
+				.div(ethers.BigNumber.from(100));
+
+			console.log("adjustedGasLimit:", gasLimit);
+		} catch (e) {
+			console.error("❗️ Error while estimating gas!");
+			// gasLimit = ethers.utils.hexlify(5000000);
+			throw e;
+		}
+
+		try {
+			const sequencer = Sequencer.Instance;
+
+			Sequencer.Wallet = getSigner();
+
+			const tx = await sequencer.wait({
+				action: pkpHelper.mintNextAndAddAuthMethods,
+				params: [
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					sendPkpToItself,
+				],
+				transactionData: { value: mintCost, gasLimit },
+			});
+
+			console.log("tx", tx);
+			return tx;
+		} catch (e: any) {
+			console.log("❗️ Error while minting pkp:", e);
+			throw e;
+		}
 	}
 }
 
