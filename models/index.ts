@@ -181,3 +181,12 @@ export interface ResolvedAuthMethod {
 	appId: string;
 	userId: string;
 }
+
+export interface SendTxnRequest {
+	txn: ethers.Transaction;
+}
+
+export interface SendTxnResponse {
+	requestId?: string;
+	error?: string;
+}
