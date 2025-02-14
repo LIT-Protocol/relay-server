@@ -24,6 +24,7 @@ export interface MintNextAndAddAuthMethodsRequest {
 	sendPkpToItself: boolean;
 	burnPkp?: boolean;
 	sendToAddressAfterMinting?: string;
+	pkpEthAddressScopes?: string[];
 }
 
 export interface Claim {

@@ -225,7 +225,7 @@ async function getPaymentDelegationContract() {
 	}
 }
 
-function getPkpNftContract(network: string): ethers.Contract {
+export function getPkpNftContract(network: string): ethers.Contract {
 	switch (network) {
 		case "serrano":
 			return getContract(
@@ -304,6 +304,7 @@ export async function mintPKP({
 	sendPkpToItself,
 	burnPkp = false,
 	sendToAddressAfterMinting = ethers.constants.AddressZero,
+	pkpEthAddressScopes = [],
 }: MintNextAndAddAuthMethodsRequest): Promise<ethers.Transaction> {
 	console.log("Minting PKP with params:", {
 		keyType,
@@ -324,27 +325,29 @@ export async function mintPKP({
 
 	if (config.network === "datil-dev") {
 		// use PKP helper v2
-		const abi = fs.readFileSync(
-			"./contracts/datil-dev/PKPHelperV2.json",
-			"utf8",
+		const abiJson = JSON.parse(
+			fs.readFileSync("./contracts/datil-dev/PKPHelperV2.json", "utf8"),
 		);
 		const contractAddress = "0x82b48Ddb284cfd9627BA9A29E9Dc605fE654B805";
 		const pkpHelper = new ethers.Contract(
 			contractAddress,
-			abi,
+			abiJson.abi,
 			getSigner(),
 		);
 		const mintTxData =
 			await pkpHelper.populateTransaction.mintNextAndAddAuthMethods(
-				keyType,
-				permittedAuthMethodTypes,
-				permittedAuthMethodIds,
-				permittedAuthMethodPubkeys,
-				permittedAuthMethodScopes,
-				addPkpEthAddressAsPermittedAddress,
-				sendPkpToItself,
-				burnPkp,
-				sendToAddressAfterMinting,
+				{
+					keyType,
+					permittedAuthMethodTypes,
+					permittedAuthMethodIds,
+					permittedAuthMethodPubkeys,
+					permittedAuthMethodScopes,
+					addPkpEthAddressAsPermittedAddress,
+					pkpEthAddressScopes,
+					sendPkpToItself,
+					burnPkp,
+					sendToAddressAfterMinting,
+				},
 				{ value: mintCost },
 			);
 
@@ -379,15 +382,18 @@ export async function mintPKP({
 			const tx = await sequencer.wait({
 				action: pkpHelper.mintNextAndAddAuthMethods,
 				params: [
-					keyType,
-					permittedAuthMethodTypes,
-					permittedAuthMethodIds,
-					permittedAuthMethodPubkeys,
-					permittedAuthMethodScopes,
-					addPkpEthAddressAsPermittedAddress,
-					sendPkpToItself,
-					burnPkp,
-					sendToAddressAfterMinting,
+					{
+						keyType,
+						permittedAuthMethodTypes,
+						permittedAuthMethodIds,
+						permittedAuthMethodPubkeys,
+						permittedAuthMethodScopes,
+						addPkpEthAddressAsPermittedAddress,
+						pkpEthAddressScopes,
+						sendPkpToItself,
+						burnPkp,
+						sendToAddressAfterMinting,
+					},
 				],
 				transactionData: { value: mintCost, gasLimit },
 			});

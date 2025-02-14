@@ -2,9 +2,14 @@ import request from "supertest";
 import express from "express";
 import { mintNextAndAddAuthMethodsHandler } from "../../../routes/auth/mintAndFetch";
 import { ethers } from "ethers";
-import { getProvider, setSequencerWallet } from "../../../lit";
+import {
+	getProvider,
+	setSequencerWallet,
+	getPkpNftContract,
+} from "../../../lit";
 import cors from "cors";
 import { Sequencer } from "../../../lib/sequencer";
+import config from "../../../config";
 
 describe("mintNextAndAddAuthMethods Integration Tests", () => {
 	let app: express.Application;
@@ -106,4 +111,63 @@ describe("mintNextAndAddAuthMethods Integration Tests", () => {
 
 		expect(response.body).toHaveProperty("error");
 	});
+
+	it("should successfully mint a PKP and send it to a specified address", async () => {
+		// Generate a random address to send the PKP to
+		const randomWallet = ethers.Wallet.createRandom();
+		const sendToAddress = randomWallet.address;
+
+		const requestBody = {
+			keyType: "2",
+			permittedAuthMethodTypes: ["2"],
+			permittedAuthMethodIds: [
+				"0x170d13600caea2933912f39a0334eca3d22e472be203f937c4bad0213d92ed71",
+			],
+			permittedAuthMethodPubkeys: ["0x"],
+			permittedAuthMethodScopes: [["1"]],
+			addPkpEthAddressAsPermittedAddress: true,
+			sendPkpToItself: false,
+			burnPkp: false,
+			sendToAddressAfterMinting: sendToAddress,
+		};
+
+		const response = await request(app)
+			.post("/mint-next-and-add-auth-methods")
+			.send(requestBody)
+			.expect("Content-Type", /json/)
+			.expect(200);
+
+		expect(response.body).toHaveProperty("requestId");
+		expect(response.body.requestId).toMatch(/^0x[a-fA-F0-9]{64}$/); // Should be a transaction hash
+
+		// Wait for transaction to be mined
+		const txReceipt = await provider.waitForTransaction(
+			response.body.requestId,
+		);
+		expect(txReceipt.status).toBe(1); // Transaction should be successful
+
+		// Get the token ID from the transaction logs
+		const pkpNft = getPkpNftContract(config.network);
+		const mintEvent = txReceipt.logs.find((log) => {
+			try {
+				return pkpNft.interface.parseLog(log).name === "PKPMinted";
+			} catch {
+				return false;
+			}
+		});
+		expect(mintEvent).toBeDefined();
+
+		if (!mintEvent) {
+			throw new Error(
+				"Failed to find PKPMinted event in transaction logs",
+			);
+		}
+
+		const tokenId = pkpNft.interface.parseLog(mintEvent).args.tokenId;
+		expect(tokenId).toBeDefined();
+
+		// Verify that the random address owns the NFT
+		const owner = await pkpNft.ownerOf(tokenId);
+		expect(owner.toLowerCase()).toBe(sendToAddress.toLowerCase());
+	}, 30000); // Increase timeout to 30s since we're waiting for real transactions
 });
