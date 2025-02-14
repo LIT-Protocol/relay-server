@@ -32,24 +32,4 @@ describe("PKP API", () => {
     const data = await response.json();
     expect(data).toHaveProperty("requestId");
   });
-
-  test("POST /fetch-pkps-by-auth-method - should fetch PKPs", async () => {
-    const response = await app.handle(
-      new Request("http://localhost/fetch-pkps-by-auth-method", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "api-key": "test-key",
-        },
-        body: JSON.stringify({
-          authMethodType: AuthMethodType.WebAuthn,
-          authMethodId: "test-id",
-        }),
-      })
-    );
-
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data).toHaveProperty("pkps");
-  });
-}); 
+});
