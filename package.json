@@ -5,13 +5,10 @@
   "module": "src/server.ts",
   "type": "module",
   "scripts": {
-    "build": "bun build ./src/server.ts --outdir ./dist",
-    "start": "bun run dist/server.js",
-    "dev": "bun --watch src/server.ts",
-    "typecheck": "tsc --noEmit",
-    "digest": "gitingest ./ -i '*.ts'"
+    "start": "bun run src/server.ts"
   },
   "dependencies": {
+    "@elysiajs/bearer": "^1.2.0",
     "@elysiajs/cors": "^1.2.0",
     "@elysiajs/swagger": "^1.2.0",
     "@ethersproject/abstract-provider": "^5.7.0",
@@ -21,7 +18,7 @@
     "@ethersproject/providers": "^5.7.0",
     "@ethersproject/wallet": "^5.7.0",
     "@lit-protocol/constants": "^7.0.6",
-    "@lit-protocol/contracts": "^0.0.86",
+    "@lit-protocol/contracts": "0.0.87",
     "@noble/ed25519": "^2.2.3",
     "@simplewebauthn/server": "6.2.1",
     "@simplewebauthn/typescript-types": "^8.3.4",
@@ -29,13 +26,15 @@
     "base64url": "^3.0.1",
     "cors": "^2.8.5",
     "elysia": "^1.2.12",
+    "elysia-rate-limit": "^4.1.0",
     "ethers5": "npm:ethers@^5.7.2",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "jwk-to-pem": "^2.0.7",
     "rate-limit-redis": "^4.2.0",
     "redis": "^4.6.13",
-    "zod": "^3.22.4"
+    "viem": "^2.23.2",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/cbor": "^6.0.4",

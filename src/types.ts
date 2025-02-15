@@ -3,16 +3,6 @@ import { ethers } from "ethers";
 
 export type NetworkType = "datil-dev" | "datil-test" | "datil";
 
-export interface MintNextAndAddAuthMethodsRequest {
-  keyType: number;
-  permittedAuthMethodTypes: number[];
-  permittedAuthMethodIds: string[];
-  permittedAuthMethodPubkeys: string[];
-  permittedAuthMethodScopes: number[][];
-  addPkpEthAddressAsPermittedAddress: boolean;
-  sendPkpToItself: boolean;
-}
-
 export interface AuthMethodVerifyRegistrationResponse {
   requestId?: string;
   error?: string;

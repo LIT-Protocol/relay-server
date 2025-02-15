@@ -1,25 +1,23 @@
-import { NextFunction, Request, Response } from "express";
-import { redisClient } from "../lib/redis";
+import { Elysia } from "elysia";
+import { env } from "config/env";
+import { redisClient } from "../services/redis/redis";
 
-const API_KEY_HEADER = "api-key";
+export const apiKeyGateAndTracking = new Elysia().derive(
+  async ({ request, set }) => {
+    const apiKey = request.headers.get("x-api-key");
 
-export function apiKeyGateAndTracking(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  const apiKey = req.header(API_KEY_HEADER);
+    if (!apiKey) {
+      set.status = 401;
+      throw new Error(
+        "Missing API key. If you do not have one, please request one at https://forms.gle/osJfmRR2PuZ46Xf98"
+      );
+    }
 
-  if (!apiKey) {
-    return res.status(400).json({
-      error: "Missing API key. If you do not have one, please request one at https://forms.gle/osJfmRR2PuZ46Xf98",
-    });
+    // Track API usage by date
+    const now = new Date();
+    const trackingKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}:${apiKey}`;
+    await redisClient.incr(trackingKey);
+
+    return {};
   }
-
-  // Track API usage
-  const now = new Date();
-  const trackingKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}:${apiKey}`;
-  redisClient.incr(trackingKey);
-
-  next();
-} 
+);

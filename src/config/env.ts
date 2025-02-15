@@ -28,7 +28,7 @@ export const env = createEnv({
     GAS_LIMIT_INCREASE_PERCENTAGE: z
       .string()
       .transform((val: string): number => Number(val))
-      .default("10"),
+      .default("15"),
 
     // Rate Limiter
     MAX_REQUESTS_PER_WINDOW: z
