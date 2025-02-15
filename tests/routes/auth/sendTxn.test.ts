@@ -2,7 +2,7 @@ import request from "supertest";
 import express from "express";
 import { ethers } from "ethers";
 import { sendTxnHandler } from "../../../routes/auth/sendTxn";
-import { getProvider } from "../../../lit";
+import { getProvider, mintPKP } from "../../../lit";
 import cors from "cors";
 import { Sequencer } from "../../../lib/sequencer";
 
@@ -100,6 +100,14 @@ describe("sendTxn Integration Tests", () => {
 		// Create a new random address to send to
 		const recipientAddress = ethers.Wallet.createRandom().address;
 
+		// mint a PKP
+		const pkp = await mintPKP({
+			keyType: "2",
+			permittedAuthMethodTypes: ["2"],
+			permittedAuthMethodIds: [
+				"0x170d13600caea2933912f39a0334eca3d22e472be203f937c4bad0213d92ed71",
+			],
+		});
 		const { chainId } = await provider.getNetwork();
 
 		const unsignedTxn = {
