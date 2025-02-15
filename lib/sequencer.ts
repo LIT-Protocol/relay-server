@@ -117,6 +117,7 @@ export class Sequencer {
 						: {};
 					transactionData["nonce"] = nonce;
 					params.push(transactionData);
+					// console.log("params going to fn", params);
 					let res = await next.action.action.apply(
 						this,
 						params as any,

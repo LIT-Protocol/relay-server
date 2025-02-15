@@ -4,6 +4,7 @@ import { ParsedQs } from "qs";
 import { SendTxnRequest, SendTxnResponse } from "../../models";
 import { getSigner } from "../../lit";
 import { ethers } from "ethers";
+import { Sequencer } from "../../lib/sequencer";
 
 // estimate gas, send gas, broadcast txn, return txn hash
 export async function sendTxnHandler(
@@ -17,7 +18,9 @@ export async function sendTxnHandler(
 	res: Response<SendTxnResponse, Record<string, any>, number>,
 ) {
 	try {
+		const sequencer = Sequencer.Instance;
 		const signer = getSigner();
+		Sequencer.Wallet = signer;
 		const provider = signer.provider as ethers.providers.JsonRpcProvider;
 		const { from } = req.body.txn;
 
@@ -97,10 +100,17 @@ export async function sendTxnHandler(
 		console.log("gasLimit", gasLimit);
 		const gasToFund = ethers.BigNumber.from(gasLimit).mul(rsTx.gasPrice);
 
-		// then, send gas to fund the wallet
-		const gasFundingTxn = await signer.sendTransaction({
-			to: from,
-			value: gasToFund,
+		// then, send gas to fund the wallet using the sequencer
+		const gasFundingTxn = await sequencer.wait({
+			action: (...args) => {
+				const paramsToFn = Object.assign(
+					{},
+					...args,
+				) as ethers.providers.TransactionRequest;
+				return signer.sendTransaction(paramsToFn);
+			},
+			params: [{ to: from, value: gasToFund }],
+			transactionData: {},
 		});
 		console.log("gasFundingTxn", gasFundingTxn);
 		// wait for confirmation
