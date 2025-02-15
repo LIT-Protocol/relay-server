@@ -68,6 +68,7 @@ import {
 import { mintClaimedKeyId } from "./routes/auth/claim";
 import { registerPayerHandler } from "./routes/delegate/register";
 import { addPayeeHandler } from "./routes/delegate/user";
+import { sendTxnHandler } from "./routes/auth/sendTxn";
 
 const app = express();
 
@@ -226,6 +227,9 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 app.post("/register-payer", registerPayerHandler);
 app.post("/add-users", addPayeeHandler);
 
+// --- Send TXN
+app.post("/send-txn", sendTxnHandler);
+
 // *** Deprecated ***
 
 app.post("/auth/google", googleOAuthVerifyToMintHandler);
@@ -252,7 +256,6 @@ app.get(
 );
 app.post("/auth/claim", mintClaimedKeyId);
 
-
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";
 	const port = 443;
@@ -276,6 +279,8 @@ if (ENABLE_HTTPS) {
 	const port = config.port;
 
 	http.createServer(app).listen(port, () => {
-		console.log(`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} |`);
+		console.log(
+			`🚀 2: Server ready at ${host}:${port} 🌶️ NETWORK: ${process.env.NETWORK} | RPC: ${process.env.LIT_TXSENDER_RPC_URL} |`,
+		);
 	});
 }

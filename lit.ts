@@ -78,13 +78,15 @@ function getContractFromJsSdk(
 	return ethersContract;
 }
 
-export function getProvider() {
-	return new ethers.providers.JsonRpcProvider(
+export function getProvider(): ethers.providers.JsonRpcProvider {
+	const provider = new ethers.providers.JsonRpcProvider(
 		process.env.LIT_TXSENDER_RPC_URL,
 	);
+	provider.pollingInterval = 200;
+	return provider;
 }
 
-function getSigner() {
+export function getSigner(): ethers.Wallet {
 	const provider = getProvider();
 	const privateKey = process.env.LIT_TXSENDER_PRIVATE_KEY!;
 	const signer = new ethers.Wallet(privateKey, provider);
