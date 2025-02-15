@@ -26,6 +26,7 @@
         "ethers5": "npm:ethers@^5.7.2",
         "express": "^4.18.2",
         "express-rate-limit": "^7.1.5",
+        "json-with-bigint": "^2.4.2",
         "jwk-to-pem": "^2.0.7",
         "rate-limit-redis": "^4.2.0",
         "redis": "^4.6.13",
@@ -346,6 +347,8 @@
     "js-sha3": ["js-sha3@0.8.0", "", {}, "sha512-gF1cRrHhIzNfToc802P800N8PpXS+evLLXfsVpowqmAFR9uwbi89WvXg2QspOmXL8QL86J4T1EpFu+yUkwJY3Q=="],
 
     "json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
+
+    "json-with-bigint": ["json-with-bigint@2.4.2", "", {}, "sha512-699n7JnZ5yhREx3MQTlxZAFL60QC+NVRD8n2aeftKh3OzmOEwExejktccRjXjfVChKxV3PP85TplG/vIbFUKew=="],
 
     "jsrsasign": ["jsrsasign@10.9.0", "", {}, "sha512-QWLUikj1SBJGuyGK8tjKSx3K7Y69KYJnrs/pQ1KZ6wvZIkHkWjZ1PJDpuvc1/28c1uP0KW9qn1eI1LzHQqDOwQ=="],
 

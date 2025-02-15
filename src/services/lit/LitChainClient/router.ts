@@ -1,6 +1,7 @@
 import { LitChainClientAPI } from "./apis";
 import { ClaimRequestInput } from "./schemas/claimRequestSchema";
 import { MintRequestInput } from "./schemas/mintRequestSchema";
+import { JSONStringify as BigBoyStringify } from 'json-with-bigint';
 
 export const LitChainClientRouter = {
   mintNextAndAddAuthMethods: async ({ body }: { body: MintRequestInput }) => {
@@ -10,6 +11,8 @@ export const LitChainClientRouter = {
       const mintRes = await LitChainClientAPI.mintNextAndAddAuthMethods(body);
       return {
         hash: mintRes.hash,
+        decodedLogs: BigBoyStringify(mintRes.decodedLogs),
+        receipt: BigBoyStringify(mintRes.receipt),
       };
     } catch (err) {
       console.error("[mintNextAndAddAuthMethodsHandler] Unable to mint PKP", {

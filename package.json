@@ -30,6 +30,7 @@
     "ethers5": "npm:ethers@^5.7.2",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "json-with-bigint": "^2.4.2",
     "jwk-to-pem": "^2.0.7",
     "rate-limit-redis": "^4.2.0",
     "redis": "^4.6.13",

@@ -20,27 +20,27 @@ describe("Relay Server API - PKP Endpoints", () => {
       sendPkpToItself: true,
     };
 
-    const response = await app
-      .handle(
-        new Request("http://localhost/pkp/mint-next-and-add-auth-methods", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        })
-      );
+    const response = await app.handle(
+      new Request("http://localhost/pkp/mint-next-and-add-auth-methods", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+    );
 
-      console.log("response:", response);
+    console.log("response:", response);
 
     expect(response.status).toBe(200);
-    
+
     const responseData = await response.json();
-    
+
     // Verify the response structure
     expect(responseData).toHaveProperty("hash");
-    // expect(responseData).toHaveProperty("decodedLogs");
-    // expect(responseData.receipt.logs.length).toBeGreaterThan(0);
+    expect(responseData).toHaveProperty("receipt");
+    expect(responseData).toHaveProperty("decodedLogs");
+    console.log("responseData:", responseData);
   });
 
   // test("POST /pkp/mint-next-and-add-auth-methods - Invalid payload", async () => {
@@ -62,4 +62,4 @@ describe("Relay Server API - PKP Endpoints", () => {
 
   //   expect(response.status).toBe(500);
   // });
-}); 
+});
