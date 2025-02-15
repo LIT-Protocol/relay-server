@@ -96,6 +96,81 @@ describe("sendTxn Integration Tests", () => {
 		expect(txReceipt.status).toBe(1); // Transaction should be successful
 	}, 30000); // Increase timeout to 30s since we're waiting for real transactions
 
+	it("should successfully send gas and broadcast a transaction using PKP signer", async () => {
+		// Create a new random address to send to
+		const recipientAddress = ethers.Wallet.createRandom().address;
+
+		const { chainId } = await provider.getNetwork();
+
+		const unsignedTxn = {
+			to: recipientAddress,
+			value: "0x0",
+			gasPrice: await provider.getGasPrice(),
+			// Note: We'll need the PKP's address for the nonce
+			// TODO: Replace with actual PKP address
+			nonce: await provider.getTransactionCount(
+				"0x0000000000000000000000000000000000000000",
+			),
+			chainId,
+			data: "0x",
+		};
+
+		console.log("unsignedTxn", unsignedTxn);
+		const txnForSimulation = {
+			...unsignedTxn,
+			gasPrice: ethers.utils.hexValue(unsignedTxn.gasPrice),
+			nonce: ethers.utils.hexValue(unsignedTxn.nonce),
+			chainId: ethers.utils.hexValue(chainId),
+		};
+
+		const stateOverrides = {
+			// TODO: Replace with actual PKP address
+			["0x0000000000000000000000000000000000000000"]: {
+				balance: "0xDE0B6B3A7640000", // 1 eth in wei
+			},
+		};
+
+		const gasLimit = await provider.send("eth_estimateGas", [
+			txnForSimulation,
+			"latest",
+			stateOverrides,
+		]);
+
+		const toSign = {
+			...unsignedTxn,
+			gasLimit,
+		};
+
+		console.log("toSign", toSign);
+
+		// TODO: Replace this section with PKP signing logic
+		// This should:
+		// 1. Get the PKP instance
+		// 2. Use the PKP to sign the transaction
+		// 3. Get the signed transaction hex string
+		const signedTxn = "0x"; // This will be replaced with actual signed transaction
+
+		console.log("signedTxn", signedTxn);
+		const txn = ethers.utils.parseTransaction(signedTxn);
+
+		console.log("sending txn request", txn);
+
+		const response = await request(app)
+			.post("/send-txn")
+			.send({ txn })
+			.expect("Content-Type", /json/)
+			.expect(200);
+
+		expect(response.body).toHaveProperty("requestId");
+		expect(response.body.requestId).toMatch(/^0x[a-fA-F0-9]{64}$/); // Should be a transaction hash
+
+		// Wait for transaction to be mined
+		const txReceipt = await provider.waitForTransaction(
+			response.body.requestId,
+		);
+		expect(txReceipt.status).toBe(1); // Transaction should be successful
+	}, 30000);
+
 	it("should reject transaction with invalid signature", async () => {
 		// Create a new random wallet
 		const wallet = ethers.Wallet.createRandom().connect(provider);
