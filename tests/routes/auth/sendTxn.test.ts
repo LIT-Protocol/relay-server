@@ -32,7 +32,7 @@ describe("sendTxn Integration Tests", () => {
 			value: "0x0",
 			gasPrice: await provider.getGasPrice(),
 			nonce: await provider.getTransactionCount(wallet.address),
-			// chainId,
+			chainId,
 			data: "0x",
 		};
 
@@ -41,7 +41,7 @@ describe("sendTxn Integration Tests", () => {
 			...unsignedTxn,
 			gasPrice: ethers.utils.hexValue(unsignedTxn.gasPrice),
 			nonce: ethers.utils.hexValue(unsignedTxn.nonce),
-			// chainId: ethers.utils.hexValue(chainId),
+			chainId: ethers.utils.hexValue(chainId),
 		};
 
 		const stateOverrides = {
@@ -65,6 +65,7 @@ describe("sendTxn Integration Tests", () => {
 
 		// Sign the transaction
 		const signedTxn = await wallet.signTransaction(toSign);
+		console.log("signedTxn", signedTxn);
 		const txn = ethers.utils.parseTransaction(signedTxn);
 
 		console.log("sending txn request", txn);

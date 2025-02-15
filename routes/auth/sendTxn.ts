@@ -43,16 +43,24 @@ export async function sendTxnHandler(
 		delete txnWithoutSig.hash;
 		delete txnWithoutSig.from;
 
-		console.log("txnWithoutSig", txnWithoutSig);
-
-		const serializedTxn = ethers.utils.serializeTransaction(txnWithoutSig);
-		console.log("serializedTxn: ", serializedTxn);
-
-		const fromViaSignature = ethers.utils.recoverAddress(serializedTxn, {
+		const signature = {
 			r: req.body.txn.r!,
 			s: req.body.txn.s!,
 			v: req.body.txn.v!,
-		});
+		};
+
+		console.log("txnWithoutSig", txnWithoutSig);
+		const rsTx = await ethers.utils.resolveProperties(txnWithoutSig);
+		const serializedTxn = ethers.utils.serializeTransaction(rsTx);
+		console.log("serializedTxn: ", serializedTxn);
+
+		const msgHash = ethers.utils.keccak256(serializedTxn); // as specified by ECDSA
+		const msgBytes = ethers.utils.arrayify(msgHash); // create binary hash
+
+		const fromViaSignature = ethers.utils.recoverAddress(
+			msgBytes,
+			signature,
+		);
 		console.log("fromViaSignature", fromViaSignature);
 		if (fromViaSignature !== from) {
 			return res.status(500).json({
@@ -60,35 +68,54 @@ export async function sendTxnHandler(
 			});
 		}
 
-		// Convert to TransactionRequest format
+		// // Convert to TransactionRequest format
 		const txnRequest = {
-			to: req.body.txn.to,
-			from: req.body.txn.from,
-			nonce: req.body.txn.nonce,
-			data: req.body.txn.data,
-			value: req.body.txn.value,
-			chainId: req.body.txn.chainId,
-			type: req.body.txn.type || undefined,
+			...fixedTxn,
+			nonce: ethers.utils.hexValue(fixedTxn.nonce),
+			value: ethers.utils.hexValue(fixedTxn.value),
+			chainId: ethers.utils.hexValue(fixedTxn.chainId),
 		};
 
-		console.log("created txn request");
+		const stateOverrides = {
+			[from]: {
+				balance: "0xDE0B6B3A7640000", // 1 eth in wei
+			},
+		};
+
+		console.log(
+			"created txn request to estimate gas on server side",
+			txnRequest,
+		);
 
 		// estimate the gas
 		// const gasLimit = await signer.provider.estimateGas(txnRequest);
-		const gasLimit = await provider.send("eth_estimateGas", [txnRequest]);
+		const gasLimit = await provider.send("eth_estimateGas", [
+			txnRequest,
+			"latest",
+			stateOverrides,
+		]);
 		console.log("gasLimit", gasLimit);
+		const gasToFund = ethers.BigNumber.from(gasLimit).mul(rsTx.gasPrice);
 
 		// then, send gas to fund the wallet
 		const gasFundingTxn = await signer.sendTransaction({
 			to: from,
-			value: gasLimit,
+			value: gasToFund,
 		});
 		console.log("gasFundingTxn", gasFundingTxn);
 		// wait for confirmation
 		await gasFundingTxn.wait();
 
+		// serialize the txn with sig
+		const serializedTxnWithSig = ethers.utils.serializeTransaction(
+			txnWithoutSig,
+			signature,
+		);
+
+		console.log("serializedTxnWithSig", serializedTxnWithSig);
+
 		// send the txn
-		const txn = await signer.provider.sendTransaction(serializedTxn);
+		const txn = await signer.provider.sendTransaction(serializedTxnWithSig);
 		// wait for confirmation
 		await txn.wait();
 
