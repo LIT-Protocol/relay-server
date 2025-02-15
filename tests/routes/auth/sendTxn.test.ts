@@ -4,6 +4,7 @@ import { ethers } from "ethers";
 import { sendTxnHandler } from "../../../routes/auth/sendTxn";
 import { getProvider } from "../../../lit";
 import cors from "cors";
+import { Sequencer } from "../../../lib/sequencer";
 
 describe("sendTxn Integration Tests", () => {
 	let app: express.Application;
@@ -19,6 +20,15 @@ describe("sendTxn Integration Tests", () => {
 		app.use(express.json());
 		app.use(cors());
 		app.post("/send-txn", sendTxnHandler);
+	});
+
+	afterAll(async () => {
+		// // Clean up provider and connections
+		if (provider) {
+			provider.removeAllListeners();
+		}
+
+		Sequencer.Instance.stop();
 	});
 
 	it("should successfully send gas and broadcast a transaction", async () => {
