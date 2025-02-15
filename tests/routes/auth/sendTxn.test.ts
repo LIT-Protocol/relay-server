@@ -91,16 +91,48 @@ describe("sendTxn Integration Tests", () => {
 		const wallet = ethers.Wallet.createRandom().connect(provider);
 		const maliciousWallet = ethers.Wallet.createRandom().connect(provider);
 
+		const { chainId } = await provider.getNetwork();
+
 		// Create a transaction but try to use a different from address
-		const unsignedTxn = await wallet.populateTransaction({
+		const unsignedTxn = {
 			to: wallet.address,
-			value: ethers.utils.parseEther("0"),
+			value: "0x0",
 			gasPrice: await provider.getGasPrice(),
 			nonce: await provider.getTransactionCount(wallet.address),
-		});
+			chainId,
+			data: "0x",
+		};
+
+		console.log("unsignedTxn", unsignedTxn);
+		const txnForSimulation = {
+			...unsignedTxn,
+			gasPrice: ethers.utils.hexValue(unsignedTxn.gasPrice),
+			nonce: ethers.utils.hexValue(unsignedTxn.nonce),
+			chainId: ethers.utils.hexValue(chainId),
+		};
+
+		const stateOverrides = {
+			[wallet.address]: {
+				balance: "0xDE0B6B3A7640000", // 1 eth in wei
+			},
+		};
+
+		const gasLimit = await provider.send("eth_estimateGas", [
+			txnForSimulation,
+			"latest",
+			stateOverrides,
+		]);
+
+		const toSign = {
+			...unsignedTxn,
+			gasLimit,
+		};
+
+		console.log("toSign", toSign);
 
 		// Sign with malicious wallet but keep original from address
-		const signedTxn = await maliciousWallet.signTransaction(unsignedTxn);
+		const signedTxn = await maliciousWallet.signTransaction(toSign);
+		console.log("signedTxn", signedTxn);
 		const txn = ethers.utils.parseTransaction(signedTxn);
 
 		// Override the from address to be the original wallet
