@@ -5,7 +5,11 @@ import { SendTxnRequest, SendTxnResponse } from "../../models";
 import { getSigner } from "../../lit";
 import { ethers } from "ethers";
 import { Sequencer } from "../../lib/sequencer";
-
+import {
+	estimateGasWithBalanceOverride,
+	removeTxnSignature,
+	txnToBytesToSign,
+} from "../../utils/eth";
 // estimate gas, send gas, broadcast txn, return txn hash
 export async function sendTxnHandler(
 	req: Request<
@@ -31,21 +35,13 @@ export async function sendTxnHandler(
 			gasLimit: (req.body.txn.gasLimit as any).hex,
 			gasPrice: (req.body.txn.gasPrice as any).hex,
 			value: (req.body.txn.value as any).hex,
+			type: req.body.txn.type || undefined,
 		};
 
 		console.log("fixed txn", fixedTxn);
 
 		// get the address that signed the txn
-		// to make sure the "from" matches and there's no funny business
-		const txnWithoutSig = {
-			...fixedTxn,
-		};
-		delete txnWithoutSig.r;
-		delete txnWithoutSig.s;
-		delete txnWithoutSig.v;
-		delete txnWithoutSig.hash;
-		delete txnWithoutSig.from;
-
+		const txnWithoutSig = removeTxnSignature(fixedTxn);
 		const signature = {
 			r: req.body.txn.r!,
 			s: req.body.txn.s!,
@@ -53,13 +49,8 @@ export async function sendTxnHandler(
 		};
 
 		console.log("txnWithoutSig", txnWithoutSig);
-		const rsTx = await ethers.utils.resolveProperties(txnWithoutSig);
-		const serializedTxn = ethers.utils.serializeTransaction(rsTx);
-		console.log("serializedTxn: ", serializedTxn);
 
-		const msgHash = ethers.utils.keccak256(serializedTxn); // as specified by ECDSA
-		const msgBytes = ethers.utils.arrayify(msgHash); // create binary hash
-
+		const msgBytes = await txnToBytesToSign(txnWithoutSig);
 		const fromViaSignature = ethers.utils.recoverAddress(
 			msgBytes,
 			signature,
@@ -71,34 +62,26 @@ export async function sendTxnHandler(
 			});
 		}
 
-		// // Convert to TransactionRequest format
-		const txnRequest = {
-			...fixedTxn,
-			nonce: ethers.utils.hexValue(fixedTxn.nonce),
-			value: ethers.utils.hexValue(fixedTxn.value),
-			chainId: ethers.utils.hexValue(fixedTxn.chainId),
-		};
+		// check that the gas price is sane
+		const currentGasPrice = await provider.getGasPrice();
+		// it must bound the gas price submitted plus or minus 10% of the current gas price
+		const gasPrice = ethers.BigNumber.from(fixedTxn.gasPrice);
+		if (
+			gasPrice.lt(currentGasPrice.mul(9).div(10)) ||
+			gasPrice.gt(currentGasPrice.mul(11).div(10))
+		) {
+			return res.status(500).json({
+				error: "Invalid gas price - the gas price is not within 10% of the current gas price",
+			});
+		}
 
-		const stateOverrides = {
-			[from]: {
-				balance: "0xDE0B6B3A7640000", // 1 eth in wei
-			},
-		};
-
-		console.log(
-			"created txn request to estimate gas on server side",
-			txnRequest,
-		);
-
-		// estimate the gas
-		// const gasLimit = await signer.provider.estimateGas(txnRequest);
-		const gasLimit = await provider.send("eth_estimateGas", [
-			txnRequest,
-			"latest",
-			stateOverrides,
-		]);
+		const gasLimit = await estimateGasWithBalanceOverride({
+			provider,
+			txn: fixedTxn,
+			walletAddress: from,
+		});
 		console.log("gasLimit", gasLimit);
-		const gasToFund = ethers.BigNumber.from(gasLimit).mul(rsTx.gasPrice);
+		const gasToFund = ethers.BigNumber.from(gasLimit).mul(gasPrice);
 
 		// then, send gas to fund the wallet using the sequencer
 		const gasFundingTxn = await sequencer.wait({

@@ -20,6 +20,10 @@ import {
 	LitPKPResource,
 	LitAbility,
 } from "@lit-protocol/auth-helpers";
+import {
+	estimateGasWithBalanceOverride,
+	txnToBytesToSign,
+} from "../../../utils/eth";
 
 describe("sendTxn Integration Tests", () => {
 	let app: express.Application;
@@ -54,7 +58,7 @@ describe("sendTxn Integration Tests", () => {
 		litNodeClient.disconnect();
 	});
 
-	it("should successfully send gas and broadcast a transaction", async () => {
+	it("should successfully send gas and broadcast a transaction with that gas, from a random wallet", async () => {
 		// Create a new random wallet
 		const wallet = ethers.Wallet.createRandom().connect(provider);
 
@@ -69,25 +73,11 @@ describe("sendTxn Integration Tests", () => {
 			data: "0x",
 		};
 
-		console.log("unsignedTxn", unsignedTxn);
-		const txnForSimulation = {
-			...unsignedTxn,
-			gasPrice: ethers.utils.hexValue(unsignedTxn.gasPrice),
-			nonce: ethers.utils.hexValue(unsignedTxn.nonce),
-			chainId: ethers.utils.hexValue(chainId),
-		};
-
-		const stateOverrides = {
-			[wallet.address]: {
-				balance: "0xDE0B6B3A7640000", // 1 eth in wei
-			},
-		};
-
-		const gasLimit = await provider.send("eth_estimateGas", [
-			txnForSimulation,
-			"latest",
-			stateOverrides,
-		]);
+		const gasLimit = await estimateGasWithBalanceOverride({
+			provider,
+			txn: unsignedTxn,
+			walletAddress: wallet.address,
+		});
 
 		const toSign = {
 			...unsignedTxn,
@@ -96,7 +86,7 @@ describe("sendTxn Integration Tests", () => {
 
 		console.log("toSign", toSign);
 
-		// Sign the transaction
+		// Sign the transaction with the local ethers wallet
 		const signedTxn = await wallet.signTransaction(toSign);
 		console.log("signedTxn", signedTxn);
 		const txn = ethers.utils.parseTransaction(signedTxn);
@@ -149,37 +139,18 @@ describe("sendTxn Integration Tests", () => {
 			data: "0x",
 		};
 
-		console.log("unsignedTxn", unsignedTxn);
-		const txnForSimulation = {
-			...unsignedTxn,
-			gasPrice: ethers.utils.hexValue(unsignedTxn.gasPrice),
-			nonce: ethers.utils.hexValue(unsignedTxn.nonce),
-			chainId: ethers.utils.hexValue(chainId),
-		};
-
-		const stateOverrides = {
-			[pkpEthAddress]: {
-				balance: "0xDE0B6B3A7640000", // 1 eth in wei
-			},
-		};
-
-		const gasLimit = await provider.send("eth_estimateGas", [
-			txnForSimulation,
-			"latest",
-			stateOverrides,
-		]);
+		const gasLimit = await estimateGasWithBalanceOverride({
+			provider,
+			txn: unsignedTxn,
+			walletAddress: pkpEthAddress,
+		});
 
 		const toSign = {
 			...unsignedTxn,
 			gasLimit,
 		};
 
-		console.log("toSign", toSign);
-		const rsTx = await ethers.utils.resolveProperties(toSign);
-		const serializedTxnToHash = ethers.utils.serializeTransaction(rsTx);
-		console.log("serializedTxnToHash", serializedTxnToHash);
-		const msgHash = ethers.utils.keccak256(serializedTxnToHash); // as specified by ECDSA
-		const msgBytesToSign = ethers.utils.arrayify(msgHash); // create binary hash
+		const msgBytesToSign = await txnToBytesToSign(toSign);
 
 		const authSigToSign = await createSiweMessage({
 			uri: "https://example.com",
@@ -269,25 +240,11 @@ describe("sendTxn Integration Tests", () => {
 			data: "0x",
 		};
 
-		console.log("unsignedTxn", unsignedTxn);
-		const txnForSimulation = {
-			...unsignedTxn,
-			gasPrice: ethers.utils.hexValue(unsignedTxn.gasPrice),
-			nonce: ethers.utils.hexValue(unsignedTxn.nonce),
-			chainId: ethers.utils.hexValue(chainId),
-		};
-
-		const stateOverrides = {
-			[wallet.address]: {
-				balance: "0xDE0B6B3A7640000", // 1 eth in wei
-			},
-		};
-
-		const gasLimit = await provider.send("eth_estimateGas", [
-			txnForSimulation,
-			"latest",
-			stateOverrides,
-		]);
+		const gasLimit = await estimateGasWithBalanceOverride({
+			provider,
+			txn: unsignedTxn,
+			walletAddress: wallet.address,
+		});
 
 		const toSign = {
 			...unsignedTxn,
