@@ -120,7 +120,7 @@ describe("sendTxn Integration Tests", () => {
 			permittedAuthMethodIds: [authWallet.address],
 			permittedAuthMethodPubkeys: ["0x"],
 			permittedAuthMethodScopes: [["1"]],
-			addPkpEthAddressAsPermittedAddress: true,
+			addPkpEthAddressAsPermittedAddress: false,
 			sendPkpToItself: true,
 		});
 		const receipt = await provider.waitForTransaction(pkpTx.hash!);
