@@ -2,17 +2,38 @@ import request from "supertest";
 import express from "express";
 import { ethers } from "ethers";
 import { sendTxnHandler } from "../../../routes/auth/sendTxn";
-import { getProvider, mintPKP } from "../../../lit";
+import {
+	getPkpEthAddress,
+	getPkpPublicKey,
+	getProvider,
+	mintPKP,
+} from "../../../lit";
 import cors from "cors";
 import { Sequencer } from "../../../lib/sequencer";
+import { getTokenIdFromTransferEvent } from "../../../utils/receipt";
+import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
+import { LitNetwork } from "@lit-protocol/constants";
+import {
+	createSiweMessage,
+	generateAuthSig,
+	LitActionResource,
+	LitPKPResource,
+	LitAbility,
+} from "@lit-protocol/auth-helpers";
 
 describe("sendTxn Integration Tests", () => {
 	let app: express.Application;
 	let provider: ethers.providers.JsonRpcProvider;
-
+	let litNodeClient: LitNodeClientNodeJs;
 	beforeAll(async () => {
 		// Set up provider
 		provider = getProvider();
+		// connect to lit so we can sign the txn
+		litNodeClient = new LitNodeClientNodeJs({
+			litNetwork: process.env.NETWORK as LitNetwork,
+			debug: false,
+		});
+		await litNodeClient.connect();
 	});
 
 	beforeEach(() => {
@@ -29,6 +50,8 @@ describe("sendTxn Integration Tests", () => {
 		}
 
 		Sequencer.Instance.stop();
+
+		litNodeClient.disconnect();
 	});
 
 	it("should successfully send gas and broadcast a transaction", async () => {
@@ -97,28 +120,31 @@ describe("sendTxn Integration Tests", () => {
 	}, 30000); // Increase timeout to 30s since we're waiting for real transactions
 
 	it("should successfully send gas and broadcast a transaction using PKP signer", async () => {
-		// Create a new random address to send to
-		const recipientAddress = ethers.Wallet.createRandom().address;
+		// Create a new random address to use for PKP auth
+		const authWallet = ethers.Wallet.createRandom();
 
 		// mint a PKP
-		const pkp = await mintPKP({
+		const pkpTx = await mintPKP({
 			keyType: "2",
-			permittedAuthMethodTypes: ["2"],
-			permittedAuthMethodIds: [
-				"0x170d13600caea2933912f39a0334eca3d22e472be203f937c4bad0213d92ed71",
-			],
+			permittedAuthMethodTypes: ["1"],
+			permittedAuthMethodIds: [authWallet.address],
+			permittedAuthMethodPubkeys: ["0x"],
+			permittedAuthMethodScopes: [["1"]],
+			addPkpEthAddressAsPermittedAddress: true,
+			sendPkpToItself: true,
 		});
+		const receipt = await provider.waitForTransaction(pkpTx.hash!);
+		const tokenIdFromEvent = await getTokenIdFromTransferEvent(receipt);
+		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
+		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
+
 		const { chainId } = await provider.getNetwork();
 
 		const unsignedTxn = {
-			to: recipientAddress,
+			to: authWallet.address,
 			value: "0x0",
 			gasPrice: await provider.getGasPrice(),
-			// Note: We'll need the PKP's address for the nonce
-			// TODO: Replace with actual PKP address
-			nonce: await provider.getTransactionCount(
-				"0x0000000000000000000000000000000000000000",
-			),
+			nonce: await provider.getTransactionCount(pkpEthAddress),
 			chainId,
 			data: "0x",
 		};
@@ -132,8 +158,7 @@ describe("sendTxn Integration Tests", () => {
 		};
 
 		const stateOverrides = {
-			// TODO: Replace with actual PKP address
-			["0x0000000000000000000000000000000000000000"]: {
+			[pkpEthAddress]: {
 				balance: "0xDE0B6B3A7640000", // 1 eth in wei
 			},
 		};
@@ -150,15 +175,63 @@ describe("sendTxn Integration Tests", () => {
 		};
 
 		console.log("toSign", toSign);
+		const rsTx = await ethers.utils.resolveProperties(toSign);
+		const serializedTxnToHash = ethers.utils.serializeTransaction(rsTx);
+		console.log("serializedTxnToHash", serializedTxnToHash);
+		const msgHash = ethers.utils.keccak256(serializedTxnToHash); // as specified by ECDSA
+		const msgBytesToSign = ethers.utils.arrayify(msgHash); // create binary hash
 
-		// TODO: Replace this section with PKP signing logic
-		// This should:
-		// 1. Get the PKP instance
-		// 2. Use the PKP to sign the transaction
-		// 3. Get the signed transaction hex string
-		const signedTxn = "0x"; // This will be replaced with actual signed transaction
+		const authSigToSign = await createSiweMessage({
+			uri: "https://example.com",
+			expiration: new Date(Date.now() + 1000 * 60 * 10).toISOString(), // 10 minutes
+			resources: [
+				{
+					resource: new LitPKPResource(tokenIdFromEvent),
+					ability: LitAbility.PKPSigning,
+				},
+			],
+			walletAddress: authWallet.address,
+			nonce: await litNodeClient.getLatestBlockhash(),
+			litNodeClient,
+		});
 
-		console.log("signedTxn", signedTxn);
+		const authSig = await generateAuthSig({
+			signer: authWallet,
+			toSign: authSigToSign,
+		});
+
+		console.log("token id from event", tokenIdFromEvent);
+
+		const sessionSigs = await litNodeClient.getPkpSessionSigs({
+			authMethods: [
+				{
+					authMethodType: 1,
+					accessToken: JSON.stringify(authSig),
+				},
+			],
+			pkpPublicKey,
+			chain: "ethereum",
+			resourceAbilityRequests: [
+				{
+					resource: new LitPKPResource(tokenIdFromEvent.substring(2)),
+					ability: LitAbility.PKPSigning,
+				},
+			],
+			expiration: new Date(Date.now() + 1000 * 60 * 10).toISOString(), // 10 mins
+		});
+
+		// sign the txn
+		const signingResult = await litNodeClient.pkpSign({
+			pubKey: pkpPublicKey,
+			sessionSigs,
+			toSign: msgBytesToSign,
+		});
+
+		console.log("signingResult", signingResult);
+		const signedTxn = ethers.utils.serializeTransaction(
+			toSign,
+			signingResult.signature,
+		);
 		const txn = ethers.utils.parseTransaction(signedTxn);
 
 		console.log("sending txn request", txn);
