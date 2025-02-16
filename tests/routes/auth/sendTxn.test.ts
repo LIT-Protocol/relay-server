@@ -93,6 +93,8 @@ describe("sendTxn Integration Tests", () => {
 
 		console.log("sending txn request", txn);
 
+		const txnHashFromClient = txn.hash;
+
 		const response = await request(app)
 			.post("/send-txn")
 			.send({ txn })
@@ -107,6 +109,9 @@ describe("sendTxn Integration Tests", () => {
 			response.body.requestId,
 		);
 		expect(txReceipt.status).toBe(1); // Transaction should be successful
+
+		// check that the txn hash is the same as the one from the client
+		expect(response.body.requestId).toBe(txnHashFromClient);
 	}, 30000); // Increase timeout to 30s since we're waiting for real transactions
 
 	it("should successfully send gas and broadcast a transaction using PKP signer", async () => {
@@ -206,6 +211,7 @@ describe("sendTxn Integration Tests", () => {
 		const txn = ethers.utils.parseTransaction(signedTxn);
 
 		console.log("sending txn request", txn);
+		const txnHashFromClient = txn.hash;
 
 		const response = await request(app)
 			.post("/send-txn")
@@ -221,6 +227,9 @@ describe("sendTxn Integration Tests", () => {
 			response.body.requestId,
 		);
 		expect(txReceipt.status).toBe(1); // Transaction should be successful
+
+		// check that the txn hash is the same as the one from the client
+		expect(response.body.requestId).toBe(txnHashFromClient);
 	}, 30000);
 
 	it("should reject transaction with invalid signature", async () => {
