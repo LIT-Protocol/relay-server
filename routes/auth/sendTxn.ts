@@ -43,16 +43,17 @@ export async function sendTxnHandler(
 
 		console.log("fixed txn", fixedTxn);
 
-		// get the address that signed the txn
+		// first, we need to remove the txn signature so that
+		// we can get the address that signed the txn.
+		// we will use this to ensure that we are only funding the address that
+		// actually signed the txn
 		const txnWithoutSig = removeTxnSignature(fixedTxn);
 		const signature = {
 			r: req.body.txn.r!,
 			s: req.body.txn.s!,
 			v: req.body.txn.v!,
 		};
-
-		console.log("txnWithoutSig", txnWithoutSig);
-
+		// console.log("txnWithoutSig", txnWithoutSig);
 		const msgBytes = await txnToBytesToSign(txnWithoutSig);
 		const fromViaSignature = ethers.utils.recoverAddress(
 			msgBytes,
@@ -87,6 +88,7 @@ export async function sendTxnHandler(
 			});
 		}
 
+		// estimate the gas for the txn
 		const gasLimit = ethers.BigNumber.from(
 			await estimateGasWithBalanceOverride({
 				provider,
@@ -136,7 +138,8 @@ export async function sendTxnHandler(
 		// wait for confirmation
 		await gasFundingTxn.wait();
 
-		// serialize the txn with sig
+		// now, the wallet is funded.  serialize the original txn with sig
+		// to a hex string, so we can broadcast it
 		const serializedTxnWithSig = ethers.utils.serializeTransaction(
 			txnWithoutSig,
 			signature,
@@ -144,10 +147,8 @@ export async function sendTxnHandler(
 
 		console.log("serializedTxnWithSig", serializedTxnWithSig);
 
-		// send the txn
+		// broadcast the txn, don't wait for confirmation
 		const txn = await signer.provider.sendTransaction(serializedTxnWithSig);
-		// wait for confirmation
-		await txn.wait();
 
 		console.info("Sent txn", {
 			requestId: txn.hash,
