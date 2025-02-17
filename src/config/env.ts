@@ -8,6 +8,7 @@ export const env = createEnv({
     NETWORK: z.enum(["datil-dev", "datil-test", "datil"]),
     LIT_TXSENDER_RPC_URL: z.string().url(),
     LIT_TXSENDER_PRIVATE_KEY: z.string().min(1),
+    LOG_LEVEL: z.enum(["info", "debug", "warn", "error"]).default("info"),
 
     // ======= OPTIONAL CONFIGURATION =======
     // Network & Chain Settings
