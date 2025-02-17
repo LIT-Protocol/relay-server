@@ -6,7 +6,7 @@ import { ethers } from "ethers";
 export async function prepareTxnForSimulation(
 	txn: ethers.providers.TransactionRequest,
 ) {
-	console.log("txn", txn);
+	// console.log("txn", txn);
 	if (
 		txn.gasPrice === undefined ||
 		txn.nonce === undefined ||
@@ -66,7 +66,9 @@ export async function txnToBytesToSign(toSign: ethers.UnsignedTransaction) {
 	return msgBytesToSign;
 }
 
-export function removeTxnSignature(txn: ethers.Transaction) {
+export function removeTxnSignature(
+	txn: ethers.Transaction,
+): ethers.UnsignedTransaction {
 	// copy and remove the elements we don't need
 	const txnWithoutSig = {
 		...txn,

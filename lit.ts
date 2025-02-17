@@ -51,9 +51,9 @@ function getContractFromJsSdk(
 
 	const contractList = contractsDataRes.data as any;
 
-	console.log(
-		`Attempting to get contract "${contractName} from "${network}"`,
-	);
+	// console.log(
+	// 	`Attempting to get contract "${contractName} from "${network}"`,
+	// );
 
 	// find object where name is == contractName
 	const contractData = contractList.find(
@@ -66,7 +66,7 @@ function getContractFromJsSdk(
 	}
 
 	const contract = contractData.contracts[0];
-	console.log(`Contract address: ${contract.address_hash}"`);
+	// console.log(`Contract address: ${contract.address_hash}"`);
 
 	// -- ethers contract
 	const ethersContract = new ethers.Contract(
@@ -401,7 +401,7 @@ export async function mintPKP({
 				transactionData: { value: mintCost, gasLimit },
 			});
 
-			console.log("tx", tx);
+			// console.log("tx", tx);
 			return tx;
 		} catch (e: any) {
 			console.log("❗️ Error while minting pkp:", e);

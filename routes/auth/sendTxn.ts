@@ -30,11 +30,14 @@ export async function sendTxnHandler(
 
 		console.log("original txn", req.body.txn);
 
+		// for some reason, the BigNumber objects don't deserialize properly
+		// and instead come in as objects like this: { type: 'BigNumber', hex: '0x989680' }
+		// so we need to deserialize them into BigNumber objects
 		const fixedTxn = {
 			...req.body.txn,
-			gasLimit: (req.body.txn.gasLimit as any).hex,
-			gasPrice: (req.body.txn.gasPrice as any).hex,
-			value: (req.body.txn.value as any).hex,
+			gasLimit: ethers.BigNumber.from(req.body.txn.gasLimit),
+			gasPrice: ethers.BigNumber.from(req.body.txn.gasPrice),
+			value: ethers.BigNumber.from(req.body.txn.value),
 			type: req.body.txn.type || undefined,
 		};
 
@@ -160,4 +163,11 @@ export async function sendTxnHandler(
 			error: `[sendTxnHandler] Unable to send txn ${JSON.stringify(err)}`,
 		});
 	}
+}
+
+function getHexValueFromPossibleObject(value: any) {
+	if (typeof value === "object" && value?.hex) {
+		return value.hex;
+	}
+	return value;
 }
