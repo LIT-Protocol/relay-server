@@ -110,7 +110,7 @@ export class Sequencer {
 							? //@ts-ignore
 							  await Sequencer._wallet.getTransactionCount()
 							: (this._nonce += 1);
-					console.log("Nonce for tx: ", nonce);
+					// console.log("Nonce for tx: ", nonce);
 					let params = next.action.params;
 					let transactionData = next.action.transactionData
 						? next.action.transactionData

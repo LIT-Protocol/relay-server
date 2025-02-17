@@ -51,9 +51,9 @@ function getContractFromJsSdk(
 
 	const contractList = contractsDataRes.data as any;
 
-	console.log(
-		`Attempting to get contract "${contractName} from "${network}"`,
-	);
+	// console.log(
+	// 	`Attempting to get contract "${contractName} from "${network}"`,
+	// );
 
 	// find object where name is == contractName
 	const contractData = contractList.find(
@@ -66,7 +66,7 @@ function getContractFromJsSdk(
 	}
 
 	const contract = contractData.contracts[0];
-	console.log(`Contract address: ${contract.address_hash}"`);
+	// console.log(`Contract address: ${contract.address_hash}"`);
 
 	// -- ethers contract
 	const ethersContract = new ethers.Contract(
@@ -330,9 +330,10 @@ export async function mintPKP({
 		const abiJson = JSON.parse(
 			fs.readFileSync("./contracts/datil-dev/PKPHelperV2.json", "utf8"),
 		);
-		const contractAddress = "0x82b48Ddb284cfd9627BA9A29E9Dc605fE654B805";
+		const pkpHelperContractAddress =
+			"0x82b48Ddb284cfd9627BA9A29E9Dc605fE654B805";
 		const pkpHelper = new ethers.Contract(
-			contractAddress,
+			pkpHelperContractAddress,
 			abiJson.abi,
 			getSigner(),
 		);
@@ -358,20 +359,22 @@ export async function mintPKP({
 
 		try {
 			gasLimit = await pkpNft.provider.estimateGas(mintTxData);
-			// since the gas limit is a BigNumber we have to use integer math and multiply by 200 then divide by 100 instead of just multiplying by 1.05
+			// since the gas limit is a BigNumber we have to use integer math and multiply by 100 then divide by 100 instead of just multiplying by 1.10
 			gasLimit = gasLimit
 				.mul(
 					ethers.BigNumber.from(
 						parseInt(
 							process.env["GAS_LIMIT_INCREASE_PERCENTAGE"]!,
-						) || 200,
+						) || 110,
 					),
 				)
 				.div(ethers.BigNumber.from(100));
 
-			console.log("adjustedGasLimit:", gasLimit);
+			// console.log("adjustedGasLimit:", gasLimit);
 		} catch (e) {
 			console.error("❗️ Error while estimating gas!");
+			// uncomment this to use a default gas limit when estimating fails.
+			// but you should probably never need to do this and fix the gas estimation issue instead.
 			// gasLimit = ethers.utils.hexlify(5000000);
 			throw e;
 		}
@@ -400,7 +403,7 @@ export async function mintPKP({
 				transactionData: { value: mintCost, gasLimit },
 			});
 
-			console.log("tx", tx);
+			// console.log("tx", tx);
 			return tx;
 		} catch (e: any) {
 			console.log("❗️ Error while minting pkp:", e);
