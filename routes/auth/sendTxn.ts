@@ -164,10 +164,3 @@ export async function sendTxnHandler(
 		});
 	}
 }
-
-function getHexValueFromPossibleObject(value: any) {
-	if (typeof value === "object" && value?.hex) {
-		return value.hex;
-	}
-	return value;
-}
