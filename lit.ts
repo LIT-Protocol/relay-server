@@ -330,9 +330,10 @@ export async function mintPKP({
 		const abiJson = JSON.parse(
 			fs.readFileSync("./contracts/datil-dev/PKPHelperV2.json", "utf8"),
 		);
-		const contractAddress = "0x82b48Ddb284cfd9627BA9A29E9Dc605fE654B805";
+		const pkpHelperContractAddress =
+			"0x82b48Ddb284cfd9627BA9A29E9Dc605fE654B805";
 		const pkpHelper = new ethers.Contract(
-			contractAddress,
+			pkpHelperContractAddress,
 			abiJson.abi,
 			getSigner(),
 		);

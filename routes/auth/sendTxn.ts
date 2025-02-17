@@ -64,24 +64,58 @@ export async function sendTxnHandler(
 
 		// check that the gas price is sane
 		const currentGasPrice = await provider.getGasPrice();
-		// it must bound the gas price submitted plus or minus 10% of the current gas price
-		const gasPrice = ethers.BigNumber.from(fixedTxn.gasPrice);
+		// it must bound the gas price submitted plus or minus the allowed percentage of the current gas price
+		const ALLOWED_GAS_PRICE_DEVIATION_PERCENTAGE = 10; // 10%
+		const gasPriceFromClient = ethers.BigNumber.from(fixedTxn.gasPrice);
 		if (
-			gasPrice.lt(currentGasPrice.mul(9).div(10)) ||
-			gasPrice.gt(currentGasPrice.mul(11).div(10))
+			gasPriceFromClient.lt(
+				currentGasPrice
+					.mul(100 - ALLOWED_GAS_PRICE_DEVIATION_PERCENTAGE)
+					.div(100),
+			) ||
+			gasPriceFromClient.gt(
+				currentGasPrice
+					.mul(100 + ALLOWED_GAS_PRICE_DEVIATION_PERCENTAGE)
+					.div(100),
+			)
 		) {
 			return res.status(500).json({
-				error: "Invalid gas price - the gas price is not within 10% of the current gas price",
+				error: `Invalid gas price - the gas price sent by the client of ${gasPriceFromClient.toString()} is not within ${ALLOWED_GAS_PRICE_DEVIATION_PERCENTAGE}% of the current gas price of ${currentGasPrice.toString()}`,
 			});
 		}
 
-		const gasLimit = await estimateGasWithBalanceOverride({
-			provider,
-			txn: fixedTxn,
-			walletAddress: from,
-		});
+		const gasLimit = ethers.BigNumber.from(
+			await estimateGasWithBalanceOverride({
+				provider,
+				txn: fixedTxn,
+				walletAddress: from,
+			}),
+		);
 		console.log("gasLimit", gasLimit);
-		const gasToFund = ethers.BigNumber.from(gasLimit).mul(gasPrice);
+
+		// check that the gas limit from the txn they sent is within 10% of the gas limit we estimated
+		const ALLOWED_GAS_LIMIT_DEVIATION_PERCENTAGE = 10; // 10%
+		const gasLimitFromClient = ethers.BigNumber.from(fixedTxn.gasLimit);
+		if (
+			gasLimitFromClient.lt(
+				gasLimit
+					.mul(100 - ALLOWED_GAS_LIMIT_DEVIATION_PERCENTAGE)
+					.div(100),
+			) ||
+			gasLimitFromClient.gt(
+				gasLimit
+					.mul(100 + ALLOWED_GAS_LIMIT_DEVIATION_PERCENTAGE)
+					.div(100),
+			)
+		) {
+			return res.status(500).json({
+				error: `Invalid gas limit - the gas limit sent by the client of ${gasLimitFromClient.toString()} is not within ${ALLOWED_GAS_LIMIT_DEVIATION_PERCENTAGE}% of the gas limit we estimated of ${gasLimit.toString()}`,
+			});
+		}
+
+		// use values from client because we already checked that they're within safe bounds
+		const gasToFund =
+			ethers.BigNumber.from(gasLimitFromClient).mul(gasPriceFromClient);
 
 		// then, send gas to fund the wallet using the sequencer
 		const gasFundingTxn = await sequencer.wait({
