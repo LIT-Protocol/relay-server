@@ -11,7 +11,7 @@ export const env = createEnv({
     LOG_LEVEL: z.enum(["info", "debug", "warn", "error"]).default("info"),
 
     // ======= OPTIONAL CONFIGURATION =======
-    // Network & Chain Settings
+    // ---------- Network & Chain Settings ----------
     CHAIN_POLLING_INTERVAL_MS: z
       .string()
       .transform((val: string): number => Number(val))
@@ -31,7 +31,7 @@ export const env = createEnv({
       .transform((val: string): number => Number(val))
       .default("15"),
 
-    // Rate Limiter
+    // ---------- RATE LIMITER ----------
     MAX_REQUESTS_PER_WINDOW: z
       .string()
       .transform((val: string): number => Number(val))
@@ -43,10 +43,10 @@ export const env = createEnv({
       .default("10000")
       .describe("10 second window"),
 
-    // Redis
+    // ---------- Redis ----------
     REDIS_URL: z.string().url().default("redis://localhost:6379"),
 
-    // Server Config
+    // ---------- Server Config ----------
     PORT: z
       .string()
       .transform((val: string): number => Number(val))
@@ -61,11 +61,18 @@ export const env = createEnv({
       .transform((val: string): string[] => val.split(","))
       .default("http://localhost:3000"),
 
-    // Features
+    // ---------- Features ----------
     ENABLE_CONFORMANCE: z
       .string()
       .transform((val: string): boolean => val === "true")
       .default("false"),
+
+    // ---------- WebAuthn ----------
+    WEBAUTHN_RP_NAME: z.string().default("Lit Protocol"),
+    WEBAUTHN_TIMEOUT: z
+      .string()
+      .transform((val: string): number => Number(val))
+      .default("6000"),
   },
 
   clientPrefix: "PUBLIC_",

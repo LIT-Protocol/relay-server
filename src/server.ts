@@ -1,19 +1,22 @@
-import { Elysia } from "elysia";
-import { swagger } from "@elysiajs/swagger";
 import { cors } from "@elysiajs/cors";
-import { env } from "./config/env";
-import { rateLimiter } from "./middleware/rateLimiter";
-import { apiKeyGateAndTracking } from "./middleware/apiKeyGate";
-import { LitPKPAuthRouter } from "./services/lit/LitPKPAuthRouter/router";
-import { MintRequestInput } from "./services/lit/LitChainClient/schemas/mintRequestSchema";
+import { swagger } from "@elysiajs/swagger";
+import { Elysia } from "elysia";
 import { JSONStringify as BigIntStringify } from "json-with-bigint";
 import { ClaimRequestInput } from "services/lit/LitChainClient/schemas/claimRequestSchema";
-import { logger } from "services/lit/LitChainClient/utils/logger";
+import { env } from "./config/env";
+import { apiKeyGateAndTracking } from "./middleware/apiKeyGate";
+import { rateLimiter } from "./middleware/rateLimiter";
+import { MintRequestInput } from "./services/lit/LitChainClient/schemas/mintRequestSchema";
+import { LitPKPAuthRouter } from "./services/lit/LitPKPAuthRouter/router";
+import { WebAuthnRequestInput } from "services/lit/WebAuthn/schemas/WebAuthnRequest";
 
 export const app = new Elysia()
+  .onAfterResponse(() => {
+    console.log("Response", performance.now());
+  })
   .use(cors())
   .use(swagger())
-  .get("/", () => "Relay Server API")
+  .get("/", () => "PKP Auth Service APIs")
   .onError(({ error }) => {
     const _error = error as unknown as { shortMessage: string };
     return new Response(BigIntStringify({ error: _error.shortMessage }), {
@@ -22,7 +25,7 @@ export const app = new Elysia()
     });
   })
   .group("/pkp", (app) => {
-    app.post("/mint-next-and-add-auth-methods", async ({ body }) => {
+    app.post("/mint", async ({ body }) => {
       const result = await LitPKPAuthRouter.mintNextAndAddAuthMethods({
         body: body as MintRequestInput,
       });
@@ -31,13 +34,38 @@ export const app = new Elysia()
         status: 200,
       });
     });
+    app.post("/claim", async ({ body }) => {
+      const result =
+        await LitPKPAuthRouter.claimAndMintNextAndAddAuthMethodsWithTypes({
+          body: body as ClaimRequestInput,
+        });
+      return new Response(BigIntStringify(result), {
+        headers: { "content-type": "application/json" },
+        status: 200,
+      });
+    });
+
     app.post(
-      "/claim-and-mint-next-and-add-auth-methods-with-types",
-      async ({ body }) => {
-        const result =
-          await LitPKPAuthRouter.claimAndMintNextAndAddAuthMethodsWithTypes({
-            body: body as ClaimRequestInput,
-          });
+      "/webauthn/generate-registration-options",
+      async ({
+        body,
+        request,
+      }: {
+        body: WebAuthnRequestInput;
+        request: Request;
+      }) => {
+        console.log("request:", request);
+
+        // get origin from request
+        const url = request.headers.get("origin") || "http://localhost";
+
+        const result = await LitPKPAuthRouter.generateRegistrationOptions({
+          body: {
+            url,
+            ...(body.username && { username: body.username }),
+          },
+        });
+
         return new Response(BigIntStringify(result), {
           headers: { "content-type": "application/json" },
           status: 200,

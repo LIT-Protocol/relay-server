@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { app } from "./server";
 
 describe("Relay Server API - PKP Endpoints", () => {
-  test("POST /pkp/mint-next-and-add-auth-methods", async () => {
+  test("POST /pkp/mint", async () => {
     // Test payload based on the successful unit test
     const payload = {
       keyType: 2,
@@ -21,7 +21,7 @@ describe("Relay Server API - PKP Endpoints", () => {
     };
 
     const response = await app.handle(
-      new Request("http://localhost/pkp/mint-next-and-add-auth-methods", {
+      new Request("http://localhost/pkp/mint", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,7 +42,7 @@ describe("Relay Server API - PKP Endpoints", () => {
     expect(responseData).toHaveProperty("decodedLogs");
   });
 
-  test("POST /pkp/claim-and-mint-next-and-add-auth-methods-with-types", async () => {
+  test("POST /pkp/claim", async () => {
     const payload = {
       derivedKeyId:
         "d8ed9605dd8b149982fedc4fd5b2097600fa592ea987580419a397d9f76bd04e",
@@ -69,16 +69,13 @@ describe("Relay Server API - PKP Endpoints", () => {
     };
 
     const response = await app.handle(
-      new Request(
-        "http://localhost/pkp/claim-and-mint-next-and-add-auth-methods-with-types",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      )
+      new Request("http://localhost/pkp/claim", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
     );
 
     if (response.status === 500) {
@@ -93,5 +90,29 @@ describe("Relay Server API - PKP Endpoints", () => {
 
       expect(responseData).toHaveProperty("requestId");
     }
+  });
+
+  test("POST /pkp/webauthn/generate-registration-options", async () => {
+    const payload = {
+      username: "Anson",
+    };
+
+    const response = await app.handle(
+      new Request(
+        "http://localhost/pkp/webauthn/generate-registration-options",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      )
+    );
+    const result = await response.json();
+    expect(response.status).toBe(200);
+    expect(result.rp.name).toBe("Lit Protocol");
+    expect(result.rp.id).toBe("localhost");
+    expect(result.user.name).toBe("Anson");
   });
 });

@@ -3,9 +3,11 @@ import { LitChainClientAPI } from "../LitChainClient/apis";
 import { MintRequestInput } from "../LitChainClient/schemas/mintRequestSchema";
 import { ClaimRequestInput } from "../LitChainClient/schemas/claimRequestSchema";
 import { JSONStringify as BigIntStringify } from "json-with-bigint";
+import { generateRegistrationOptions } from "../WebAuthn/apis/generationRegistrationOptions";
+import { WebAuthnRequestInput } from "../WebAuthn/schemas/WebAuthnRequest";
 
 /**
- * This router includes ALL the APIs for the LitChainClient
+ * This router includes ALL the APIs for a PKP Auth Service
  */
 export const LitPKPAuthRouter = {
   mintNextAndAddAuthMethods: asyncHandler(
@@ -30,6 +32,11 @@ export const LitPKPAuthRouter = {
           authMethodPubkey: "0x",
         });
       return { requestId: mintTx.hash };
+    }
+  ),
+  generateRegistrationOptions: asyncHandler(
+    async ({ body }: { body: WebAuthnRequestInput }) => {
+      return await generateRegistrationOptions(body);
     }
   ),
 };
