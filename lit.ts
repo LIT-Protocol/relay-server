@@ -359,7 +359,7 @@ export async function mintPKP({
 
 		try {
 			gasLimit = await pkpNft.provider.estimateGas(mintTxData);
-			// since the gas limit is a BigNumber we have to use integer math and multiply by 100 then divide by 100 instead of just multiplying by 1.1
+			// since the gas limit is a BigNumber we have to use integer math and multiply by 100 then divide by 100 instead of just multiplying by 1.10
 			gasLimit = gasLimit
 				.mul(
 					ethers.BigNumber.from(
@@ -373,6 +373,8 @@ export async function mintPKP({
 			// console.log("adjustedGasLimit:", gasLimit);
 		} catch (e) {
 			console.error("❗️ Error while estimating gas!");
+			// uncomment this to use a default gas limit when estimating fails.
+			// but you should probably never need to do this and fix the gas estimation issue instead.
 			// gasLimit = ethers.utils.hexlify(5000000);
 			throw e;
 		}
