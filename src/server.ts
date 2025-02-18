@@ -1,6 +1,6 @@
 import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
-import { Elysia, t } from "elysia";
+import { Elysia } from "elysia";
 import { JSONStringify as BigIntStringify } from "json-with-bigint";
 import {
   ClaimRequestInput,
@@ -14,16 +14,27 @@ import {
 import { env } from "./config/env";
 import { apiKeyGateAndTracking } from "./middleware/apiKeyGate";
 import { rateLimiter } from "./middleware/rateLimiter";
-import { MintRequestInput } from "./services/lit/LitChainClient/schemas/MintRequestSchema";
+import {
+  MintRequestInput,
+  tMintRequestSchema,
+} from "./services/lit/LitChainClient/schemas/MintRequestSchema";
 import { LitPKPAuthRouter } from "./services/lit/LitPKPAuthRouter/router";
-import { tMintRequestSchema } from "./services/lit/LitChainClient/schemas/MintRequestSchema";
+import { privateKeyToAccount } from "viem/accounts";
+import { Hex } from "viem";
+
+export const baseApp = new Elysia();
 
 export const app = new Elysia()
+  .get("/test-rate-limit", () => ({ message: "OK" }))
   .use(apiKeyGateAndTracking)
   .use(cors())
   .use(rateLimiter)
-  .use(swagger())
-  .get("/test-rate-limit", () => ({ message: "OK" }))
+  .use(
+    swagger({
+      version: "1.0.0",
+      exclude: ["/test-rate-limit"],
+    })
+  )
   .onError(({ error }) => {
     const _error = error as unknown as { shortMessage: string };
     return new Response(BigIntStringify({ error: _error.shortMessage }), {
@@ -95,10 +106,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const port = env.PORT || 3000;
   app.listen(port, () => {
     console.log("\n🚀 Lit Protocol Auth Service");
-    console.log("   Status: Running");
     console.log(`   URL: http://localhost:${port}`);
+    console.log(`   Swagger: http://localhost:${port}/swagger`);
+    console.log(`   API Key Gate: ${env.ENABLE_API_KEY_GATE}`);
     console.log("\n🌐 Network Configuration");
     console.log(`   Network: ${env.NETWORK}`);
-    console.log(`   RPC URL: ${env.LIT_TXSENDER_RPC_URL}\n`);
+    console.log(`   RPC URL: ${env.LIT_TXSENDER_RPC_URL}`);
+    console.log(`   TX Sender Address: ${privateKeyToAccount(env.LIT_TXSENDER_PRIVATE_KEY as Hex).address}`);
   });
 }

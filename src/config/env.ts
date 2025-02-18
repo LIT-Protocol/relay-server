@@ -3,6 +3,11 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
+    PORT: z
+      .string()
+      .transform((val: string): number => Number(val))
+      .default("3001"),
+
     // ======= REQUIRED CONFIGURATION =======
     // Network & Chain
     NETWORK: z.enum(["datil-dev", "datil-test", "datil"]),
@@ -14,22 +19,7 @@ export const env = createEnv({
       .transform((val: string): boolean => val === "true")
       .default("true"),
 
-    // ======= OPTIONAL CONFIGURATION =======
     // ---------- Network & Chain Settings ----------
-    CHAIN_POLLING_INTERVAL_MS: z
-      .string()
-      .transform((val: string): number => Number(val))
-      .default("200"),
-    SAFE_BLOCK_CONFIRMATIONS: z
-      .string()
-      .transform((val: string): number => Number(val))
-      .default("1"),
-    MINT_TX_TIMEOUT_MS: z
-      .string()
-      .transform((val: string): number => Number(val))
-      .default("30000")
-      .describe("30 second timeout for minting transactions"),
-
     GAS_LIMIT_INCREASE_PERCENTAGE: z
       .string()
       .transform((val: string): number => Number(val))
@@ -50,28 +40,8 @@ export const env = createEnv({
     // ---------- Redis ----------
     REDIS_URL: z.string().url().default("redis://localhost:6379"),
 
-    // ---------- Server Config ----------
-    PORT: z
-      .string()
-      .transform((val: string): number => Number(val))
-      .default("3001"),
-    ENABLE_HTTPS: z
-      .string()
-      .transform((val: string): boolean => val === "true")
-      .default("false"),
-    RP_ID: z.string().default("localhost"),
-    EXPECTED_ORIGINS: z
-      .string()
-      .transform((val: string): string[] => val.split(","))
-      .default("http://localhost:3000"),
-
-    // ---------- Features ----------
-    ENABLE_CONFORMANCE: z
-      .string()
-      .transform((val: string): boolean => val === "true")
-      .default("false"),
-
     // ---------- WebAuthn ----------
+    RP_ID: z.string().default("localhost"),
     WEBAUTHN_RP_NAME: z.string().default("Lit Protocol"),
     WEBAUTHN_TIMEOUT: z
       .string()

@@ -27,6 +27,7 @@ describe("Relay Server API - PKP Endpoints", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": "1234567890",
         },
         body: JSON.stringify(payload),
       })
@@ -75,6 +76,7 @@ describe("Relay Server API - PKP Endpoints", () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-api-key": "1234567890",
         },
         body: JSON.stringify(payload),
       })
@@ -106,6 +108,7 @@ describe("Relay Server API - PKP Endpoints", () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "x-api-key": "1234567890",
           },
           body: JSON.stringify(payload),
         }
@@ -129,6 +132,9 @@ describe("Rate Limiter", () => {
       const response = await app.handle(
         new Request(endpoint, {
           method: "GET",
+          headers: {
+            "x-api-key": "1234567890",
+          },
         })
       );
       expect(response.status).toBe(200);
@@ -138,6 +144,9 @@ describe("Rate Limiter", () => {
     const limitedResponse = await app.handle(
       new Request(endpoint, {
         method: "GET",
+        headers: {
+          "x-api-key": "1234567890",
+        },
       })
     );
 
@@ -147,8 +156,6 @@ describe("Rate Limiter", () => {
     expect(await limitedResponse.text()).toBe("Rate limit exceeded");
   });
 });
-
-// ... existing code ...
 
 describe("API Key Authentication", () => {
   test("should reject requests without API key", async () => {
