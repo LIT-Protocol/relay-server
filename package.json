@@ -1,7 +1,7 @@
 {
   "name": "relay-server-naga",
   "version": "1.0.0",
-  "description": "Lit Protocol Relay Server",
+  "description": "Lit Protocol Auth Service",
   "module": "src/server.ts",
   "type": "module",
   "scripts": {

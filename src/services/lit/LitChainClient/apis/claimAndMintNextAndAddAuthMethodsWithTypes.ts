@@ -1,12 +1,12 @@
 import { env } from "config/env";
 import {
   ClaimRequestInput,
-  claimRequestSchema,
-} from "../schemas/claimRequestSchema";
+  ClaimRequestSchema,
+} from "../schemas/ClaimRequestSchema";
+import { LitTxRes } from "../types";
 import { callWithAdjustedOverrides } from "../utils/callWithAdjustedOverrides";
 import { createLitContracts } from "../utils/createLitContracts";
 import { decodeLogs } from "../utils/decodeLogs";
-import { LitTxRes } from "../types";
 
 /**
  * Claims and mints a PKP using derived key ID and signatures, then adds authentication methods.
@@ -23,7 +23,7 @@ import { LitTxRes } from "../types";
 export async function claimAndMintNextAndAddAuthMethodsWithTypes(
   request: ClaimRequestInput
 ): Promise<LitTxRes> {
-  const validatedRequest = claimRequestSchema.parse(request);
+  const validatedRequest = ClaimRequestSchema.parse(request);
   const { pkpHelperContract, pkpNftContract, publicClient } =
     createLitContracts(env.NETWORK);
 

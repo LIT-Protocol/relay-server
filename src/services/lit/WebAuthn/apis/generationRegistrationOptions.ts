@@ -3,14 +3,14 @@ import { env } from "config/env";
 import { keccak256, toBytes } from "viem";
 import {
   WebAuthnRequestInput,
-  webAuthnRequestSchema,
+  WebAuthnRequestSchema,
 } from "../schemas/WebAuthnRequest";
 import { generateTimestampBasedUsername } from "../utils/generateUsername";
 
 export const generateRegistrationOptions = async (
   request: WebAuthnRequestInput
 ) => {
-  const validatedRequest = webAuthnRequestSchema.parse(request);
+  const validatedRequest = WebAuthnRequestSchema.parse(request);
 
   // Relying Party Identifier - is usually the domain (or a registered domain suffix) of your website (e.g., "example.com"). The browser uses it to ensure that credentials are tied to your domain and not misused on another site.
   const RP_ID = new URL(validatedRequest.url).hostname;

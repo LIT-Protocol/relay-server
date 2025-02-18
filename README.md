@@ -1,4 +1,4 @@
-# Lit Protocol Relay Server
+# Lit Protocol Auth Service
 
 A relay server for managing Programmable Key Pairs (PKPs) in the Lit Protocol ecosystem. This server handles PKP minting, authentication, and management operations.
 

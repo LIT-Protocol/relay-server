@@ -4,6 +4,8 @@
  */
 import { describe, expect, test } from "bun:test";
 import { app } from "./server";
+import { logger } from "services/lit/LitChainClient/utils/logger";
+import { env } from "config/env";
 
 describe("Relay Server API - PKP Endpoints", () => {
   test("POST /pkp/mint", async () => {
@@ -34,7 +36,7 @@ describe("Relay Server API - PKP Endpoints", () => {
 
     const responseData = await response.json();
 
-    console.log("mint hash:", responseData.hash);
+    logger.info("mint hash:", responseData.hash);
 
     // Verify the response structure
     expect(responseData).toHaveProperty("hash");
@@ -80,13 +82,13 @@ describe("Relay Server API - PKP Endpoints", () => {
 
     if (response.status === 500) {
       const errorResponse = await response.json();
-      console.log("error response:", errorResponse);
+      logger.info("error response:", errorResponse);
     } else {
       expect(response.status).toBe(200);
 
       const responseData = await response.json();
 
-      console.log("claim hash:", responseData.requestId);
+      logger.info("claim hash:", responseData.requestId);
 
       expect(responseData).toHaveProperty("requestId");
     }
@@ -114,5 +116,87 @@ describe("Relay Server API - PKP Endpoints", () => {
     expect(result.rp.name).toBe("Lit Protocol");
     expect(result.rp.id).toBe("localhost");
     expect(result.user.name).toBe("Anson");
+  });
+});
+
+describe("Rate Limiter", () => {
+  test("should limit requests according to configuration", async () => {
+    const maxRequests = Number(env.MAX_REQUESTS_PER_WINDOW);
+    const endpoint = "http://localhost/test-rate-limit";
+
+    // Make maxRequests number of requests
+    for (let i = 0; i < maxRequests; i++) {
+      const response = await app.handle(
+        new Request(endpoint, {
+          method: "GET",
+        })
+      );
+      expect(response.status).toBe(200);
+    }
+
+    // The next request should be rate limited
+    const limitedResponse = await app.handle(
+      new Request(endpoint, {
+        method: "GET",
+      })
+    );
+
+    console.log("limitedResponse.status:", limitedResponse.status);
+
+    expect(limitedResponse.status).toBe(429);
+    expect(await limitedResponse.text()).toBe("Rate limit exceeded");
+  });
+});
+
+// ... existing code ...
+
+describe("API Key Authentication", () => {
+  test("should reject requests without API key", async () => {
+    const payload = {
+      username: "Anson",
+    };
+
+    const response = await app.handle(
+      new Request(
+        "http://localhost/pkp/webauthn/generate-registration-options",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      )
+    );
+
+    expect(response.status).toBe(401);
+    const error = await response.json();
+    expect(error.error).toBe(
+      "Missing API key. If you do not have one, please request one at https://forms.gle/osJfmRR2PuZ46Xf98"
+    );
+  });
+
+  test("should accept requests with valid API key", async () => {
+    const payload = {
+      username: "Anson",
+    };
+
+    const response = await app.handle(
+      new Request(
+        "http://localhost/pkp/webauthn/generate-registration-options",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "test-api-key", // You might want to use env.TEST_API_KEY here
+          },
+          body: JSON.stringify(payload),
+        }
+      )
+    );
+
+    expect(response.status).toBe(200);
+    const result = await response.json();
+    expect(result.rp.name).toBe("Lit Protocol");
   });
 });

@@ -9,6 +9,10 @@ export const env = createEnv({
     LIT_TXSENDER_RPC_URL: z.string().url(),
     LIT_TXSENDER_PRIVATE_KEY: z.string().min(1),
     LOG_LEVEL: z.enum(["info", "debug", "warn", "error"]).default("info"),
+    ENABLE_API_KEY_GATE: z
+      .string()
+      .transform((val: string): boolean => val === "true")
+      .default("true"),
 
     // ======= OPTIONAL CONFIGURATION =======
     // ---------- Network & Chain Settings ----------

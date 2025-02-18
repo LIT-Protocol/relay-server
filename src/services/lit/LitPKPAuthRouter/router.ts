@@ -1,7 +1,7 @@
 import { asyncHandler } from "../LitChainClient/utils/asyncHandler";
 import { LitChainClientAPI } from "../LitChainClient/apis";
-import { MintRequestInput } from "../LitChainClient/schemas/mintRequestSchema";
-import { ClaimRequestInput } from "../LitChainClient/schemas/claimRequestSchema";
+import { MintRequestInput } from "../LitChainClient/schemas/MintRequestSchema";
+import { ClaimRequestInput } from "../LitChainClient/schemas/ClaimRequestSchema";
 import { JSONStringify as BigIntStringify } from "json-with-bigint";
 import { generateRegistrationOptions } from "../WebAuthn/apis/generationRegistrationOptions";
 import { WebAuthnRequestInput } from "../WebAuthn/schemas/WebAuthnRequest";

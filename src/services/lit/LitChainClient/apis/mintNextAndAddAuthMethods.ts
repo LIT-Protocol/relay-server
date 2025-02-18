@@ -1,8 +1,8 @@
 import { env } from "config/env";
 import {
   MintRequestInput,
-  mintRequestSchema,
-} from "../schemas/mintRequestSchema";
+  MintRequestSchema,
+} from "../schemas/MintRequestSchema";
 import { callWithAdjustedOverrides } from "../utils/callWithAdjustedOverrides";
 import { createLitContracts } from "../utils/createLitContracts";
 import { decodeLogs } from "../utils/decodeLogs";
@@ -25,7 +25,7 @@ import { LitTxRes } from "../types";
 export async function mintNextAndAddAuthMethods(
   request: MintRequestInput
 ): Promise<LitTxRes> {
-  const validatedRequest = mintRequestSchema.parse(request);
+  const validatedRequest = MintRequestSchema.parse(request);
 
   const { pkpNftContract, pkpHelperContract, publicClient } =
     createLitContracts(env.NETWORK);
