@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lit Protocol API Key Request</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      .form-input {
+        @apply w-full px-4 py-2 mt-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600;
+      }
+      .form-label {
+        @apply block text-sm font-medium text-gray-700;
+      }
+      .submit-button {
+        @apply w-full px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:ring-opacity-50;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50">
+    <div
+      class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+    >
+      <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+        <div>
+          <img
+            class="mx-auto h-12 w-auto"
+            src="https://i.ibb.co/Jwb53ndk/Screenshot-2025-02-18-at-02-24-42.png"
+            alt="Lit Protocol"
+          />
+          <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Request an API Key
+          </h2>
+          <p class="mt-2 text-center text-sm text-gray-600">
+            Fill out this form to request an API key for Lit Protocol
+          </p>
+        </div>
+
+        <form id="apiKeyRequestForm" class="mt-8 space-y-6">
+          <div class="space-y-4">
+            <div>
+              <label for="email" class="form-label">Email address *</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                class="form-input"
+              />
+            </div>
+
+            <div>
+              <label for="organization_name" class="form-label"
+                >Organization name *</label
+              >
+              <input
+                id="organization_name"
+                name="organization_name"
+                type="text"
+                required
+                class="form-input"
+              />
+            </div>
+
+            <div>
+              <label for="application_name" class="form-label"
+                >Application name *</label
+              >
+              <input
+                id="application_name"
+                name="application_name"
+                type="text"
+                required
+                class="form-input"
+              />
+            </div>
+
+            <div>
+              <label for="usage_description" class="form-label">
+                How will you use the API? *
+                <span class="text-sm text-gray-500">(max 250 words)</span>
+              </label>
+              <textarea
+                id="usage_description"
+                name="usage_description"
+                required
+                class="form-input h-32 resize-none"
+              ></textarea>
+            </div>
+
+            <div>
+              <label for="eth_wallet_address" class="form-label"
+                >Ethereum wallet address (optional)</label
+              >
+              <input
+                id="eth_wallet_address"
+                name="eth_wallet_address"
+                type="text"
+                class="form-input"
+              />
+            </div>
+
+            <div>
+              <label for="discord_handle" class="form-label"
+                >Discord handle (optional)</label
+              >
+              <input
+                id="discord_handle"
+                name="discord_handle"
+                type="text"
+                class="form-input"
+                placeholder="username#1234"
+              />
+            </div>
+          </div>
+
+          <div>
+            <button type="submit" class="submit-button">Submit Request</button>
+          </div>
+        </form>
+
+        <!-- Success/Error Messages -->
+        <div
+          id="successMessage"
+          class="hidden mt-4 p-4 rounded-lg bg-green-100 text-green-700"
+        ></div>
+        <div
+          id="errorMessage"
+          class="hidden mt-4 p-4 rounded-lg bg-red-100 text-red-700"
+        ></div>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("apiKeyRequestForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const successMsg = document.getElementById("successMessage");
+          const errorMsg = document.getElementById("errorMessage");
+
+          // Hide any existing messages
+          successMsg.classList.add("hidden");
+          errorMsg.classList.add("hidden");
+
+          // Get form data
+          const formData = new FormData(e.target);
+          const data = Object.fromEntries(formData.entries());
+
+          try {
+            const response = await fetch("/request-key/submit", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+              throw new Error("Request failed");
+            }
+
+            const result = await response.json();
+
+            // Show success message
+            successMsg.textContent =
+              "Your request has been submitted successfully! We will review it and get back to you soon.";
+            successMsg.classList.remove("hidden");
+
+            // Reset form
+            e.target.reset();
+          } catch (error) {
+            // Show error message
+            errorMsg.textContent =
+              "There was an error submitting your request. Please try again.";
+            errorMsg.classList.remove("hidden");
+          }
+        });
+    </script>
+  </body>
+</html>

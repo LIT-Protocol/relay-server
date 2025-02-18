@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lit Protocol API Key Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center">
+        <div class="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+            <div>
+                <img class="mx-auto h-12 w-auto" src="https://i.ibb.co/Jwb53ndk/Screenshot-2025-02-18-at-02-24-42.png" alt="Lit Protocol">
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    API Key Management
+                </h2>
+                <p class="mt-2 text-center text-sm text-gray-600">
+                    Sign in with your Lit Protocol email
+                </p>
+            </div>
+            <div class="flex justify-center">
+                <div id="g_id_onload"></div>
+                <div class="g_id_signin"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden min-h-screen bg-gray-100">
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <div class="flex-shrink-0 flex items-center">
+                            <img class="h-8 w-auto" src="https://i.ibb.co/Jwb53ndk/Screenshot-2025-02-18-at-02-24-42.png" alt="Lit Protocol">
+                        </div>
+                        <div class="ml-6 flex items-center">
+                            <h1 class="text-2xl font-semibold text-gray-900">API Key Management</h1>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <span id="userEmail" class="text-gray-700 mr-4"></span>
+                        <button onclick="logout()" class="text-gray-700 hover:text-gray-900">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 mb-6">
+                <nav class="-mb-px flex">
+                    <button onclick="showTab('pending')" class="tab-button active" data-tab="pending">
+                        Pending Requests
+                    </button>
+                    <button onclick="showTab('approved')" class="tab-button" data-tab="approved">
+                        Approved Keys
+                    </button>
+                    <button onclick="showTab('denied')" class="tab-button" data-tab="denied">
+                        Denied Requests
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Request List -->
+            <div id="requestList" class="bg-white shadow overflow-hidden sm:rounded-md">
+                <!-- Requests will be loaded here -->
+            </div>
+        </main>
+    </div>
+
+    <style>
+        .tab-button {
+            @apply px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap;
+            @apply border-b-2 border-transparent;
+        }
+        .tab-button.active {
+            @apply border-purple-500 text-purple-600;
+        }
+        .request-card {
+            @apply px-4 py-5 border-b border-gray-200 sm:px-6;
+        }
+        .request-card:last-child {
+            @apply border-b-0;
+        }
+        .action-button {
+            @apply px-4 py-2 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2;
+        }
+        .approve-button {
+            @apply text-white bg-green-600 hover:bg-green-700 focus:ring-green-500;
+        }
+        .deny-button {
+            @apply text-white bg-red-600 hover:bg-red-700 focus:ring-red-500;
+        }
+    </style>
+
+    <script>
+        let currentUser = null;
+        let accessToken = null;
+
+        // Parse JWT token
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                console.error('Error parsing JWT:', e);
+                return null;
+            }
+        }
+
+        // Google OAuth callback
+        function handleCredentialResponse(response) {
+            accessToken = response.credential;
+            const decoded = parseJwt(accessToken);
+            
+            if (!decoded?.email?.endsWith('@litprotocol.com')) {
+                alert('Please use your @litprotocol.com email address');
+                return;
+            }
+
+            currentUser = {
+                email: decoded.email,
+                name: decoded.name
+            };
+            
+            validateToken(accessToken);
+        }
+
+        async function validateToken(token) {
+            try {
+                console.log("Validating token:", token ? "Present" : "Missing");
+                const response = await fetch('/request-key/admin/requests', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    // Token is valid, show dashboard
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('dashboard').classList.remove('hidden');
+                    document.getElementById('userEmail').textContent = currentUser.email;
+                    loadRequests('pending');
+                } else {
+                    const errorData = await response.json();
+                    console.error('Auth validation failed:', errorData);
+                    alert('Authentication failed: ' + (errorData.error || 'Unknown error'));
+                    logout();
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                alert('Authentication failed. Please try again.');
+                logout();
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            accessToken = null;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            google.accounts.id.disableAutoSelect();
+        }
+
+        // Tab management
+        function showTab(status) {
+            // Update tab UI
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.tab === status) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Load requests for selected status
+            loadRequests(status);
+        }
+
+        // Load requests
+        async function loadRequests(status) {
+            try {
+                if (!accessToken) {
+                    throw new Error('No access token available');
+                }
+                
+                console.log("Loading requests with token:", accessToken ? "Present" : "Missing");
+                const response = await fetch('/request-key/admin/requests', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to load requests');
+                }
+
+                const { requests } = await response.json();
+                const filteredRequests = requests.filter(r => r.status === status);
+                
+                const requestList = document.getElementById('requestList');
+                requestList.innerHTML = filteredRequests.map(request => `
+                    <div class="request-card">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">${request.application_name}</h3>
+                                <p class="mt-1 text-sm text-gray-600">${request.organization_name}</p>
+                                <p class="mt-1 text-sm text-gray-500">${request.email}</p>
+                            </div>
+                            ${status === 'pending' ? `
+                                <div class="space-x-2">
+                                    <button onclick="approveRequest('${request.id}')" class="action-button approve-button">
+                                        Approve
+                                    </button>
+                                    <button onclick="denyRequest('${request.id}')" class="action-button deny-button">
+                                        Deny
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="mt-4">
+                            <h4 class="text-sm font-medium text-gray-900">Usage Description</h4>
+                            <p class="mt-1 text-sm text-gray-600">${request.usage_description}</p>
+                        </div>
+                        ${request.eth_wallet_address ? `
+                            <div class="mt-2">
+                                <span class="text-sm text-gray-500">ETH Address: ${request.eth_wallet_address}</span>
+                            </div>
+                        ` : ''}
+                        ${request.discord_handle ? `
+                            <div class="mt-1">
+                                <span class="text-sm text-gray-500">Discord: ${request.discord_handle}</span>
+                            </div>
+                        ` : ''}
+                        ${request.api_key ? `
+                            <div class="mt-4 p-2 bg-gray-50 rounded">
+                                <span class="text-sm font-mono">${request.api_key}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                alert('Failed to load requests. Please try again.');
+            }
+        }
+
+        // Approve request
+        async function approveRequest(requestId) {
+            try {
+                const response = await fetch(`/request-key/admin/requests/${requestId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        approverEmail: currentUser.email
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to approve request');
+
+                // Reload current tab
+                const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+                loadRequests(activeTab);
+            } catch (error) {
+                console.error('Error approving request:', error);
+                alert('Failed to approve request. Please try again.');
+            }
+        }
+
+        // Deny request
+        async function denyRequest(requestId) {
+            try {
+                const response = await fetch(`/request-key/admin/requests/${requestId}/deny`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        approverEmail: currentUser.email
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to deny request');
+
+                // Reload current tab
+                const activeTab = document.querySelector('.tab-button.active').dataset.tab;
+                loadRequests(activeTab);
+            } catch (error) {
+                console.error('Error denying request:', error);
+                alert('Failed to deny request. Please try again.');
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Fetch Google client ID from server config
+                const response = await fetch('/request-key/config');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch config');
+                }
+                const { googleClientId } = await response.json();
+                
+                // Configure Google Sign-In with client ID from server
+                const gidOnload = document.getElementById('g_id_onload');
+                gidOnload.setAttribute('data-client_id', googleClientId);
+                gidOnload.setAttribute('data-callback', 'handleCredentialResponse');
+                
+                // Initialize Google Sign-In
+                google.accounts.id.initialize({
+                    client_id: googleClientId,
+                    callback: handleCredentialResponse,
+                    auto_select: false,
+                    context: 'signin'
+                });
+                
+                // Render the button
+                google.accounts.id.renderButton(
+                    document.querySelector('.g_id_signin'),
+                    { theme: 'outline', size: 'large', width: '250' }
+                );
+            } catch (error) {
+                console.error('Failed to initialize Google Sign-In:', error);
+                alert('Failed to initialize authentication. Please try again later.');
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -17,15 +17,22 @@ import { rateLimiter } from "./middleware/rateLimiter";
 import { MintRequestInput } from "./services/lit/LitChainClient/schemas/MintRequestSchema";
 import { LitPKPAuthRouter } from "./services/lit/LitPKPAuthRouter/router";
 import { tMintRequestSchema } from "./services/lit/LitChainClient/schemas/MintRequestSchema";
+import { apiKeyRouter } from './services/apiKeys/router';
+import { staticPlugin } from '@elysiajs/static';
 
 export const app = new Elysia()
   .use(apiKeyGateAndTracking)
   .use(cors())
   .use(rateLimiter)
-  .use(swagger())
+  .use(staticPlugin({
+    prefix: '/',
+    assets: 'public'
+  }))
+  .use(apiKeyRouter)
   .get("/test-rate-limit", () => ({ message: "OK" }))
   .onError(({ error }) => {
     const _error = error as unknown as { shortMessage: string };
+    logger.error('Server error:', _error.shortMessage);
     return new Response(BigIntStringify({ error: _error.shortMessage }), {
       headers: { "content-type": "application/json" },
       status: 500,

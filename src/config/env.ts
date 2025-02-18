@@ -9,10 +9,45 @@ export const env = createEnv({
     LIT_TXSENDER_RPC_URL: z.string().url(),
     LIT_TXSENDER_PRIVATE_KEY: z.string().min(1),
     LOG_LEVEL: z.enum(["info", "debug", "warn", "error"]).default("info"),
+
+    // ---------- Auth ----------
     ENABLE_API_KEY_GATE: z
       .string()
       .transform((val: string): boolean => val === "true")
-      .default("true"),
+      .default("true")
+      .describe("Enable API key gate to restrict access to the API"),
+    GOOGLE_OAUTH_CLIENT_ID: z
+      .string()
+      .min(1)
+      .describe("Google OAuth client ID"),
+    GOOGLE_OAUTH_CLIENT_SECRET: z
+      .string()
+      .min(1)
+      .describe("Google OAuth client secret"),
+    
+    // ---------- Supabase ----------
+    SUPABASE_URL: z
+      .string()
+      .url()
+      .describe("Supabase project URL"),
+    SUPABASE_ANON_KEY: z
+      .string()
+      .min(1)
+      .describe("Supabase anonymous key"),
+    SUPABASE_SERVICE_ROLE_KEY: z
+      .string()
+      .min(1)
+      .describe("Supabase service role key for admin operations"),
+
+    // ---------- Slack ----------
+    SLACK_BOT_TOKEN: z
+      .string()
+      .min(1)
+      .describe("Slack bot token for notifications"),
+    SLACK_CHANNEL_ID: z
+      .string()
+      .min(1)
+      .describe("Slack channel ID for API key notifications"),
 
     // ======= OPTIONAL CONFIGURATION =======
     // ---------- Network & Chain Settings ----------
