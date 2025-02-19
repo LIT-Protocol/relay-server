@@ -10,15 +10,22 @@ import {
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
 import { CapacityToken } from "lit";
-import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
+import { LIT_NETWORK_VALUES, LIT_NETWORKS } from "@lit-protocol/constants";
+import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
+import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
+import { LitActionResource, LitPKPResource } from "@lit-protocol/auth-helpers";
+import { LIT_ABILITY } from "@lit-protocol/constants";
+import { LIT_NETWORKS_KEYS } from "@lit-protocol/types";
+import { estimateGasWithBalanceOverride, removeTxnSignature, txnToBytesToSign } from "./utils/eth";
 
 import {
 	datil,
 	datilDev,
-	datilTest,
-	habanero,
-	manzano,
+	datilTest
 } from "@lit-protocol/contracts";
+
+// Cast the network to LIT_NETWORK_VALUES type at the config level
+config.network = config.network as unknown as LIT_NETWORK_VALUES;
 
 function getContractFromJsSdk(
 	network: LIT_NETWORK_VALUES,
@@ -29,18 +36,11 @@ function getContractFromJsSdk(
 
 	let contractsDataRes;
 	switch (network) {
-		case "manzano":
-			contractsDataRes = manzano;
-			break;
-		case "habanero":
-			contractsDataRes = habanero;
-			break;
 		case "datil-dev":
 			contractsDataRes = datilDev;
 			break;
 		case "datil-test":
 			contractsDataRes = datilTest;
-
 			break;
 		case "datil":
 			contractsDataRes = datil;
@@ -118,33 +118,20 @@ function getContract(abiPath: string, deployedContractAddress: string) {
 	return ethersContract;
 }
 
+
+// No datildev support
 function getAccessControlConditionsContract() {
 	switch (config.network) {
-		case "serrano":
+		case "serrano" as LIT_NETWORK_VALUES:
 			return getContract(
 				"./contracts/serrano/AccessControlConditions.json",
-				config?.serranoContract
-					?.accessControlConditionsAddress as string,
+				config?.serranoContract?.accessControlConditionsAddress as string,
 			);
-		case "cayenne":
+		case "cayenne" as LIT_NETWORK_VALUES:
 			return getContract(
 				"./contracts/cayenne/AccessControlConditions.json",
-				config?.cayenneContracts
-					?.accessControlConditionsAddress as string,
+				config?.cayenneContracts?.accessControlConditionsAddress as string,
 			);
-	}
-}
-
-function getPkpHelperContractAbiPath() {
-	if (config.useSoloNet) {
-		return "./contracts/serrano/SoloNetPKPHelper.json";
-	}
-
-	switch (config.network) {
-		case "serrano":
-			return "./contracts/serrano/PKPHelper.json";
-		case "cayenne":
-			return "./contracts/cayenne/PKPHelper.json";
 	}
 }
 
@@ -153,29 +140,13 @@ function getPkpNftContractAbiPath() {
 		return "./contracts/serrano/SoloNetPKP.json";
 	}
 	switch (config.network) {
-		case "serrano":
+		case "datil-dev":
 			return "./contracts/serrano/PKPNFT.json";
-		case "cayenne":
-			return "./contracts/cayenne/PKPNFT.json";
 	}
 }
 
-function getPkpHelperContract(network: string): ethers.Contract {
+function getPkpHelperContract(network: LIT_NETWORK_VALUES): ethers.Contract {
 	switch (network) {
-		case "serrano":
-			return getContract(
-				getPkpHelperContractAbiPath()!,
-				config?.serranoContract?.pkpHelperAddress as string,
-			);
-		case "cayenne":
-			return getContract(
-				getPkpHelperContractAbiPath()!,
-				config?.cayenneContracts?.pkpHelperAddress as string,
-			);
-		case "manzano":
-			return getContractFromJsSdk("manzano", "PKPHelper");
-		case "habanero":
-			return getContractFromJsSdk("habanero", "PKPHelper");
 		case "datil-dev":
 			return getContractFromJsSdk("datil-dev", "PKPHelper");
 		case "datil-test":
@@ -189,20 +160,6 @@ function getPkpHelperContract(network: string): ethers.Contract {
 
 function getPermissionsContract(): ethers.Contract {
 	switch (config.network) {
-		case "serrano":
-			return getContract(
-				"./contracts/serrano/PKPPermissions.json",
-				config?.serranoContract?.pkpPermissionsAddress as string,
-			);
-		case "cayenne":
-			return getContract(
-				"./contracts/cayenne/PKPPermissions.json",
-				config?.cayenneContracts?.pkpPermissionsAddress as string,
-			);
-		case "manzano":
-			return getContractFromJsSdk("manzano", "PKPPermissions");
-		case "habanero":
-			return getContractFromJsSdk("habanero", "PKPPermissions");
 		case "datil-dev":
 			return getContractFromJsSdk("datil-dev", "PKPPermissions");
 		case "datil-test":
@@ -216,10 +173,10 @@ function getPermissionsContract(): ethers.Contract {
 
 async function getPaymentDelegationContract() {
 	switch (config.network) {
-		case "manzano":
-			return getContractFromJsSdk("manzano", "PaymentDelegation");
-		case "habanero":
-			return getContractFromJsSdk("habanero", "PaymentDelegation");
+		case "datil-test":
+			return getContractFromJsSdk("datil-test", "PaymentDelegation");
+		case "datil":
+			return getContractFromJsSdk("datil", "PaymentDelegation");
 		default:
 			throw new Error(
 				"PaymentDelegation contract not available for this network",
@@ -227,22 +184,8 @@ async function getPaymentDelegationContract() {
 	}
 }
 
-export function getPkpNftContract(network: string): ethers.Contract {
+export function getPkpNftContract(network: LIT_NETWORK_VALUES): ethers.Contract {
 	switch (network) {
-		case "serrano":
-			return getContract(
-				getPkpNftContractAbiPath()!,
-				config?.serranoContract?.pkpNftAddress as string,
-			);
-		case "cayenne":
-			return getContract(
-				getPkpNftContractAbiPath()!,
-				config?.cayenneContracts?.pkpNftAddress as string,
-			);
-		case "manzano":
-			return getContractFromJsSdk("manzano", "PKPNFT");
-		case "habanero":
-			return getContractFromJsSdk("habanero", "PKPNFT");
 		case "datil-dev":
 			return getContractFromJsSdk("datil-dev", "PKPNFT");
 		case "datil-test":
@@ -626,7 +569,7 @@ export async function mintCapacityCredits({
 }: {
 	signer: ethers.Wallet;
 }) {
-	if (config.network === "serrano" || config.network === "cayenne") {
+	if (config.network === "datil-dev") {
 		throw new Error(
 			`Payment delegation is not available on ${config.network}`,
 		);
@@ -734,7 +677,7 @@ async function queryCapacityCredit(
 }
 
 export async function queryCapacityCredits(signer: ethers.Wallet) {
-	if (config.network === "serrano" || config.network === "cayenne") {
+	if (config.network === "datil-dev") {
 		throw new Error(
 			`Payment delegation is not available on ${config.network}`,
 		);
@@ -757,7 +700,7 @@ export async function addPaymentDelegationPayee({
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
 }) {
-	if (config.network === "serrano" || config.network === "cayenne") {
+	if (config.network === "datil-dev") {
 		throw new Error(
 			`Payment delegation is not available on ${config.network}`,
 		);
@@ -828,3 +771,66 @@ export async function addPaymentDelegationPayee({
 //   console.log("packed", packed);
 //   return packed;
 // }
+
+export async function initializeLitClient() {
+	const litNodeClient = new LitNodeClientNodeJs({
+		litNetwork: process.env.NETWORK as LIT_NETWORKS_KEYS,
+		debug: false
+	});
+	await litNodeClient.connect();
+	return litNodeClient;
+}
+
+export async function getPkpSessionSigs(litNodeClient: any, pkpPublicKey: string, authMethod: any) {
+	return litNodeClient.getPkpSessionSigs({
+		pkpPublicKey: pkpPublicKey,
+		chain: "ethereum",
+		authMethods: [authMethod],
+		expiration: new Date(Date.now() + 1000 * 60 * 10).toISOString(), // 10 minutes
+		resourceAbilityRequests: [
+			{
+				resource: new LitActionResource("*"),
+				ability: LIT_ABILITY.LitActionExecution,
+			},
+			{
+				resource: new LitPKPResource("*"),
+				ability: LIT_ABILITY.PKPSigning,
+			},
+		],
+	});
+}
+
+export async function signWithPkp(litNodeClient: any, pkpPublicKey: string, sessionSigs: any, toSign: Uint8Array) {
+	const signingResult = await litNodeClient.pkpSign({
+		pubKey: pkpPublicKey,
+		sessionSigs,
+		toSign,
+	});
+
+	if (!signingResult || !signingResult.signature) {
+		throw new Error("Failed to get signature from PKP");
+	}
+
+	return signingResult;
+}
+
+export async function initializePkpWallet({
+	sessionSigs,
+	pkpPublicKey,
+	litNodeClient,
+	provider,
+}: {
+	sessionSigs: any;
+	pkpPublicKey: string;
+	litNodeClient: any;
+	provider: ethers.providers.Provider;
+}) {
+	const pkpWallet = new PKPEthersWallet({
+		controllerSessionSigs: sessionSigs,
+		pkpPubKey: pkpPublicKey,
+		litNodeClient,
+		provider
+	});
+	await pkpWallet.init();
+	return pkpWallet;
+}
