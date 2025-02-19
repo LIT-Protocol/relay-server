@@ -100,7 +100,13 @@ describe.each(networks)('pkpsign Integration Tests on %s', (network) => {
   });
 
   afterAll(async () => {
-    litNodeClient.disconnect();
+    await litNodeClient.disconnect();
+    if (provider instanceof ethers.providers.JsonRpcProvider) {
+      // Remove all listeners from the provider
+      provider.removeAllListeners();
+    }
+    // Clear any remaining timeouts
+    jest.clearAllTimers();
   });
 
   it(`should successfully sign a message using PKP on ${network}`, async () => {
