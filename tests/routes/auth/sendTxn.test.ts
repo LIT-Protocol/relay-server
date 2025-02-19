@@ -12,13 +12,13 @@ import cors from "cors";
 import { Sequencer } from "../../../lib/sequencer";
 import { getTokenIdFromTransferEvent } from "../../../utils/receipt";
 import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
-import { LitNetwork } from "@lit-protocol/constants";
+import { LIT_ABILITY } from "@lit-protocol/constants";
+import { LIT_NETWORKS_KEYS } from "@lit-protocol/types";
 import {
 	createSiweMessage,
 	generateAuthSig,
 	LitActionResource,
 	LitPKPResource,
-	LitAbility,
 } from "@lit-protocol/auth-helpers";
 import {
 	estimateGasWithBalanceOverride,
@@ -34,7 +34,7 @@ describe("sendTxn Integration Tests", () => {
 		provider = getProvider();
 		// connect to lit so we can sign the txn
 		litNodeClient = new LitNodeClientNodeJs({
-			litNetwork: process.env.NETWORK as LitNetwork,
+			litNetwork: process.env.NETWORK as LIT_NETWORKS_KEYS,
 			debug: false,
 		});
 		await litNodeClient.connect();
@@ -163,7 +163,7 @@ describe("sendTxn Integration Tests", () => {
 			resources: [
 				{
 					resource: new LitPKPResource(tokenIdFromEvent),
-					ability: LitAbility.PKPSigning,
+					ability: LIT_ABILITY.PKPSigning,
 				},
 			],
 			walletAddress: authWallet.address,
@@ -190,7 +190,7 @@ describe("sendTxn Integration Tests", () => {
 			resourceAbilityRequests: [
 				{
 					resource: new LitPKPResource(tokenIdFromEvent.substring(2)),
-					ability: LitAbility.PKPSigning,
+					ability: LIT_ABILITY.PKPSigning,
 				},
 			],
 			expiration: new Date(Date.now() + 1000 * 60 * 10).toISOString(), // 10 mins

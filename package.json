@@ -16,9 +16,11 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"@lit-protocol/constants": "^6.2.4",
+		"@lit-protocol/constants": "^7.0.6",
 		"@lit-protocol/contracts": "^0.0.39",
-		"@lit-protocol/lit-node-client-nodejs": "^6.2.4",
+		"@lit-protocol/lit-auth-client": "^7.0.6",
+		"@lit-protocol/lit-node-client-nodejs": "^7.0.6",
+		"@lit-protocol/pkp-ethers": "^7.0.6",
 		"@simplewebauthn/server": "6.2.1",
 		"base64url": "^3.0.1",
 		"cbor": "^8.1.0",
