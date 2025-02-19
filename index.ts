@@ -69,6 +69,7 @@ import { mintClaimedKeyId } from "./routes/auth/claim";
 import { registerPayerHandler } from "./routes/delegate/register";
 import { addPayeeHandler } from "./routes/delegate/user";
 import { sendTxnHandler } from "./routes/auth/sendTxn";
+import { pkpSignHandler } from "./routes/auth/pkpSign
 
 const app = express();
 
@@ -226,6 +227,9 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 // -- Payment Delegation
 app.post("/register-payer", registerPayerHandler);
 app.post("/add-users", addPayeeHandler);
+
+// --- PKP Signing
+app.post("/pkp-sign", pkpSignHandler);
 
 // --- Send TXN
 app.post("/send-txn", sendTxnHandler);
