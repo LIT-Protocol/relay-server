@@ -10,22 +10,18 @@ import {
 import { Sequencer } from "./lib/sequencer";
 import { parseEther } from "ethers/lib/utils";
 import { CapacityToken } from "lit";
-import { LIT_NETWORK_VALUES, LIT_NETWORKS } from "@lit-protocol/constants";
+import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
 import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { PKPEthersWallet } from "@lit-protocol/pkp-ethers";
 import { LitActionResource, LitPKPResource } from "@lit-protocol/auth-helpers";
 import { LIT_ABILITY } from "@lit-protocol/constants";
 import { LIT_NETWORKS_KEYS } from "@lit-protocol/types";
-import { estimateGasWithBalanceOverride, removeTxnSignature, txnToBytesToSign } from "./utils/eth";
 
 import {
 	datil,
 	datilDev,
 	datilTest
 } from "@lit-protocol/contracts";
-
-// Cast the network to LIT_NETWORK_VALUES type at the config level
-config.network = config.network as unknown as LIT_NETWORK_VALUES;
 
 function getContractFromJsSdk(
 	network: LIT_NETWORK_VALUES,
@@ -132,16 +128,6 @@ function getAccessControlConditionsContract() {
 				"./contracts/cayenne/AccessControlConditions.json",
 				config?.cayenneContracts?.accessControlConditionsAddress as string,
 			);
-	}
-}
-
-function getPkpNftContractAbiPath() {
-	if (config.useSoloNet) {
-		return "./contracts/serrano/SoloNetPKP.json";
-	}
-	switch (config.network) {
-		case "datil-dev":
-			return "./contracts/serrano/PKPNFT.json";
 	}
 }
 
@@ -782,7 +768,7 @@ export async function initializeLitClient() {
 }
 
 export async function getPkpSessionSigs(litNodeClient: any, pkpPublicKey: string, authMethod: any) {
-	return litNodeClient.getPkpSessionSigs({
+	let sessionSigsParams: any = {
 		pkpPublicKey: pkpPublicKey,
 		chain: "ethereum",
 		authMethods: [authMethod],
@@ -797,7 +783,36 @@ export async function getPkpSessionSigs(litNodeClient: any, pkpPublicKey: string
 				ability: LIT_ABILITY.PKPSigning,
 			},
 		],
-	});
+	};
+	
+	// Get capacity delegation auth sig for datil networks before session sigs
+	if (process.env.NETWORK === "datil-test" || process.env.NETWORK === "datil") {
+		const signer = getSigner();
+		
+		const capacityTokens = await queryCapacityCredits(signer);
+		const capacityToken = capacityTokens.find((token) => !token.isExpired);
+		let capacityTokenId;
+
+		if (!capacityToken) {
+			const mintResult = await mintCapacityCredits({ signer });
+			if (!mintResult || !mintResult.capacityTokenId) {
+				throw new Error("Failed to mint capacity credits");
+			}
+			capacityTokenId = mintResult.capacityTokenId;
+		} else {
+			capacityTokenId = capacityToken.tokenId;
+		}
+
+		const result = await litNodeClient.createCapacityDelegationAuthSig({
+			dAppOwnerWallet: signer,
+			capacityTokenId: capacityTokenId.toString(),
+			delegateeAddresses: [ethers.utils.computeAddress(pkpPublicKey)],
+			uses: "1",
+		});
+		sessionSigsParams.capabilityAuthSigs = [result.capacityDelegationAuthSig];
+	}
+
+	return await litNodeClient.getPkpSessionSigs(sessionSigsParams);
 }
 
 export async function signWithPkp(litNodeClient: any, pkpPublicKey: string, sessionSigs: any, toSign: Uint8Array) {

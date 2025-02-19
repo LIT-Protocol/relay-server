@@ -8,7 +8,23 @@ import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { LitRelay, EthWalletProvider } from "@lit-protocol/lit-auth-client";
 import { LIT_NETWORKS_KEYS } from "@lit-protocol/types";
 
-describe("pkpsign Integration Tests", () => {
+type NetworkType = 'datil-dev' | 'datil-test' | 'datil';
+
+const REGISTRY_ADDRESSES = {
+  'datil-dev': '0x2707eabb60D262024F8738455811a338B0ECd3EC',
+  'datil-test': '0x525bF2bEb622D7C05E979a8b3fFcDBBEF944450E',
+  'datil': '0xBDEd44A02b64416C831A0D82a630488A854ab4b1',
+} as const;
+
+// Example ABI for PKP contract interactions
+const PKP_PERMISSIONS_ABI = [
+  'function addDelegatees(uint256 pkpTokenId, address[] calldata delegatees) external',
+  'function getDelegatees(uint256 pkpTokenId) external view returns (address[] memory)'
+];
+
+const networks: NetworkType[] = ['datil-dev', 'datil-test', 'datil'];
+
+describe.each(networks)('pkpsign Integration Tests on %s', (network) => {
   let app: express.Application;
   let litNodeClient: LitNodeClientNodeJs;
   let provider: ethers.providers.JsonRpcProvider;
@@ -16,17 +32,13 @@ describe("pkpsign Integration Tests", () => {
   let authMethod: any;
   let pkpTokenId: ethers.BigNumber;
 
-
-  // Example ABI for PKP contract interactions
-  const PKP_PERMISSIONS_ABI = [
-    'function addDelegatees(uint256 pkpTokenId, address[] calldata delegatees) external',
-    'function getDelegatees(uint256 pkpTokenId) external view returns (address[] memory)'
-  ];
-
   beforeAll(async () => {
+    // Set network for this test suite
+    process.env.NETWORK = network;
+
     // connect to lit so we can sign messages
     litNodeClient = new LitNodeClientNodeJs({
-      litNetwork: process.env.NETWORK as LIT_NETWORKS_KEYS,
+      litNetwork: network,
       debug: false,
     });
     await litNodeClient.connect();
@@ -38,7 +50,7 @@ describe("pkpsign Integration Tests", () => {
     const authWallet = getSigner();
 
     const litRelay = new LitRelay({
-      relayUrl: LitRelay.getRelayUrl(process.env.NETWORK as LIT_NETWORKS_KEYS),
+      relayUrl: LitRelay.getRelayUrl(network),
       relayApiKey: "test-api-key",
     });
 
@@ -58,6 +70,7 @@ describe("pkpsign Integration Tests", () => {
       pkpPublicKey: pkp.pkpPublicKey,
       pkpEthAddress: pkp.pkpEthAddress,
       tokenId: pkp.tokenId,
+      network: network,
       fullResponse: pkp // Log the full response to see what we get
     });
 
@@ -74,15 +87,9 @@ describe("pkpsign Integration Tests", () => {
     console.log("Token ID conversion:", {
       original: tokenId,
       hex: tokenIdHex,
-      decimal: pkpTokenId.toString()
+      decimal: pkpTokenId.toString(),
+      network: network
     });
-
-    // Create contract instance to verify permissions
-    const pkpPermissionsContract = new ethers.Contract(
-      "0x2707eabb60D262024F8738455811a338B0ECd3EC",
-      PKP_PERMISSIONS_ABI,
-      provider
-    );
   }, 60000); // Increase timeout to 60 seconds
 
   beforeEach(() => {
@@ -96,7 +103,7 @@ describe("pkpsign Integration Tests", () => {
     litNodeClient.disconnect();
   });
 
-  it("should successfully sign a message using PKP", async () => {
+  it(`should successfully sign a message using PKP on ${network}`, async () => {
     const messageToSign = "Hello, World!";
 
     const response = await request(app)
@@ -121,10 +128,12 @@ describe("pkpsign Integration Tests", () => {
     expect(recoveredAddress.toLowerCase()).toBe(pkp.pkpEthAddress!.toLowerCase());
   });
 
-  it("should successfully sign a contract interaction using PKP", async () => {
+  it(`should successfully sign a contract interaction using PKP on ${network}`, async () => {
+    // Get the correct contract address for the current network
+    const contractAddress = REGISTRY_ADDRESSES[network];
+    
     // Create a contract interface for testing
     const iface = new ethers.utils.Interface(PKP_PERMISSIONS_ABI);
-    const contractAddress = "0x2707eabb60D262024F8738455811a338B0ECd3EC";
     
     // Generate a random Ethereum address as delegatee
     const delegatee = ethers.Wallet.createRandom().address;
@@ -143,6 +152,7 @@ describe("pkpsign Integration Tests", () => {
       pkpAddress: pkp.pkpEthAddress,
       delegatee,
       contractAddress,
+      network,
       encodedData: data,
     });
     
@@ -152,7 +162,7 @@ describe("pkpsign Integration Tests", () => {
       value: "0x0",
       gasPrice: await provider.getGasPrice(),
       nonce: await provider.getTransactionCount(pkp.pkpEthAddress),
-      gasLimit: ethers.BigNumber.from(179970), // Updated to match estimated gas
+      gasLimit: ethers.BigNumber.from(179970),
       chainId: (await provider.getNetwork()).chainId,
     };
 
@@ -170,7 +180,8 @@ describe("pkpsign Integration Tests", () => {
         data: error.data,
         pkpAddress: pkp.pkpEthAddress,
         tokenId: pkpTokenId.toString(),
-        delegatee
+        delegatee,
+        network
       });
     }
 
@@ -179,7 +190,8 @@ describe("pkpsign Integration Tests", () => {
       ...transaction,
       pkpPublicKey: pkp.pkpPublicKey,
       pkpEthAddress: pkp.pkpEthAddress,
-      tokenId: pkpTokenId.toString()
+      tokenId: pkpTokenId.toString(),
+      network
     });
 
     try {
@@ -195,7 +207,8 @@ describe("pkpsign Integration Tests", () => {
       console.log("Response from pkp-sign:", {
         status: response.status,
         body: response.body,
-        txHash: response.body.requestId // This is the transaction hash
+        txHash: response.body.requestId,
+        network
       });
 
       // Log transaction hash separately for easy copying
@@ -216,7 +229,8 @@ describe("pkpsign Integration Tests", () => {
       const delegatees = await contract.getDelegatees(pkpTokenId);
       console.log("Delegatees after transaction:", {
         delegatees: delegatees.map((d: string) => d.toLowerCase()),
-        expectedDelegatee: delegatee.toLowerCase()
+        expectedDelegatee: delegatee.toLowerCase(),
+        network
       });
 
       // Check if our delegatee is in the list
@@ -227,13 +241,14 @@ describe("pkpsign Integration Tests", () => {
       console.log("Error from pkp-sign request:", {
         error: error.message,
         response: error.response?.body,
-        errorDetails: error.response?.body?.error
+        errorDetails: error.response?.body?.error,
+        network
       });
       throw error;
     }
   }, 60000);
 
-  it("should reject direct ETH transfers", async () => {
+  it(`should reject direct ETH transfers on ${network}`, async () => {
     // Create a simple ETH transfer transaction
     const transaction = {
       to: ethers.Wallet.createRandom().address,
@@ -259,7 +274,7 @@ describe("pkpsign Integration Tests", () => {
     expect(response.body.error).toContain("Direct ETH transfers are not allowed");
   });
 
-  it("should fail with missing parameters", async () => {
+  it(`should fail with missing parameters on ${network}`, async () => {
     const response = await request(app)
       .post("/pkp-sign")
       .send({
