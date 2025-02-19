@@ -786,7 +786,7 @@ export async function getPkpSessionSigs(litNodeClient: any, pkpPublicKey: string
 	};
 	
 	// Get capacity delegation auth sig for datil networks before session sigs
-	if (process.env.NETWORK === "datil-test" || process.env.NETWORK === "datil") {
+	if (config.network === "datil-test" || config.network === "datil") {
 		const signer = getSigner();
 		
 		const capacityTokens = await queryCapacityCredits(signer);

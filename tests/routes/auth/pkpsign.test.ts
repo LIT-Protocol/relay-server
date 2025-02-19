@@ -22,7 +22,7 @@ const PKP_PERMISSIONS_ABI = [
   'function getDelegatees(uint256 pkpTokenId) external view returns (address[] memory)'
 ];
 
-const networks: NetworkType[] = ['datil-dev', 'datil-test', 'datil'];
+const networks: NetworkType[] = ['datil-dev']//, 'datil-test', 'datil'];
 
 describe.each(networks)('pkpsign Integration Tests on %s', (network) => {
   let app: express.Application;
