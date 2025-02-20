@@ -169,5 +169,16 @@ describe("mintNextAndAddAuthMethods Integration Tests", () => {
 		// Verify that the random address owns the NFT
 		const owner = await pkpNft.ownerOf(tokenId);
 		expect(owner.toLowerCase()).toBe(sendToAddress.toLowerCase());
+
+		// get PKP eth address from the PKP NFT contract
+		const pkpEthAddress = await pkpNft.getEthAddress(tokenId);
+		expect(pkpEthAddress).toBeDefined();
+
+		// check that the pkp has 0.001 eth
+		const pkpBalance = await provider.getBalance(pkpEthAddress);
+		console.log("pkpBalance", pkpBalance);
+		expect(pkpBalance.toHexString()).toBe(
+			ethers.utils.parseEther("0.001").toHexString(),
+		);
 	}, 30000); // Increase timeout to 30s since we're waiting for real transactions
 });
