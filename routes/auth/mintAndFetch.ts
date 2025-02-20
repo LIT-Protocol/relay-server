@@ -14,7 +14,10 @@ import {
 	MintNextAndAddAuthMethodsResponse,
 } from "../../models";
 import { ethers } from "ethers";
-import { getTokenIdFromTransferEvent } from "../../utils/receipt";
+import {
+	getPKPEthAddressFromTransferEvent,
+	getTokenIdFromTransferEvent,
+} from "../../utils/receipt";
 import { Sequencer } from "../../lib/sequencer";
 
 export async function mintNextAndAddAuthMethodsHandler(
@@ -39,8 +42,7 @@ export async function mintNextAndAddAuthMethodsHandler(
 		});
 		const signer = getSigner();
 		const receipt = await signer.provider.waitForTransaction(mintTx.hash!);
-		const tokenIdFromEvent = await getTokenIdFromTransferEvent(receipt);
-		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
+		const pkpEthAddress = await getPKPEthAddressFromTransferEvent(receipt);
 
 		// send 0.001 eth to the pkp to fund it.
 		// we will replace this with EIP2771 funding once we have that working

@@ -1,4 +1,6 @@
-import { providers } from "ethers";
+import config from "../config";
+import { ethers, providers } from "ethers";
+import { getPkpNftContract } from "../lit";
 
 const TRANSFER_EVENT_SIGNATURE =
 	"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
@@ -23,4 +25,23 @@ export async function getTokenIdFromTransferEvent(
 	}
 
 	return transferEventLog.topics[3];
+}
+
+export async function getPKPEthAddressFromTransferEvent(
+	receipt: providers.TransactionReceipt,
+): Promise<string> {
+	const pkpNft = getPkpNftContract(config.network);
+	const mintEvent = receipt.logs.find((log) => {
+		try {
+			return pkpNft.interface.parseLog(log).name === "PKPMinted";
+		} catch {
+			return false;
+		}
+	});
+	if (!mintEvent) {
+		throw new Error("No PKPMinted event found in receipt");
+	}
+	const pkpPubkey = pkpNft.interface.parseLog(mintEvent).args.pubkey;
+
+	return ethers.utils.computeAddress(pkpPubkey);
 }
