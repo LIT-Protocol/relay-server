@@ -27,7 +27,7 @@ export async function getTokenIdFromTransferEvent(
 	return transferEventLog.topics[3];
 }
 
-export async function getPKPEthAddressFromTransferEvent(
+export async function getPKPEthAddressFromPKPMintedEvent(
 	receipt: providers.TransactionReceipt,
 ): Promise<string> {
 	const pkpNft = getPkpNftContract(config.network);
