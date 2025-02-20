@@ -1,7 +1,12 @@
 import { Request } from "express";
 import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
-import { getPKPsForAuthMethod, getSigner, mintPKP } from "../../lit";
+import {
+	getPkpEthAddress,
+	getPKPsForAuthMethod,
+	getSigner,
+	mintPKP,
+} from "../../lit";
 import {
 	AuthMethodVerifyToFetchResponse,
 	FetchRequest,
@@ -9,6 +14,8 @@ import {
 	MintNextAndAddAuthMethodsResponse,
 } from "../../models";
 import { ethers } from "ethers";
+import { getTokenIdFromTransferEvent } from "../../utils/receipt";
+import { Sequencer } from "../../lib/sequencer";
 
 export async function mintNextAndAddAuthMethodsHandler(
 	req: Request<
@@ -30,15 +37,39 @@ export async function mintNextAndAddAuthMethodsHandler(
 		console.info("Minted PKP", {
 			requestId: mintTx.hash,
 		});
+		const signer = getSigner();
+		const receipt = await signer.provider.waitForTransaction(mintTx.hash!);
+		const tokenIdFromEvent = await getTokenIdFromTransferEvent(receipt);
+		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
+
 		// send 0.001 eth to the pkp to fund it.
 		// we will replace this with EIP2771 funding once we have that working
-		const tx = await (
-			await getSigner()
-		).sendTransaction({
-			to: mintTx.to,
-			value: ethers.utils.parseEther("0.001"),
+		const sequencer = Sequencer.Instance;
+		Sequencer.Wallet = signer;
+		const gasToFund = ethers.utils.parseEther("0.001");
+
+		const gasFundingTxn = await sequencer.wait({
+			action: (...args) => {
+				const paramsToFn = Object.assign(
+					{},
+					...args,
+				) as ethers.providers.TransactionRequest;
+				return signer.sendTransaction(paramsToFn);
+			},
+			params: [{ to: pkpEthAddress, value: gasToFund }],
+			transactionData: {},
 		});
-		await tx.wait();
+		console.log("gasFundingTxn", gasFundingTxn);
+		// wait for confirmation
+		await gasFundingTxn.wait();
+
+		// const tx = await (
+		// 	await getSigner()
+		// ).sendTransaction({
+		// 	to: mintTx.to,
+		// 	value: ethers.utils.parseEther("0.001"),
+		// });
+		// await tx.wait();
 		return res.status(200).json({
 			requestId: mintTx.hash,
 		});
