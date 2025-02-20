@@ -1,13 +1,14 @@
 import { Request } from "express";
 import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
-import { getPKPsForAuthMethod, mintPKP } from "../../lit";
+import { getPKPsForAuthMethod, getSigner, mintPKP } from "../../lit";
 import {
 	AuthMethodVerifyToFetchResponse,
 	FetchRequest,
 	MintNextAndAddAuthMethodsRequest,
 	MintNextAndAddAuthMethodsResponse,
 } from "../../models";
+import { ethers } from "ethers";
 
 export async function mintNextAndAddAuthMethodsHandler(
 	req: Request<
@@ -29,6 +30,15 @@ export async function mintNextAndAddAuthMethodsHandler(
 		console.info("Minted PKP", {
 			requestId: mintTx.hash,
 		});
+		// send 0.001 eth to the pkp to fund it.
+		// we will replace this with EIP2771 funding once we have that working
+		const tx = await (
+			await getSigner()
+		).sendTransaction({
+			to: mintTx.to,
+			value: ethers.utils.parseEther("0.001"),
+		});
+		await tx.wait();
 		return res.status(200).json({
 			requestId: mintTx.hash,
 		});
