@@ -10,6 +10,7 @@ jobs:
     test:
         runs-on: ubuntu-latest
         strategy:
+            max-parallel: 1
             matrix:
                 network: [datil-dev, datil-test, datil]
 
