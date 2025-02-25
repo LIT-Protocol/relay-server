@@ -6,7 +6,10 @@ import {
 	getPkpEthAddress,
 	getPkpPublicKey,
 	getProvider,
+	getSigner,
+	mintCapacityCredits,
 	mintPKP,
+	getContractFromJsSdk,
 } from "../../../lit";
 import cors from "cors";
 import { Sequencer } from "../../../lib/sequencer";
@@ -115,7 +118,8 @@ describe("sendTxn Integration Tests", () => {
 
 	it("should successfully send gas and broadcast a transaction using PKP signer", async () => {
 		// Create a new random address to use for PKP auth
-		const authWallet = ethers.Wallet.createRandom();
+		const provider = getProvider();
+		const authWallet = ethers.Wallet.createRandom().connect(provider);
 
 		// mint a PKP
 		const pkpTx = await mintPKP({
@@ -131,6 +135,31 @@ describe("sendTxn Integration Tests", () => {
 		const tokenIdFromEvent = await getTokenIdFromTransferEvent(receipt);
 		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
 		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
+
+		const signer = await getSigner();
+		const rateLimitNft = await mintCapacityCredits({
+			signer,
+			daysFromNow: 2,
+		});
+		// console.log("rate limit nft", rateLimitNft);
+		const { capacityTokenId } = rateLimitNft!;
+		// transfer the rate limit nft to the pkp address
+		const rateLimitNftContract = await getContractFromJsSdk(
+			process.env.NETWORK as LIT_NETWORK_VALUES,
+			"RateLimitNFT",
+			signer,
+		);
+		const rateLimitNftTransferTx =
+			await rateLimitNftContract.functions.transferFrom(
+				await signer.getAddress(),
+				pkpEthAddress,
+				capacityTokenId,
+			);
+		const rateLimitNftTransferReceipt = await rateLimitNftTransferTx.wait();
+		// console.log(
+		// 	"rate limit nft transfer receipt",
+		// 	rateLimitNftTransferReceipt,
+		// );
 
 		const { chainId } = await provider.getNetwork();
 
@@ -165,7 +194,7 @@ describe("sendTxn Integration Tests", () => {
 					ability: LIT_ABILITY.PKPSigning,
 				},
 			],
-			walletAddress: authWallet.address,
+			walletAddress: await authWallet.getAddress(),
 			nonce: await litNodeClient.getLatestBlockhash(),
 			litNodeClient,
 		});

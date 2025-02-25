@@ -20,7 +20,7 @@ import {
 	manzano,
 } from "@lit-protocol/contracts";
 
-function getContractFromJsSdk(
+export function getContractFromJsSdk(
 	network: LIT_NETWORK_VALUES,
 	contractName: string,
 	signer?: ethers.Wallet,
@@ -525,8 +525,10 @@ export async function sendLitTokens(
 
 export async function mintCapacityCredits({
 	signer,
+	daysFromNow = 15,
 }: {
 	signer: ethers.Wallet;
+	daysFromNow?: number;
 }) {
 	const contract = await getContractFromJsSdk(
 		config.network,
@@ -539,7 +541,7 @@ export async function mintCapacityCredits({
 	}
 
 	// set the expiration to midnight, 15 days from now
-	const timestamp = Date.now() + 15 * 24 * 60 * 60 * 1000;
+	const timestamp = Date.now() + daysFromNow * 24 * 60 * 60 * 1000;
 	const futureDate = new Date(timestamp);
 	futureDate.setUTCHours(0, 0, 0, 0);
 
@@ -562,6 +564,7 @@ export async function mintCapacityCredits({
 		);
 		return;
 	}
+	console.log("cost is", cost.toString());
 
 	const tx = await contract.functions.mint(expires, {
 		value: cost.toString(),
