@@ -325,13 +325,21 @@ export async function mintPKP({
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
 
-	if (config.network === "datil-dev") {
+	if (
+		config.network === "datil-dev" ||
+		config.network === "datil-test" ||
+		config.network === "datil"
+	) {
 		// use PKP helper v2
 		const abiJson = JSON.parse(
 			fs.readFileSync("./contracts/datil-dev/PKPHelperV2.json", "utf8"),
 		);
-		const pkpHelperContractAddress =
-			"0x82b48Ddb284cfd9627BA9A29E9Dc605fE654B805";
+		const pkpHelperV2Addresses = {
+			"datil-dev": "0x82b48Ddb284cfd9627BA9A29E9Dc605fE654B805",
+			"datil-test": "0x41837a630BD22F893a6bE3ecBE2101Ca2f32ed6b",
+			datil: "0x3f24953B66Ed4089c6B25Be8C7a83262d6f6255C",
+		};
+		const pkpHelperContractAddress = pkpHelperV2Addresses[config.network];
 		const pkpHelper = new ethers.Contract(
 			pkpHelperContractAddress,
 			abiJson.abi,
