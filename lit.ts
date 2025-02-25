@@ -29,18 +29,11 @@ function getContractFromJsSdk(
 
 	let contractsDataRes;
 	switch (network) {
-		case "manzano":
-			contractsDataRes = manzano;
-			break;
-		case "habanero":
-			contractsDataRes = habanero;
-			break;
 		case "datil-dev":
 			contractsDataRes = datilDev;
 			break;
 		case "datil-test":
 			contractsDataRes = datilTest;
-
 			break;
 		case "datil":
 			contractsDataRes = datil;
@@ -118,64 +111,8 @@ function getContract(abiPath: string, deployedContractAddress: string) {
 	return ethersContract;
 }
 
-function getAccessControlConditionsContract() {
-	switch (config.network) {
-		case "serrano":
-			return getContract(
-				"./contracts/serrano/AccessControlConditions.json",
-				config?.serranoContract
-					?.accessControlConditionsAddress as string,
-			);
-		case "cayenne":
-			return getContract(
-				"./contracts/cayenne/AccessControlConditions.json",
-				config?.cayenneContracts
-					?.accessControlConditionsAddress as string,
-			);
-	}
-}
-
-function getPkpHelperContractAbiPath() {
-	if (config.useSoloNet) {
-		return "./contracts/serrano/SoloNetPKPHelper.json";
-	}
-
-	switch (config.network) {
-		case "serrano":
-			return "./contracts/serrano/PKPHelper.json";
-		case "cayenne":
-			return "./contracts/cayenne/PKPHelper.json";
-	}
-}
-
-function getPkpNftContractAbiPath() {
-	if (config.useSoloNet) {
-		return "./contracts/serrano/SoloNetPKP.json";
-	}
-	switch (config.network) {
-		case "serrano":
-			return "./contracts/serrano/PKPNFT.json";
-		case "cayenne":
-			return "./contracts/cayenne/PKPNFT.json";
-	}
-}
-
 function getPkpHelperContract(network: string): ethers.Contract {
 	switch (network) {
-		case "serrano":
-			return getContract(
-				getPkpHelperContractAbiPath()!,
-				config?.serranoContract?.pkpHelperAddress as string,
-			);
-		case "cayenne":
-			return getContract(
-				getPkpHelperContractAbiPath()!,
-				config?.cayenneContracts?.pkpHelperAddress as string,
-			);
-		case "manzano":
-			return getContractFromJsSdk("manzano", "PKPHelper");
-		case "habanero":
-			return getContractFromJsSdk("habanero", "PKPHelper");
 		case "datil-dev":
 			return getContractFromJsSdk("datil-dev", "PKPHelper");
 		case "datil-test":
@@ -189,20 +126,6 @@ function getPkpHelperContract(network: string): ethers.Contract {
 
 function getPermissionsContract(): ethers.Contract {
 	switch (config.network) {
-		case "serrano":
-			return getContract(
-				"./contracts/serrano/PKPPermissions.json",
-				config?.serranoContract?.pkpPermissionsAddress as string,
-			);
-		case "cayenne":
-			return getContract(
-				"./contracts/cayenne/PKPPermissions.json",
-				config?.cayenneContracts?.pkpPermissionsAddress as string,
-			);
-		case "manzano":
-			return getContractFromJsSdk("manzano", "PKPPermissions");
-		case "habanero":
-			return getContractFromJsSdk("habanero", "PKPPermissions");
 		case "datil-dev":
 			return getContractFromJsSdk("datil-dev", "PKPPermissions");
 		case "datil-test":
@@ -216,10 +139,12 @@ function getPermissionsContract(): ethers.Contract {
 
 async function getPaymentDelegationContract() {
 	switch (config.network) {
-		case "manzano":
-			return getContractFromJsSdk("manzano", "PaymentDelegation");
-		case "habanero":
-			return getContractFromJsSdk("habanero", "PaymentDelegation");
+		case "datil-dev":
+			return getContractFromJsSdk("datil-dev", "PaymentDelegation");
+		case "datil-test":
+			return getContractFromJsSdk("datil-test", "PaymentDelegation");
+		case "datil":
+			return getContractFromJsSdk("datil", "PaymentDelegation");
 		default:
 			throw new Error(
 				"PaymentDelegation contract not available for this network",
@@ -229,20 +154,6 @@ async function getPaymentDelegationContract() {
 
 export function getPkpNftContract(network: string): ethers.Contract {
 	switch (network) {
-		case "serrano":
-			return getContract(
-				getPkpNftContractAbiPath()!,
-				config?.serranoContract?.pkpNftAddress as string,
-			);
-		case "cayenne":
-			return getContract(
-				getPkpNftContractAbiPath()!,
-				config?.cayenneContracts?.pkpNftAddress as string,
-			);
-		case "manzano":
-			return getContractFromJsSdk("manzano", "PKPNFT");
-		case "habanero":
-			return getContractFromJsSdk("habanero", "PKPNFT");
 		case "datil-dev":
 			return getContractFromJsSdk("datil-dev", "PKPNFT");
 		case "datil-test":
@@ -277,23 +188,6 @@ export async function setSequencerWallet(
 	wallet: ethers.Wallet | ethers.providers.JsonRpcProvider,
 ) {
 	Sequencer.Wallet = wallet;
-}
-
-export async function storeConditionWithSigner(
-	storeConditionRequest: StoreConditionWithSigner,
-): Promise<ethers.Transaction> {
-	console.log("Storing condition");
-	const accessControlConditions = getAccessControlConditionsContract();
-	const tx = accessControlConditions?.storeConditionWithSigner(
-		prependHexPrefixIfNeeded(storeConditionRequest.key),
-		prependHexPrefixIfNeeded(storeConditionRequest.value),
-		prependHexPrefixIfNeeded(storeConditionRequest.securityHash),
-		storeConditionRequest.chainId,
-		storeConditionRequest.permanent,
-		utils.getAddress(storeConditionRequest.creatorAddress),
-	);
-	console.log("tx", tx);
-	return tx;
 }
 
 export async function mintPKP({
@@ -634,12 +528,6 @@ export async function mintCapacityCredits({
 }: {
 	signer: ethers.Wallet;
 }) {
-	if (config.network === "serrano" || config.network === "cayenne") {
-		throw new Error(
-			`Payment delegation is not available on ${config.network}`,
-		);
-	}
-
 	const contract = await getContractFromJsSdk(
 		config.network,
 		"RateLimitNFT",
@@ -742,12 +630,6 @@ async function queryCapacityCredit(
 }
 
 export async function queryCapacityCredits(signer: ethers.Wallet) {
-	if (config.network === "serrano" || config.network === "cayenne") {
-		throw new Error(
-			`Payment delegation is not available on ${config.network}`,
-		);
-	}
-
 	const contract = await getContractFromJsSdk(config.network, "RateLimitNFT");
 	const count = parseInt(await contract.functions.balanceOf(signer.address));
 
@@ -765,12 +647,6 @@ export async function addPaymentDelegationPayee({
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
 }) {
-	if (config.network === "serrano" || config.network === "cayenne") {
-		throw new Error(
-			`Payment delegation is not available on ${config.network}`,
-		);
-	}
-
 	// get the first token that is not expired
 	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
 	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
