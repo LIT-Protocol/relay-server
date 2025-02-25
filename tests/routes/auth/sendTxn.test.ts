@@ -6,19 +6,21 @@ import {
 	getPkpEthAddress,
 	getPkpPublicKey,
 	getProvider,
+	getSigner,
+	mintCapacityCredits,
 	mintPKP,
+	getContractFromJsSdk,
 } from "../../../lit";
 import cors from "cors";
 import { Sequencer } from "../../../lib/sequencer";
 import { getTokenIdFromTransferEvent } from "../../../utils/receipt";
 import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
-import { LitNetwork } from "@lit-protocol/constants";
+import { LIT_NETWORK_VALUES, LIT_ABILITY } from "@lit-protocol/constants";
 import {
 	createSiweMessage,
 	generateAuthSig,
 	LitActionResource,
 	LitPKPResource,
-	LitAbility,
 } from "@lit-protocol/auth-helpers";
 import {
 	estimateGasWithBalanceOverride,
@@ -34,7 +36,7 @@ describe("sendTxn Integration Tests", () => {
 		provider = getProvider();
 		// connect to lit so we can sign the txn
 		litNodeClient = new LitNodeClientNodeJs({
-			litNetwork: process.env.NETWORK as LitNetwork,
+			litNetwork: process.env.NETWORK as LIT_NETWORK_VALUES,
 			debug: false,
 		});
 		await litNodeClient.connect();
@@ -116,7 +118,8 @@ describe("sendTxn Integration Tests", () => {
 
 	it("should successfully send gas and broadcast a transaction using PKP signer", async () => {
 		// Create a new random address to use for PKP auth
-		const authWallet = ethers.Wallet.createRandom();
+		const provider = getProvider();
+		const authWallet = ethers.Wallet.createRandom().connect(provider);
 
 		// mint a PKP
 		const pkpTx = await mintPKP({
@@ -132,6 +135,31 @@ describe("sendTxn Integration Tests", () => {
 		const tokenIdFromEvent = await getTokenIdFromTransferEvent(receipt);
 		const pkpEthAddress = await getPkpEthAddress(tokenIdFromEvent);
 		const pkpPublicKey = await getPkpPublicKey(tokenIdFromEvent);
+
+		const signer = await getSigner();
+		const rateLimitNft = await mintCapacityCredits({
+			signer,
+			daysFromNow: 2,
+		});
+		// console.log("rate limit nft", rateLimitNft);
+		const { capacityTokenId } = rateLimitNft!;
+		// transfer the rate limit nft to the pkp address
+		const rateLimitNftContract = await getContractFromJsSdk(
+			process.env.NETWORK as LIT_NETWORK_VALUES,
+			"RateLimitNFT",
+			signer,
+		);
+		const rateLimitNftTransferTx =
+			await rateLimitNftContract.functions.transferFrom(
+				await signer.getAddress(),
+				pkpEthAddress,
+				capacityTokenId,
+			);
+		const rateLimitNftTransferReceipt = await rateLimitNftTransferTx.wait();
+		// console.log(
+		// 	"rate limit nft transfer receipt",
+		// 	rateLimitNftTransferReceipt,
+		// );
 
 		const { chainId } = await provider.getNetwork();
 
@@ -163,10 +191,10 @@ describe("sendTxn Integration Tests", () => {
 			resources: [
 				{
 					resource: new LitPKPResource(tokenIdFromEvent),
-					ability: LitAbility.PKPSigning,
+					ability: LIT_ABILITY.PKPSigning,
 				},
 			],
-			walletAddress: authWallet.address,
+			walletAddress: await authWallet.getAddress(),
 			nonce: await litNodeClient.getLatestBlockhash(),
 			litNodeClient,
 		});
@@ -190,7 +218,7 @@ describe("sendTxn Integration Tests", () => {
 			resourceAbilityRequests: [
 				{
 					resource: new LitPKPResource(tokenIdFromEvent.substring(2)),
-					ability: LitAbility.PKPSigning,
+					ability: LIT_ABILITY.PKPSigning,
 				},
 			],
 			expiration: new Date(Date.now() + 1000 * 60 * 10).toISOString(), // 10 mins

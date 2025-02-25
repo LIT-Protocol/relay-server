@@ -34,7 +34,6 @@ import {
 } from "./routes/auth/google";
 import { getAuthStatusHandler } from "./routes/auth/status";
 import limiter from "./routes/middlewares/limiter";
-import { storeConditionHandler } from "./routes/storeCondition";
 import apiKeyGateAndTracking from "./routes/middlewares/apiKeyGateAndTracking";
 import {
 	webAuthnVerifyRegistrationHandler,
@@ -210,9 +209,6 @@ app.get("/generate-authentication-options", (req, res) => {
 
 	res.send(options);
 });
-
-// --- Store condition
-app.post("/store-condition", storeConditionHandler);
 
 // --- Mint PKP for authorized account
 app.post("/mint-next-and-add-auth-methods", mintNextAndAddAuthMethodsHandler);
