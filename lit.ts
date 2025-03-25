@@ -700,7 +700,7 @@ export async function addPaymentDelegationPayee({
 		console.log("Retrying with manual gas limits...");
 		
 		// Define increasing gas limits for retries
-		const gasLimits = [500000, 750000, 1000000];
+		const gasLimits = [1500000, 2000000, 2500000];
 		
 		for (let i = 0; i < gasLimits.length; i++) {
 			try {
