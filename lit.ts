@@ -644,89 +644,83 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 }
 
 export async function addPaymentDelegationPayee({
-	wallet,
-	payeeAddresses,
+    wallet,
+    payeeAddresses,
 }: {
-	wallet: ethers.Wallet;
-	payeeAddresses: string[];
+    wallet: ethers.Wallet;
+    payeeAddresses: string[];
 }) {
-	// get the first token that is not expired
-	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
-	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
-	const capacityToken = capacityTokens.find((token) => !token.isExpired);
+    // get the first token that is not expired
+    const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
+    console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
+    const capacityToken = capacityTokens.find((token) => !token.isExpired);
 
-	let tokenId: number | null = null;
+    let tokenId: number | null = null;
 
-	if (!capacityToken) {
-		// mint a new token
-		const minted = await mintCapacityCredits({ signer: wallet });
+    if (!capacityToken) {
+        // mint a new token
+        const minted = await mintCapacityCredits({ signer: wallet });
 
-		if (!minted) {
-			throw new Error("Failed to mint capacity credits");
-		}
+        if (!minted) {
+            throw new Error("Failed to mint capacity credits");
+        }
 
-		console.log(
-			"No capacity token found, minted a new one:",
-			minted.capacityTokenId,
-		);
-		tokenId = minted.capacityTokenId;
-	} else {
-		tokenId = capacityToken.tokenId;
-	}
+        console.log(
+            "No capacity token found, minted a new one:",
+            minted.capacityTokenId,
+        );
+        tokenId = minted.capacityTokenId;
+    } else {
+        tokenId = capacityToken.tokenId;
+    }
 
-	if (!tokenId) {
-		throw new Error("Failed to get ID for capacity token");
-	}
+    if (!tokenId) {
+        throw new Error("Failed to get ID for capacity token");
+    }
 
-	// add payer in contract
-	const provider = getProvider();
-	const paymentDelegationContract = await getContractFromJsSdk(
-		config.network,
-		"PaymentDelegation",
-		wallet,
-	);
+    // add payer in contract
+    const provider = getProvider();
+    const paymentDelegationContract = await getContractFromJsSdk(
+        config.network,
+        "PaymentDelegation",
+        wallet,
+    );
 
-	// First try without manual gas limit
-	try {
-		const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-			payeeAddresses
-		);
-		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-		await tx.wait();
-		return tx;
-	} catch (err) {
-		// If first attempt fails, try with progressively increasing gas limits
-		console.warn("delegatePaymentsBatch failed with auto gas estimation:", err);
-		console.log("Retrying with manual gas limits...");
-		
-		// Define increasing gas limits for retries
-		const gasLimits = [1500000, 2000000, 2500000];
-		
-		for (let i = 0; i < gasLimits.length; i++) {
-			try {
-				const gasLimit = gasLimits[i];
-				console.log(`Attempting with manual gas limit: ${gasLimit}`);
-				
-				const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-					payeeAddresses,
-					{ gasLimit }
-				);
-				console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-				await tx.wait();
-				return tx;
-			} catch (retryErr) {
-				console.warn(`Failed with gas limit ${gasLimits[i]}:`, retryErr);
-				
-				// If this is the last attempt, throw the error
-				if (i === gasLimits.length - 1) {
-					throw retryErr;
-				}
-			}
-		}
-	}
-	
-	// This line should never be reached due to the throw in the last retry
-	throw new Error("Failed to delegate payments after all attempts");
+    // First try without manual gas limit
+    try {
+        const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+            payeeAddresses
+        );
+        console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+        await tx.wait();
+        return tx;
+    } catch (err) {
+        // If first attempt fails, try with estimated gas * 1.3
+        console.warn("delegatePaymentsBatch failed with auto gas estimation:", err);
+        console.log("Retrying with estimated gas * 1.3...");
+        
+        try {
+            // Estimate gas first
+            const estimatedGas = await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
+                payeeAddresses
+            );
+            
+            // Multiply by 1.3 and round up
+            const gasLimit = Math.ceil(estimatedGas.toNumber() * 1.3);
+            console.log(`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit}`);
+            
+            const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+                payeeAddresses,
+                { gasLimit }
+            );
+            console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+            await tx.wait();
+            return tx;
+        } catch (retryErr) {
+            console.warn("Failed with estimated gas * 1.3:", retryErr);
+            throw retryErr;
+        }
+    }
 }
 
 // export function packAuthData({
