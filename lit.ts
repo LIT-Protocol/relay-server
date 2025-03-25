@@ -686,12 +686,47 @@ export async function addPaymentDelegationPayee({
 		wallet,
 	);
 
-	const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-		payeeAddresses,
-	);
-	console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-	await tx.wait();
-	return tx;
+	// First try without manual gas limit
+	try {
+		const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+			payeeAddresses
+		);
+		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+		await tx.wait();
+		return tx;
+	} catch (err) {
+		// If first attempt fails, try with progressively increasing gas limits
+		console.warn("delegatePaymentsBatch failed with auto gas estimation:", err);
+		console.log("Retrying with manual gas limits...");
+		
+		// Define increasing gas limits for retries
+		const gasLimits = [500000, 750000, 1000000];
+		
+		for (let i = 0; i < gasLimits.length; i++) {
+			try {
+				const gasLimit = gasLimits[i];
+				console.log(`Attempting with manual gas limit: ${gasLimit}`);
+				
+				const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+					payeeAddresses,
+					{ gasLimit }
+				);
+				console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+				await tx.wait();
+				return tx;
+			} catch (retryErr) {
+				console.warn(`Failed with gas limit ${gasLimits[i]}:`, retryErr);
+				
+				// If this is the last attempt, throw the error
+				if (i === gasLimits.length - 1) {
+					throw retryErr;
+				}
+			}
+		}
+	}
+	
+	// This line should never be reached due to the throw in the last retry
+	throw new Error("Failed to delegate payments after all attempts");
 }
 
 // export function packAuthData({
