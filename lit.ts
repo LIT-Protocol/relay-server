@@ -644,71 +644,71 @@ export async function queryCapacityCredits(signer: ethers.Wallet) {
 }
 
 export async function addPaymentDelegationPayee({
-    wallet,
-    payeeAddresses,
+	wallet,
+	payeeAddresses,
 }: {
-    wallet: ethers.Wallet;
-    payeeAddresses: string[];
+	wallet: ethers.Wallet;
+	payeeAddresses: string[];
 }) {
-    // get the first token that is not expired
-    const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
-    console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
-    const capacityToken = capacityTokens.find((token) => !token.isExpired);
+	// get the first token that is not expired
+	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
+	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
+	const capacityToken = capacityTokens.find((token) => !token.isExpired);
 
-    let tokenId: number | null = null;
+	let tokenId: number | null = null;
 
-    if (!capacityToken) {
-        // mint a new token (if there is no capacity token)
-        const minted = await mintCapacityCredits({ signer: wallet });
+	if (!capacityToken) {
+		// mint a new token
+		const minted = await mintCapacityCredits({ signer: wallet });
 
-        if (!minted) {
-            throw new Error("Failed to mint capacity credits");
-        }
+		if (!minted) {
+			throw new Error("Failed to mint capacity credits");
+		}
 
-        console.log(
-            "No capacity token found, minted a new one:",
-            minted.capacityTokenId,
-        );
-        tokenId = minted.capacityTokenId;
-    } else {
-        tokenId = capacityToken.tokenId;
-    }
+		console.log(
+			"No capacity token found, minted a new one:",
+			minted.capacityTokenId,
+		);
+		tokenId = minted.capacityTokenId;
+	} else {
+		tokenId = capacityToken.tokenId;
+	}
 
-    if (!tokenId) {
-        throw new Error("Failed to get ID for capacity token");
-    }
+	if (!tokenId) {
+		throw new Error("Failed to get ID for capacity token");
+	}
 
-    // add payer in contract
-    const paymentDelegationContract = await getContractFromJsSdk(
-        config.network,
-        "PaymentDelegation",
-        wallet,
-    );
+	// add payer in contract
+	const paymentDelegationContract = await getContractFromJsSdk(
+		config.network,
+		"PaymentDelegation",
+		wallet,
+	);
 
-    try {
-        // Estimate gas first
-        const estimatedGas = await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
-            payeeAddresses
-        );
-        
-        // Add 30% buffer using proper BigNumber math
-        const gasLimit = estimatedGas
-            .mul(ethers.BigNumber.from(130)) 
-            .div(ethers.BigNumber.from(100));
-        
-        console.log(`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`);
-        
-        const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-            payeeAddresses,
-            { gasLimit }
-        );
-        console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-        await tx.wait();
-        return tx;
-    } catch (err) {
-        console.error("Error while estimating or executing delegatePaymentsBatch:", err);
-        throw err;
-    }
+	try {
+		// Estimate gas first
+		const estimatedGas = await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
+			payeeAddresses
+		);
+		
+		// Add 30% buffer using proper BigNumber math
+		const gasLimit = estimatedGas
+			.mul(ethers.BigNumber.from(130))
+			.div(ethers.BigNumber.from(100));
+		
+		console.log(`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`);
+		
+		const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+			payeeAddresses,
+			{ gasLimit }
+		);
+		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+		await tx.wait();
+		return tx;
+	} catch (err) {
+		console.error("Error while estimating or executing delegatePaymentsBatch:", err);
+		throw err;
+	}
 }
 
 // export function packAuthData({
