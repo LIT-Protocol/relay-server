@@ -44,6 +44,8 @@ jobs:
                   echo "LIT_TXSENDER_RPC_URL=${{ secrets.LIT_TXSENDER_RPC_URL }}" >> .env
                   echo "LIT_TXSENDER_ADDRESS=${{ secrets.LIT_TXSENDER_ADDRESS }}" >> .env
                   echo "LIT_TXSENDER_PRIVATE_KEY=${{ secrets.LIT_TXSENDER_PRIVATE_KEY }}" >> .env
+                  # address is 0x1B672D38C063c443DDBFEB5769389c597621571e
+                  echo "LIT_DELEGATION_ROOT_MNEMONIC=${{ secrets.LIT_DELEGATION_ROOT_MNEMONIC }}" >> .env
                   echo "NETWORK=${{ matrix.network }}" >> .env
 
             - name: Run tests

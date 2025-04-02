@@ -679,19 +679,36 @@ export async function addPaymentDelegationPayee({
 	}
 
 	// add payer in contract
-	const provider = getProvider();
 	const paymentDelegationContract = await getContractFromJsSdk(
 		config.network,
 		"PaymentDelegation",
 		wallet,
 	);
 
-	const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-		payeeAddresses,
-	);
-	console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-	await tx.wait();
-	return tx;
+	try {
+		// Estimate gas first
+		const estimatedGas = await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
+			payeeAddresses
+		);
+		
+		// Add 30% buffer using proper BigNumber math
+		const gasLimit = estimatedGas
+			.mul(ethers.BigNumber.from(130))
+			.div(ethers.BigNumber.from(100));
+		
+		console.log(`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`);
+		
+		const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
+			payeeAddresses,
+			{ gasLimit }
+		);
+		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+		await tx.wait();
+		return tx;
+	} catch (err) {
+		console.error("Error while estimating or executing delegatePaymentsBatch:", err);
+		throw err;
+	}
 }
 
 // export function packAuthData({
