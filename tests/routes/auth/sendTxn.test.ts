@@ -163,11 +163,15 @@ describe("sendTxn Integration Tests", () => {
 
 		const { chainId } = await provider.getNetwork();
 
+		// Get a fresh nonce right before creating the transaction
+		const nonce = await provider.getTransactionCount(pkpEthAddress);
+		const gasPrice = await provider.getGasPrice();
+
 		const unsignedTxn = {
 			to: authWallet.address,
-			value: "0x0",
-			gasPrice: await provider.getGasPrice(),
-			nonce: await provider.getTransactionCount(pkpEthAddress),
+			value: ethers.utils.parseEther("0"), // Use parseEther to ensure proper formatting instead of "0x0"
+			gasPrice,
+			nonce,
 			chainId,
 			data: "0x",
 		};
@@ -258,7 +262,7 @@ describe("sendTxn Integration Tests", () => {
 
 		// check that the txn hash is the same as the one from the client
 		expect(response.body.requestId).toBe(txnHashFromClient);
-	}, 30000);
+	}, 60000); // Increase timeout to 60s since we're waiting for real transactions
 
 	it("should reject transaction with invalid signature", async () => {
 		// Create a new random wallet
