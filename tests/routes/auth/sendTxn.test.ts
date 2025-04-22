@@ -163,15 +163,11 @@ describe("sendTxn Integration Tests", () => {
 
 		const { chainId } = await provider.getNetwork();
 
-		// Get a fresh nonce right before creating the transaction
-		const nonce = await provider.getTransactionCount(pkpEthAddress);
-		const gasPrice = await provider.getGasPrice();
-
 		const unsignedTxn = {
 			to: authWallet.address,
-			value: ethers.utils.parseEther("0"), // Use parseEther to ensure proper formatting instead of "0x0"
-			gasPrice,
-			nonce,
+			value: "0x0",
+			gasPrice: await provider.getGasPrice(),
+			nonce: await provider.getTransactionCount(pkpEthAddress),
 			chainId,
 			data: "0x",
 		};
