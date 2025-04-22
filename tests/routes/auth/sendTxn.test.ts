@@ -258,7 +258,7 @@ describe("sendTxn Integration Tests", () => {
 
 		// check that the txn hash is the same as the one from the client
 		expect(response.body.requestId).toBe(txnHashFromClient);
-	}, 30000);
+	}, 60000); // Increase timeout to 60s since we're waiting for real transactions
 
 	it("should reject transaction with invalid signature", async () => {
 		// Create a new random wallet
