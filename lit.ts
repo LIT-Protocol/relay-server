@@ -718,7 +718,7 @@ export async function removePaymentDelegationPayee({
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
 }) {
-	// add payer in contract
+	// remove payer in contract
 	const paymentDelegationContract = await getContractFromJsSdk(
 		config.network,
 		"PaymentDelegation",
