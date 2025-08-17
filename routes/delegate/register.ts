@@ -42,15 +42,15 @@ export async function deriveWallet(apiKey: string, payerSecret: string) {
 }
 
 async function fundWallet(wallet: Wallet) {
-    console.log(`Funding wallet ${wallet.address} with 0.001 LIT`);
+    console.log(`Funding wallet ${wallet.address} with 1 LIT`);
 
-    const tx = await sendLitTokens(wallet.address, "0.001");
+    const tx = await sendLitTokens(wallet.address, "1");
 
     if (!tx) {
         throw new Error("Failed to fund wallet");
     }
 
-    console.log(`Funded wallet ${wallet.address} with 0.001 LIT`);
+    console.log(`Funded wallet ${wallet.address} with 1 LIT`);
 
     return wallet;
 }
