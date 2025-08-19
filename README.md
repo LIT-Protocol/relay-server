@@ -48,6 +48,7 @@ Staging instance of the relay server is live at https://relay-server-staging.her
 | --------- | -------------------------------------------- | -------------------------------------------------------------- |
 | POST      | /auth/google                                 | Mint PKP for authorized Google account                         |
 | POST      | /auth/discord                                | Mint PKP for authorized Discord account                        |
+| POST      | /auth/apple                                  | Mint PKP for authorized Apple account                          |
 | POST      | /auth/wallet                                 | Mint PKP for verified Eth wallet account                       |
 | GET       | /auth/webauthn/generate-registration-options | Register (i.e., create an account) via supported authenticator |
 | POST      | /auth/webauthn/verify-registration           | Verify the authenticator's response                            |
