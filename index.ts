@@ -5,7 +5,7 @@
  * The webpages served from ./public use @simplewebauthn/browser.
  */
 
-import "./instrument.js";
+import "./instrument";
 
 import * as Sentry from "@sentry/node";
 import fs from "fs";
