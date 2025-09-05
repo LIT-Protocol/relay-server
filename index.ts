@@ -5,6 +5,9 @@
  * The webpages served from ./public use @simplewebauthn/browser.
  */
 
+import "./instrument.js";
+
+import * as Sentry from "@sentry/node";
 import fs from "fs";
 import http from "http";
 import https from "https";
@@ -251,6 +254,9 @@ app.get(
 	webAuthnGenerateRegistrationOptionsHandler,
 );
 app.post("/auth/claim", mintClaimedKeyId);
+
+// The error handler must be registered before any other error middleware and after all controllers
+Sentry.setupExpressErrorHandler(app);
 
 if (ENABLE_HTTPS) {
 	const host = "0.0.0.0";

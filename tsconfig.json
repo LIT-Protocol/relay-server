@@ -1,10 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2018",
+
     "lib": [
       "ES2018",
       "DOM"
     ],
+
     "module": "commonjs",
     "esModuleInterop": true,
     "declaration": true,
@@ -15,11 +17,19 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "resolveJsonModule": true,
+
     "paths": {
       "*": [
         "./types/*"
       ]
     },
+
+    "inlineSources": true,
+
+    // Set `sourceRoot` to  "/" to strip the build path prefix
+    // from generated source code references.
+    // This improves issue grouping in Sentry.
+    "sourceRoot": "/"
   },
   "exclude": [
     "node_modules",
