@@ -711,6 +711,46 @@ export async function addPaymentDelegationPayee({
 	}
 }
 
+export async function removePaymentDelegationPayee({
+	wallet,
+	payeeAddresses,
+}: {
+	wallet: ethers.Wallet;
+	payeeAddresses: string[];
+}) {
+	// remove payer in contract
+	const paymentDelegationContract = await getContractFromJsSdk(
+		config.network,
+		"PaymentDelegation",
+		wallet,
+	);
+
+	try {
+		// Estimate gas first
+		const estimatedGas = await paymentDelegationContract.estimateGas.undelegatePaymentsBatch(
+			payeeAddresses
+		);
+		
+		// Add 30% buffer using proper BigNumber math
+		const gasLimit = estimatedGas
+			.mul(ethers.BigNumber.from(130))
+			.div(ethers.BigNumber.from(100));
+		
+		console.log(`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`);
+		
+		const tx = await paymentDelegationContract.functions.undelegatePaymentsBatch(
+			payeeAddresses,
+			{ gasLimit }
+		);
+		console.log("tx hash for undelegatePaymentsBatch()", tx.hash);
+		await tx.wait();
+		return tx;
+	} catch (err) {
+		console.error("Error while estimating or executing undelegatePaymentsBatch:", err);
+		throw err;
+	}
+}
+
 // export function packAuthData({
 //   credentialPublicKey,
 //   credentialID,

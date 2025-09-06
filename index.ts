@@ -69,7 +69,7 @@ import {
 
 import { mintClaimedKeyId } from "./routes/auth/claim";
 import { registerPayerHandler } from "./routes/delegate/register";
-import { addPayeeHandler } from "./routes/delegate/user";
+import { addPayeeHandler, removePayeeHandler } from "./routes/delegate/user";
 import { sendTxnHandler } from "./routes/auth/sendTxn";
 
 const app = express();
@@ -225,6 +225,7 @@ app.get("/auth/status/:requestId", getAuthStatusHandler);
 // -- Payment Delegation
 app.post("/register-payer", registerPayerHandler);
 app.post("/add-users", addPayeeHandler);
+app.post("/remove-users", removePayeeHandler);
 
 // --- Send TXN
 app.post("/send-txn", sendTxnHandler);
