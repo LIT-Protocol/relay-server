@@ -657,7 +657,7 @@ export async function addPaymentDelegationPayee({
 	);
 
 	try {
-		let gasLimit;
+		let gasLimit: ethers.BigNumber;
 		if (payeeAddresses.length > 1) {
 			// run gas estimation
 			const estimatedGas =
