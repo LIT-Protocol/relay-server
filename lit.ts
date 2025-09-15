@@ -184,7 +184,6 @@ export async function getPkpPublicKey(tokenId: string) {
 	return pkpNft.getPubkey(tokenId);
 }
 
-
 export async function mintPKP({
 	keyType,
 	permittedAuthMethodTypes,
@@ -296,9 +295,9 @@ export async function mintPKP({
 							burnPkp,
 							sendToAddressAfterMinting,
 						},
-						{ value: mintCost, gasLimit, nonce }
+						{ value: mintCost, gasLimit, nonce },
 					);
-				}
+				},
 			);
 
 			console.log("PKP mint tx hash:", tx.hash);
@@ -360,9 +359,9 @@ export async function mintPKP({
 						permittedAuthMethodScopes,
 						addPkpEthAddressAsPermittedAddress,
 						sendPkpToItself,
-						{ value: mintCost, gasLimit, nonce }
+						{ value: mintCost, gasLimit, nonce },
 					);
-				}
+				},
 			);
 
 			console.log("PKP mint tx hash:", tx.hash);
@@ -420,7 +419,7 @@ export async function claimPKP({
 		authMethodId,
 		authMethodPubkey,
 	});
-	
+
 	// Use executeTransactionWithRetry instead of sequencer
 	const tx = await executeTransactionWithRetry(
 		signer,
@@ -438,11 +437,11 @@ export async function claimPKP({
 					[authMethodPubkey],
 					[[ethers.BigNumber.from(1)]],
 				],
-				{ value: mintCost, nonce }
+				{ value: mintCost, nonce },
 			);
-		}
+		},
 	);
-	
+
 	console.log("tx", tx);
 	return tx;
 }
@@ -658,9 +657,22 @@ export async function addPaymentDelegationPayee({
 	);
 
 	try {
-		// We used to use gas estimation, but it was slow
-		// We use a fixed gas limit of 500,000 to avoid issues with gas estimation - it usually only costs 300k gas anyway.
-		const gasLimit = ethers.BigNumber.from(500000);
+		let gasLimit;
+		if (payeeAddresses.length > 1) {
+			// run gas estimation
+			const estimatedGas =
+				await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
+					payeeAddresses,
+				);
+
+			// Add 30% buffer using proper BigNumber math
+			gasLimit = estimatedGas
+				.mul(ethers.BigNumber.from(130))
+				.div(ethers.BigNumber.from(100));
+		} else {
+			// a single user only costs 300k gas, skip estimation.
+			gasLimit = ethers.BigNumber.from(500000);
+		}
 
 		// Use optimistic nonce management for parallel execution
 		const tx = await executeTransactionWithRetry(
@@ -668,18 +680,15 @@ export async function addPaymentDelegationPayee({
 			async (nonce: number) => {
 				return await paymentDelegationContract.functions.delegatePaymentsBatch(
 					payeeAddresses,
-					{ gasLimit, nonce }
+					{ gasLimit, nonce },
 				);
-			}
+			},
 		);
 
 		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
 		return tx;
 	} catch (err) {
-		console.error(
-			"Error while executing delegatePaymentsBatch:",
-			err,
-		);
+		console.error("Error while executing delegatePaymentsBatch:", err);
 		throw err;
 	}
 }
