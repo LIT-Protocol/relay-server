@@ -1,7 +1,7 @@
 import { Request } from "express";
 import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
-import * as Sentry from '@sentry/node';
+import * as Sentry from "@sentry/node";
 import {
 	getPkpEthAddress,
 	getPKPsForAuthMethod,
@@ -47,9 +47,6 @@ export async function mintNextAndAddAuthMethodsHandler(
 			requestId: mintTxHash,
 		});
 
-		// // Start both operations in parallel:
-		// // 1. Wait for mint confirmation to get PKP address
-		// // 2. Prepare for gas funding transaction
 		const receipt = await signer.provider.waitForTransaction(mintTxHash!);
 
 		const pkpEthAddress = await getPKPEthAddressFromPKPMintedEvent(receipt);
@@ -82,7 +79,7 @@ export async function mintNextAndAddAuthMethodsHandler(
 		console.error("[mintNextAndAddAuthMethodsHandler] Unable to mint PKP", {
 			err,
 		});
-		
+
 		// Report to Sentry for 500 errors
 		Sentry.captureException(err, {
 			extra: {
@@ -91,11 +88,11 @@ export async function mintNextAndAddAuthMethodsHandler(
 				burnPkp: req.body.burnPkp,
 			},
 			tags: {
-				component: 'mintNextAndAddAuthMethodsHandler',
-				failure_type: 'mint_failed'
-			}
+				component: "mintNextAndAddAuthMethodsHandler",
+				failure_type: "mint_failed",
+			},
 		});
-		
+
 		return res.status(500).json({
 			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP: ${
 				(err as Error).message
@@ -136,7 +133,7 @@ export async function fetchPKPsHandler(
 				err,
 			},
 		);
-		
+
 		// Report to Sentry for 500 errors
 		Sentry.captureException(err, {
 			extra: {
@@ -144,11 +141,11 @@ export async function fetchPKPsHandler(
 				authMethodId,
 			},
 			tags: {
-				component: 'fetchPKPsHandler',
-				failure_type: 'fetch_failed'
-			}
+				component: "fetchPKPsHandler",
+				failure_type: "fetch_failed",
+			},
 		});
-		
+
 		return res.status(500).json({
 			error: `Unable to fetch PKPs for given auth method type: ${authMethodType}`,
 		});
