@@ -691,19 +691,23 @@ export async function addPaymentDelegationPayee({
 
 	try {
 		// Estimate gas first
-		const estimatedGas =
-			await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
-				payeeAddresses,
-			);
+		// const estimatedGas =
+		// 	await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
+		// 		payeeAddresses,
+		// 	);
 
-		// Add 30% buffer using proper BigNumber math
-		const gasLimit = estimatedGas
-			.mul(ethers.BigNumber.from(130))
-			.div(ethers.BigNumber.from(100));
+		// // Add 30% buffer using proper BigNumber math
+		// const gasLimit = estimatedGas
+		// 	.mul(ethers.BigNumber.from(130))
+		// 	.div(ethers.BigNumber.from(100));
 
-		console.log(
-			`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`,
-		);
+		// We used to use gas estimation, but it was slow
+		// We use a fixed gas limit of 500,000 to avoid issues with gas estimation - it usually only costs 300k gas anyway.
+		const gasLimit = ethers.BigNumber.from(500000);
+
+		// console.log(
+		// 	`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`,
+		// );
 
 		// Use wallet-specific sequencer to prevent nonce collisions
 		const tx = await walletSequencerManager.executeTransaction(
