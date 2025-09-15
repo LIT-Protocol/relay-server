@@ -52,11 +52,11 @@ export class OptimisticNonceManager {
 		success: boolean = true,
 	): void {
 		this.pendingTransactions.delete(nonce);
-		console.log(
-			`[NonceManager] Transaction with nonce ${nonce} ${
-				success ? "completed" : "failed"
-			} (${this.pendingTransactions.size} pending)`,
-		);
+		if (!success) {
+			console.log(
+				`[NonceManager] Transaction with nonce ${nonce} failed. (${this.pendingTransactions.size} pending)`,
+			);
+		}
 	}
 
 	/**
@@ -197,9 +197,6 @@ export async function executeTransactionWithRetry(
 	const nonceManager = OptimisticNonceManager.getInstance(wallet.address);
 	let lastError: Error | null = null;
 	let consecutiveNonceErrors = 0;
-	const isTestEnvironment =
-		process.env.NODE_ENV === "test" ||
-		process.env.JEST_WORKER_ID !== undefined;
 
 	for (let attempt = 0; attempt < maxRetries; attempt++) {
 		try {
@@ -223,53 +220,46 @@ export async function executeTransactionWithRetry(
 				.wait()
 				.then((receipt) => {
 					nonceManager.markTransactionComplete(nonce, true);
-					if (!isTestEnvironment) {
-						console.log(
-							`[TransactionRetry] Transaction ${tx.hash} confirmed in block ${receipt.blockNumber}`,
-						);
-					}
 					return receipt;
 				})
 				.catch((error) => {
 					// Always mark transaction as complete to free up nonce tracking
 					nonceManager.markTransactionComplete(nonce, false);
 
-					if (!isTestEnvironment) {
-						// Log error but don't throw - this is a background task
-						console.error(
-							`[TransactionRetry] Transaction ${tx.hash} failed to confirm:`,
-							error,
-						);
+					// Log error but don't throw - this is a background task
+					console.error(
+						`[TransactionRetry] Transaction ${tx.hash} failed to confirm:`,
+						error,
+					);
 
-						// Report significant failures to Sentry (not network hiccups)
-						if (
-							error?.code === "TRANSACTION_REPLACED" ||
-							error?.code === "TIMEOUT"
-						) {
-							// These are expected in some cases, just log
-							console.warn(
-								`[TransactionRetry] Transaction ${tx.hash} was replaced or timed out`,
-							);
-						} else if (error?.receipt?.status === 0) {
-							// Transaction was mined but reverted - this is important
-							Sentry.captureException(
-								new Error(
-									`Transaction ${tx.hash} reverted on chain`,
-								),
-								{
-									extra: {
-										txHash: tx.hash,
-										nonce,
-										error: error.message,
-										receipt: error.receipt,
-									},
-									tags: {
-										component: "optimisticNonceManager",
-										failure_type: "transaction_reverted",
-									},
+					// Report significant failures to Sentry (not network hiccups)
+					if (
+						error?.code === "TRANSACTION_REPLACED" ||
+						error?.code === "TIMEOUT"
+					) {
+						// These are expected in some cases, just log
+						console.warn(
+							`[TransactionRetry] Transaction ${tx.hash} was replaced or timed out`,
+						);
+					} else if (error?.receipt?.status === 0) {
+						// Transaction was mined but reverted - this is important
+						Sentry.captureException(
+							new Error(
+								`Transaction ${tx.hash} reverted on chain`,
+							),
+							{
+								extra: {
+									txHash: tx.hash,
+									nonce,
+									error: error.message,
+									receipt: error.receipt,
 								},
-							);
-						}
+								tags: {
+									component: "optimisticNonceManager",
+									failure_type: "transaction_reverted",
+								},
+							},
+						);
 					}
 
 					// Return null to indicate failure, but don't throw
