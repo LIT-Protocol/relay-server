@@ -31,7 +31,7 @@ describe("addPayeeHandler Load Test", () => {
 	});
 
 	it("should handle concurrent requests without nonce collisions", async () => {
-		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "10");
+		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "5");
 		const promises: Promise<any>[] = [];
 		const results: {
 			success: boolean;

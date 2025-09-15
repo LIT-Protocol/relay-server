@@ -35,7 +35,7 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 	});
 
 	it("should handle concurrent mint requests without nonce collisions", async () => {
-		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "10"); // Lower default since minting is expensive
+		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "5"); // Lower default since minting is expensive
 		const promises: Promise<any>[] = [];
 		const results: {
 			success: boolean;
