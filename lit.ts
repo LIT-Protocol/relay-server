@@ -651,33 +651,36 @@ export async function addPaymentDelegationPayee({
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
 }) {
-	// get the first token that is not expired
-	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
-	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
-	const capacityToken = capacityTokens.find((token) => !token.isExpired);
+	// This used to handle ensureing capacity credits are added for the payer.
+	// Instead, we add important wallets to the lit-scheduled-tasks project
+	// which makes sure capacity credits are added for the payer.
+	// // get the first token that is not expired
+	// const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
+	// console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
+	// const capacityToken = capacityTokens.find((token) => !token.isExpired);
 
-	let tokenId: number | null = null;
+	// let tokenId: number | null = null;
 
-	if (!capacityToken) {
-		// mint a new token
-		const minted = await mintCapacityCredits({ signer: wallet });
+	// if (!capacityToken) {
+	// 	// mint a new token
+	// 	const minted = await mintCapacityCredits({ signer: wallet });
 
-		if (!minted) {
-			throw new Error("Failed to mint capacity credits");
-		}
+	// 	if (!minted) {
+	// 		throw new Error("Failed to mint capacity credits");
+	// 	}
 
-		console.log(
-			"No capacity token found, minted a new one:",
-			minted.capacityTokenId,
-		);
-		tokenId = minted.capacityTokenId;
-	} else {
-		tokenId = capacityToken.tokenId;
-	}
+	// 	console.log(
+	// 		"No capacity token found, minted a new one:",
+	// 		minted.capacityTokenId,
+	// 	);
+	// 	tokenId = minted.capacityTokenId;
+	// } else {
+	// 	tokenId = capacityToken.tokenId;
+	// }
 
-	if (!tokenId) {
-		throw new Error("Failed to get ID for capacity token");
-	}
+	// if (!tokenId) {
+	// 	throw new Error("Failed to get ID for capacity token");
+	// }
 
 	// add payer in contract
 	const paymentDelegationContract = await getContractFromJsSdk(
@@ -688,31 +691,36 @@ export async function addPaymentDelegationPayee({
 
 	try {
 		// Estimate gas first
-		const estimatedGas = await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
-			payeeAddresses
-		);
-		
+		const estimatedGas =
+			await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
+				payeeAddresses,
+			);
+
 		// Add 30% buffer using proper BigNumber math
 		const gasLimit = estimatedGas
 			.mul(ethers.BigNumber.from(130))
 			.div(ethers.BigNumber.from(100));
-		
-		console.log(`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`);
-		
+
+		console.log(
+			`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`,
+		);
+
 		// Use wallet-specific sequencer to prevent nonce collisions
 		const tx = await walletSequencerManager.executeTransaction(
 			wallet,
 			paymentDelegationContract.functions.delegatePaymentsBatch,
 			[payeeAddresses],
-			{ gasLimit }
+			{ gasLimit },
 		);
-		
+
 		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-		// IMPORTANT: Wait for transaction to be mined before returning
-		await tx.wait();
+		// Transaction confirmation is now handled in the sequencer
 		return tx;
 	} catch (err) {
-		console.error("Error while estimating or executing delegatePaymentsBatch:", err);
+		console.error(
+			"Error while estimating or executing delegatePaymentsBatch:",
+			err,
+		);
 		throw err;
 	}
 }

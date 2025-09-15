@@ -92,14 +92,20 @@ describe('addPayeeHandler Load Test', () => {
         const successful = results.filter(r => r.success);
         const failed = results.filter(r => !r.success);
         const nonceErrors = failed.filter(r => r.isNonceError);
+        const insufficientFunds = failed.filter(r => r.error?.includes('insufficient funds'));
+        const rateLimited = failed.filter(r => r.error?.includes('429') || r.error?.includes('rate limit'));
         
         console.log('\n=== Load Test Results ===');
         console.log(`Total requests: ${numRequests}`);
         console.log(`Successful: ${successful.length} (${(successful.length/numRequests*100).toFixed(1)}%)`);
         console.log(`Failed: ${failed.length} (${(failed.length/numRequests*100).toFixed(1)}%)`);
-        console.log(`Nonce errors: ${nonceErrors.length}`);
+        console.log(`  - Nonce errors: ${nonceErrors.length}`);
+        console.log(`  - Insufficient funds: ${insufficientFunds.length}`);
+        console.log(`  - Rate limited: ${rateLimited.length}`);
+        console.log(`  - Other errors: ${failed.length - nonceErrors.length - insufficientFunds.length - rateLimited.length}`);
         console.log(`Duration: ${(duration/1000).toFixed(2)} seconds`);
-        console.log(`Avg time per request: ${(duration/numRequests).toFixed(0)}ms`);
+        console.log(`Throughput: ${(numRequests/(duration/1000)).toFixed(1)} requests/second`);
+        console.log(`Avg response time: ${(duration/numRequests).toFixed(0)}ms`);
         
         if (nonceErrors.length > 0) {
             console.log('\nSample nonce errors:');

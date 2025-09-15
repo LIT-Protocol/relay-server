@@ -45,6 +45,8 @@ export class Sequencer {
 		? parseInt(process.env.CHAIN_POLLING_INTERVAL_MS, 10)
 		: 200;
 	private _nonce: number = -1;
+	private _lastChainNonce: number = -1;
+	private _nonceLastUpdated: number = 0;
 	private _pollingPromise: Promise<void> | undefined;
 	private _actionIndex: Record<string, Promise<any>> = {};
 	private _instanceWallet: Wallet | providers.JsonRpcProvider | undefined;
@@ -114,11 +116,8 @@ export class Sequencer {
 					if (!wallet) {
 						throw new Error('No wallet set for sequencer');
 					}
-					let nonce =
-						this._nonce === -1
-							? //@ts-ignore
-							  await wallet.getTransactionCount()
-							: (this._nonce += 1);
+					
+					let nonce = await this._getOptimisticNonce(wallet);
 					// console.log("Nonce for tx: ", nonce);
 					let params = next.action.params;
 					let transactionData = next.action.transactionData
@@ -131,16 +130,44 @@ export class Sequencer {
 						this,
 						params as any,
 					);
+					
+					// Wait for transaction confirmation in sequencer
+					if (res && res.wait) {
+						try {
+							await res.wait();
+							console.log(`Transaction ${res.hash} confirmed`);
+						} catch (waitError) {
+							console.error(`Transaction ${res.hash} failed to confirm:`, waitError);
+							// Don't throw here - the transaction was submitted successfully
+						}
+					}
+					
+					// Increment optimistic nonce for next transaction
+					this._nonce = nonce + 1;
+					
 					next.resolve(res);
 					delete this._actionIndex[next.id];
 				} catch (e) {
-					e = new SequencerError((e as Error).message, next.id);
+					const errorMessage = (e as Error).message;
+					
+					// Check if it's a nonce error and try to recover
+					if (this._isNonceError(errorMessage)) {
+						console.warn("[Sequencer] Nonce error detected, refreshing from chain:", errorMessage);
+						this._nonce = -1; // Force refresh from chain
+						this._lastChainNonce = -1;
+						// Re-queue this action to try again
+						this._queue.unshift(next);
+						continue;
+					}
+					
+					e = new SequencerError(errorMessage, next.id);
 					console.error(
 						"[Sequencer] error while executing queued action",
 						(e as SequencerError).toString(),
 					);
 					this._flush(e as Error);
 					this._nonce = -1;
+					this._lastChainNonce = -1;
 				}
 			}
 		});
@@ -164,5 +191,49 @@ export class Sequencer {
 			action?.reject(e);
 		}
 		this._pollingPromise = undefined;
+	}
+
+	private async _getOptimisticNonce(wallet: Wallet | providers.JsonRpcProvider): Promise<number> {
+		const now = Date.now();
+		const NONCE_CACHE_MS = 5000; // Cache nonce for 5 seconds
+		
+		// If we have no cached nonce or it's stale, fetch from chain
+		if (this._nonce === -1 || (now - this._nonceLastUpdated) > NONCE_CACHE_MS) {
+			try {
+				//@ts-ignore
+				const chainNonce = await wallet.getTransactionCount();
+				console.log(`[Sequencer] Fetched nonce from chain: ${chainNonce}`);
+				
+				// Use the higher of chain nonce or our optimistic nonce
+				this._nonce = Math.max(chainNonce, this._nonce === -1 ? chainNonce : this._nonce);
+				this._lastChainNonce = chainNonce;
+				this._nonceLastUpdated = now;
+				
+				return this._nonce;
+			} catch (error) {
+				console.error('[Sequencer] Failed to fetch nonce from chain:', error);
+				if (this._nonce === -1) {
+					throw error;
+				}
+				// Fall back to optimistic nonce if we have one
+				return this._nonce;
+			}
+		}
+		
+		// Return optimistic nonce (incremented locally)
+		return this._nonce;
+	}
+
+	private _isNonceError(errorMessage: string): boolean {
+		const nonceErrorPatterns = [
+			'nonce too low',
+			'nonce too high', 
+			'replacement fee too low',
+			'already known',
+			'invalid nonce'
+		];
+		
+		const lowerError = errorMessage.toLowerCase();
+		return nonceErrorPatterns.some(pattern => lowerError.includes(pattern));
 	}
 }

@@ -27,13 +27,14 @@ export async function addPayeeHandler(req: Request, res: Response) {
 
     const wallet = await deriveWallet(apiKey, payerSecret);
     let error: string | boolean = false;
+    let tx: any = null;
 
     // Use mutex to serialize transactions for the same wallet
     const mutex = mutexManager.getMutex(wallet.address);
     const release = await mutex.acquire();
 
     try {
-        const tx = await addPaymentDelegationPayee({
+        tx = await addPaymentDelegationPayee({
             wallet,
             payeeAddresses
         });
@@ -55,7 +56,9 @@ export async function addPayeeHandler(req: Request, res: Response) {
         });
     } else {
         res.status(200).json({
-            success: true
+            success: true,
+            txHash: tx?.hash,
+            message: 'Transaction submitted successfully. Confirmation will happen in the background.'
         });
     }
 }
