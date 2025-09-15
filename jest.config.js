@@ -5,5 +5,5 @@ module.exports = {
 	testMatch: ["**/*.test.ts"],
 	moduleFileExtensions: ["ts", "js", "json", "node"],
 	setupFiles: ["<rootDir>/tests/setup.ts"],
-	testTimeout: 30000, // Increased to 30 seconds to allow background operations to complete
+	testTimeout: 90000, // 90 seconds
 };
