@@ -33,7 +33,7 @@ export async function mintNextAndAddAuthMethodsHandler(
 ) {
 	try {
 		const signer = getSigner();
-		const gasToFund = ethers.utils.parseEther("0.001");
+		const gasToFund = ethers.utils.parseEther("0.01");
 
 		// Start minting PKP (don't await yet)
 		console.info("Starting PKP mint...");
@@ -42,15 +42,14 @@ export async function mintNextAndAddAuthMethodsHandler(
 		// Get the mint transaction hash immediately for response
 		const mintTx = await mintPromise;
 		const mintTxHash = mintTx.hash;
-		console.info("PKP mint transaction submitted", { requestId: mintTxHash });
+		console.info("PKP mint transaction submitted", {
+			requestId: mintTxHash,
+		});
 
-		// Start both operations in parallel:
-		// 1. Wait for mint confirmation to get PKP address
-		// 2. Prepare for gas funding transaction
-		const [receipt] = await Promise.all([
-			signer.provider.waitForTransaction(mintTxHash!),
-			// We could add other parallel operations here if needed
-		]);
+		// // Start both operations in parallel:
+		// // 1. Wait for mint confirmation to get PKP address
+		// // 2. Prepare for gas funding transaction
+		const receipt = await signer.provider.waitForTransaction(mintTxHash!);
 
 		const pkpEthAddress = await getPKPEthAddressFromPKPMintedEvent(receipt);
 		console.info("PKP address extracted", { pkpEthAddress });
@@ -63,28 +62,29 @@ export async function mintNextAndAddAuthMethodsHandler(
 				return await signer.sendTransaction({
 					to: pkpEthAddress,
 					value: gasToFund,
-					nonce
+					nonce,
 				});
-			}
+			},
 		);
 
-		console.info("Gas funding transaction submitted", { 
+		console.info("Gas funding transaction submitted", {
 			gasFundingTxHash: gasFundingTxn.hash,
 			pkpAddress: pkpEthAddress,
-			fundingAmount: gasToFund.toString()
+			fundingAmount: gasToFund.toString(),
 		});
 
 		// Return immediately - confirmations happen in background
 		return res.status(200).json({
-			requestId: mintTxHash
+			requestId: mintTxHash,
 		});
-
 	} catch (err) {
 		console.error("[mintNextAndAddAuthMethodsHandler] Unable to mint PKP", {
 			err,
 		});
 		return res.status(500).json({
-			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP: ${(err as Error).message}`,
+			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP: ${
+				(err as Error).message
+			}`,
 		});
 	}
 }

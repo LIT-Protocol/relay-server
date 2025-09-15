@@ -155,6 +155,7 @@ export async function executeTransactionWithRetry(
     const nonceManager = OptimisticNonceManager.getInstance(wallet.address);
     let lastError: Error | null = null;
     let consecutiveNonceErrors = 0;
+    const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
@@ -167,11 +168,16 @@ export async function executeTransactionWithRetry(
             console.log(`[TransactionRetry] Transaction submitted: ${tx.hash} (nonce: ${nonce})`);
             
             // Start confirmation in background (don't await)
+            // In test environment, avoid logging after test completion
             tx.wait().then(() => {
                 nonceManager.markTransactionComplete(nonce, true);
-                console.log(`[TransactionRetry] Transaction ${tx.hash} confirmed`);
+                if (!isTestEnvironment) {
+                    console.log(`[TransactionRetry] Transaction ${tx.hash} confirmed`);
+                }
             }).catch((error) => {
-                console.error(`[TransactionRetry] Transaction ${tx.hash} failed to confirm:`, error);
+                if (!isTestEnvironment) {
+                    console.error(`[TransactionRetry] Transaction ${tx.hash} failed to confirm:`, error);
+                }
                 nonceManager.markTransactionComplete(nonce, false);
             });
             

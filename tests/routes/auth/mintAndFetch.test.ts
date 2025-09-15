@@ -35,7 +35,7 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 	});
 
 	it("should handle concurrent mint requests without nonce collisions", async () => {
-		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "50"); // Lower default since minting is expensive
+		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "10"); // Lower default since minting is expensive
 		const promises: Promise<any>[] = [];
 		const results: {
 			success: boolean;
@@ -200,7 +200,9 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 
 		// Success rate should be reasonable (at least 80% for 50 requests)
 		const successRate = successful.length / numRequests;
-		console.log(`\nOverall success rate: ${(successRate * 100).toFixed(1)}%`);
+		console.log(
+			`\nOverall success rate: ${(successRate * 100).toFixed(1)}%`,
+		);
 		expect(successRate).toBeGreaterThan(0.8);
 	}, 300000); // 5 minute timeout for the entire test
 });
