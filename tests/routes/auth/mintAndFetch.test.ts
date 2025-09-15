@@ -175,6 +175,13 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 			});
 		}
 
+		if (failed.length > 0) {
+			console.log("\nSample failed responses:");
+			failed.slice(0, 3).forEach((f) => {
+				console.log(`  - Request ${f.index}: ${f.error}`);
+			});
+		}
+
 		// Test assertions
 		expect(successful.length).toBeGreaterThan(0);
 
@@ -191,8 +198,9 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 			expect(nonceErrorRate).toBeLessThan(0.5);
 		}
 
-		// Success rate should be reasonable (at least 30% under load for minting)
+		// Success rate should be reasonable (at least 80% for 50 requests)
 		const successRate = successful.length / numRequests;
-		expect(successRate).toBeGreaterThan(0.3);
+		console.log(`\nOverall success rate: ${(successRate * 100).toFixed(1)}%`);
+		expect(successRate).toBeGreaterThan(0.8);
 	}, 300000); // 5 minute timeout for the entire test
 });

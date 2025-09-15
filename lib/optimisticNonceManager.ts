@@ -88,12 +88,32 @@ export class OptimisticNonceManager {
             const chainNonce = await wallet.getTransactionCount('pending');
             console.log(`[NonceManager] Chain nonce for ${this.walletAddress}: ${chainNonce} (current base: ${this.baseNonce}, next: ${this.nextNonce})`);
             
-            // Always reset to chain nonce to avoid drift
-            // This is more conservative but prevents "nonce too high" errors
-            this.baseNonce = chainNonce;
-            this.nextNonce = chainNonce;
+            // More intelligent nonce management:
+            // - If chain nonce is higher than our next nonce, some transactions completed, reset to chain
+            // - If chain nonce is lower, we have pending transactions, keep our optimistic nonce
+            // - Only reset completely if we're way off (drift > 10)
             
-            console.log(`[NonceManager] Reset to chain nonce: ${chainNonce} (pending: ${this.pendingTransactions.size})`);
+            if (this.baseNonce === -1) {
+                // First time initialization
+                this.baseNonce = chainNonce;
+                this.nextNonce = chainNonce;
+                console.log(`[NonceManager] Initial nonce set to: ${chainNonce}`);
+            } else if (chainNonce > this.nextNonce) {
+                // Chain has moved forward, some of our transactions completed
+                this.baseNonce = chainNonce;
+                this.nextNonce = chainNonce;
+                console.log(`[NonceManager] Chain moved forward, reset to: ${chainNonce}`);
+            } else if (Math.abs(chainNonce - this.nextNonce) > 10) {
+                // We've drifted too far, reset conservatively
+                console.warn(`[NonceManager] Large nonce drift detected (chain: ${chainNonce}, ours: ${this.nextNonce}), resetting`);
+                this.baseNonce = chainNonce;
+                this.nextNonce = chainNonce;
+            } else {
+                // Keep our optimistic nonce, just update base for reference
+                this.baseNonce = chainNonce;
+                console.log(`[NonceManager] Keeping optimistic nonce ${this.nextNonce} (chain: ${chainNonce}, pending: ${this.pendingTransactions.size})`);
+            }
+            
             this.lastChainUpdate = timestamp;
         } catch (error) {
             console.error(`[NonceManager] Failed to fetch nonce from chain:`, error);
@@ -130,10 +150,11 @@ export class OptimisticNonceManager {
 export async function executeTransactionWithRetry(
     wallet: ethers.Wallet,
     transactionFunction: (nonce: number) => Promise<ethers.providers.TransactionResponse>,
-    maxRetries: number = 10 // Increased for high concurrency
+    maxRetries: number = 15 // Further increased for high concurrency
 ): Promise<ethers.providers.TransactionResponse> {
     const nonceManager = OptimisticNonceManager.getInstance(wallet.address);
     let lastError: Error | null = null;
+    let consecutiveNonceErrors = 0;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
@@ -164,27 +185,34 @@ export async function executeTransactionWithRetry(
             
             // If it's a nonce error, refresh and retry with backoff
             if (OptimisticNonceManager.isRetryableNonceError(errorMessage)) {
-                console.log(`[TransactionRetry] Nonce error detected, refreshing and retrying...`);
+                consecutiveNonceErrors++;
+                console.log(`[TransactionRetry] Nonce error detected (${consecutiveNonceErrors} consecutive), refreshing and retrying...`);
                 
                 // Force refresh nonce from chain
                 await nonceManager.forceRefreshNonce(wallet);
                 
-                // Exponential backoff with jitter to avoid thundering herd
-                // Base delay: 50ms, doubles each retry, max 2s
-                const baseDelay = 50;
-                const maxDelay = 2000;
-                const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
-                const jitter = Math.random() * 0.3; // ±30% jitter
+                // More aggressive backoff for consecutive nonce errors
+                let baseDelay = 50;
+                if (consecutiveNonceErrors > 3) {
+                    baseDelay = 200; // Slower retry after multiple nonce errors
+                }
+                
+                const maxDelay = 3000; // Increased max delay
+                const delay = Math.min(baseDelay * Math.pow(1.5, attempt), maxDelay); // Gentler exponential
+                const jitter = Math.random() * 0.4; // Increased jitter
                 const finalDelay = delay * (1 + jitter);
                 
                 console.log(`[TransactionRetry] Waiting ${finalDelay.toFixed(0)}ms before retry ${attempt + 2}`);
                 await new Promise(resolve => setTimeout(resolve, finalDelay));
                 
                 continue;
+            } else {
+                // Reset consecutive nonce error counter for non-nonce errors
+                consecutiveNonceErrors = 0;
+                
+                // For non-nonce errors, don't retry immediately
+                throw error;
             }
-            
-            // If it's not a nonce error, don't retry
-            throw error;
         }
     }
     
