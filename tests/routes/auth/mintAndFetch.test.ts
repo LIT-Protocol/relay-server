@@ -13,6 +13,11 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 	const isCI = process.env.CI === "true";
 
 	beforeAll(async () => {
+		if (isCI) {
+			console.log("Skipping load test in CI environment");
+			return;
+		}
+
 		if (!API_KEY) {
 			throw new Error(
 				"TEST_LIT_RELAYER_API_KEY must be set in .env file",

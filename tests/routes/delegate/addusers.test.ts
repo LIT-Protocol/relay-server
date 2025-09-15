@@ -5,7 +5,6 @@ import { registerPayerHandler } from "../../../routes/delegate/register";
 import { ethers } from "ethers";
 import { getProvider } from "../../../lit";
 import cors from "cors";
-import { Sequencer } from "../../../lib/sequencer";
 import "../../../tests/setup"; // Import setup to ensure environment variables are loaded
 
 describe("addPayee Integration Tests", () => {
@@ -47,10 +46,6 @@ describe("addPayee Integration Tests", () => {
     // Clean up provider and connections
     if (provider) {
       provider.removeAllListeners();
-    }
-
-    if (Sequencer.Instance) {
-      Sequencer.Instance.stop();
     }
   });
 

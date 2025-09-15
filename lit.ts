@@ -7,7 +7,6 @@ import {
 	PKP,
 	StoreConditionWithSigner,
 } from "./models";
-import { Sequencer } from "./lib/sequencer";
 import { executeTransactionWithRetry } from "./lib/optimisticNonceManager";
 import { parseEther } from "ethers/lib/utils";
 import { CapacityToken } from "lit";
@@ -185,11 +184,6 @@ export async function getPkpPublicKey(tokenId: string) {
 	return pkpNft.getPubkey(tokenId);
 }
 
-export async function setSequencerWallet(
-	wallet: ethers.Wallet | ethers.providers.JsonRpcProvider,
-) {
-	Sequencer.Wallet = wallet;
-}
 
 export async function mintPKP({
 	keyType,
@@ -419,33 +413,36 @@ export async function claimPKP({
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
-	const sequencer = Sequencer.Instance;
-
-	Sequencer.Wallet = getSigner();
+	const signer = getSigner();
 
 	console.info("Minting PKP against PKPHelper contract", {
 		authMethodType,
 		authMethodId,
 		authMethodPubkey,
 	});
-	let tx = await sequencer.wait({
-		action: pkpHelper.claimAndMintNextAndAddAuthMethods,
-		params: [
-			[2, `0x${keyId}`, signatures],
-			[
-				2,
-				[],
-				[],
-				[],
-				[],
-				[authMethodType],
-				[`0x${authMethodId}`],
-				[authMethodPubkey],
-				[[ethers.BigNumber.from(1)]],
-			],
-		],
-		transactionData: { value: mintCost },
-	});
+	
+	// Use executeTransactionWithRetry instead of sequencer
+	const tx = await executeTransactionWithRetry(
+		signer,
+		async (nonce: number) => {
+			return await pkpHelper.claimAndMintNextAndAddAuthMethods(
+				[2, `0x${keyId}`, signatures],
+				[
+					2,
+					[],
+					[],
+					[],
+					[],
+					[authMethodType],
+					[`0x${authMethodId}`],
+					[authMethodPubkey],
+					[[ethers.BigNumber.from(1)]],
+				],
+				{ value: mintCost, nonce }
+			);
+		}
+	);
+	
 	console.log("tx", tx);
 	return tx;
 }
