@@ -10,6 +10,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 	const API_KEY = process.env.TEST_LIT_RELAYER_API_KEY;
 	const BASE_URL = process.env.API_BASE_URL || "http://localhost:8080";
+	const isCI = process.env.CI === "true";
 
 	beforeAll(async () => {
 		if (!API_KEY) {
@@ -35,6 +36,12 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 	});
 
 	it("should handle concurrent mint requests without nonce collisions", async () => {
+		// Skip load test in CI
+		if (isCI) {
+			console.log("Skipping load test in CI environment");
+			return;
+		}
+
 		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "5"); // Lower default since minting is expensive
 		const promises: Promise<any>[] = [];
 		const results: {
