@@ -7,7 +7,7 @@ import {
 	PKP,
 	StoreConditionWithSigner,
 } from "./models";
-import { Sequencer } from "./lib/sequencer";
+import { executeTransactionWithRetry } from "./lib/optimisticNonceManager";
 import { parseEther } from "ethers/lib/utils";
 import { CapacityToken } from "lit";
 import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
@@ -184,12 +184,6 @@ export async function getPkpPublicKey(tokenId: string) {
 	return pkpNft.getPubkey(tokenId);
 }
 
-export async function setSequencerWallet(
-	wallet: ethers.Wallet | ethers.providers.JsonRpcProvider,
-) {
-	Sequencer.Wallet = wallet;
-}
-
 export async function mintPKP({
 	keyType,
 	permittedAuthMethodTypes,
@@ -257,7 +251,7 @@ export async function mintPKP({
 			);
 
 		// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
-		let gasLimit;
+		let gasLimit: ethers.BigNumber;
 
 		try {
 			gasLimit = await pkpNft.provider.estimateGas(mintTxData);
@@ -282,30 +276,31 @@ export async function mintPKP({
 		}
 
 		try {
-			const sequencer = Sequencer.Instance;
+			const signer = getSigner();
 
-			Sequencer.Wallet = getSigner();
+			// Use optimistic nonce management for parallel minting
+			const tx = await executeTransactionWithRetry(
+				signer,
+				async (nonce: number) => {
+					return await pkpHelper.mintNextAndAddAuthMethods(
+						{
+							keyType,
+							permittedAuthMethodTypes,
+							permittedAuthMethodIds,
+							permittedAuthMethodPubkeys,
+							permittedAuthMethodScopes,
+							addPkpEthAddressAsPermittedAddress,
+							pkpEthAddressScopes,
+							sendPkpToItself,
+							burnPkp,
+							sendToAddressAfterMinting,
+						},
+						{ value: mintCost, gasLimit, nonce },
+					);
+				},
+			);
 
-			const tx = await sequencer.wait({
-				action: pkpHelper.mintNextAndAddAuthMethods,
-				params: [
-					{
-						keyType,
-						permittedAuthMethodTypes,
-						permittedAuthMethodIds,
-						permittedAuthMethodPubkeys,
-						permittedAuthMethodScopes,
-						addPkpEthAddressAsPermittedAddress,
-						pkpEthAddressScopes,
-						sendPkpToItself,
-						burnPkp,
-						sendToAddressAfterMinting,
-					},
-				],
-				transactionData: { value: mintCost, gasLimit },
-			});
-
-			// console.log("tx", tx);
+			console.log("PKP mint tx hash:", tx.hash);
 			return tx;
 		} catch (e: any) {
 			console.log("❗️ Error while minting pkp:", e);
@@ -327,7 +322,7 @@ export async function mintPKP({
 			);
 
 		// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
-		let gasLimit;
+		let gasLimit: ethers.BigNumber;
 
 		try {
 			gasLimit = await pkpNft.provider.estimateGas(mintTxData);
@@ -350,25 +345,26 @@ export async function mintPKP({
 		}
 
 		try {
-			const sequencer = Sequencer.Instance;
+			const signer = getSigner();
 
-			Sequencer.Wallet = getSigner();
+			// Use optimistic nonce management for parallel minting
+			const tx = await executeTransactionWithRetry(
+				signer,
+				async (nonce: number) => {
+					return await pkpHelper.mintNextAndAddAuthMethods(
+						keyType,
+						permittedAuthMethodTypes,
+						permittedAuthMethodIds,
+						permittedAuthMethodPubkeys,
+						permittedAuthMethodScopes,
+						addPkpEthAddressAsPermittedAddress,
+						sendPkpToItself,
+						{ value: mintCost, gasLimit, nonce },
+					);
+				},
+			);
 
-			const tx = await sequencer.wait({
-				action: pkpHelper.mintNextAndAddAuthMethods,
-				params: [
-					keyType,
-					permittedAuthMethodTypes,
-					permittedAuthMethodIds,
-					permittedAuthMethodPubkeys,
-					permittedAuthMethodScopes,
-					addPkpEthAddressAsPermittedAddress,
-					sendPkpToItself,
-				],
-				transactionData: { value: mintCost, gasLimit },
-			});
-
-			console.log("tx", tx);
+			console.log("PKP mint tx hash:", tx.hash);
 			return tx;
 		} catch (e: any) {
 			console.log("❗️ Error while minting pkp:", e);
@@ -416,33 +412,36 @@ export async function claimPKP({
 
 	// first get mint cost
 	const mintCost = await pkpNft.mintCost();
-	const sequencer = Sequencer.Instance;
-
-	Sequencer.Wallet = getSigner();
+	const signer = getSigner();
 
 	console.info("Minting PKP against PKPHelper contract", {
 		authMethodType,
 		authMethodId,
 		authMethodPubkey,
 	});
-	let tx = await sequencer.wait({
-		action: pkpHelper.claimAndMintNextAndAddAuthMethods,
-		params: [
-			[2, `0x${keyId}`, signatures],
-			[
-				2,
-				[],
-				[],
-				[],
-				[],
-				[authMethodType],
-				[`0x${authMethodId}`],
-				[authMethodPubkey],
-				[[ethers.BigNumber.from(1)]],
-			],
-		],
-		transactionData: { value: mintCost },
-	});
+
+	// Use executeTransactionWithRetry instead of sequencer
+	const tx = await executeTransactionWithRetry(
+		signer,
+		async (nonce: number) => {
+			return await pkpHelper.claimAndMintNextAndAddAuthMethods(
+				[2, `0x${keyId}`, signatures],
+				[
+					2,
+					[],
+					[],
+					[],
+					[],
+					[authMethodType],
+					[`0x${authMethodId}`],
+					[authMethodPubkey],
+					[[ethers.BigNumber.from(1)]],
+				],
+				{ value: mintCost, nonce },
+			);
+		},
+	);
+
 	console.log("tx", tx);
 	return tx;
 }
@@ -650,34 +649,6 @@ export async function addPaymentDelegationPayee({
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
 }) {
-	// get the first token that is not expired
-	const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
-	console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
-	const capacityToken = capacityTokens.find((token) => !token.isExpired);
-
-	let tokenId: number | null = null;
-
-	if (!capacityToken) {
-		// mint a new token
-		const minted = await mintCapacityCredits({ signer: wallet });
-
-		if (!minted) {
-			throw new Error("Failed to mint capacity credits");
-		}
-
-		console.log(
-			"No capacity token found, minted a new one:",
-			minted.capacityTokenId,
-		);
-		tokenId = minted.capacityTokenId;
-	} else {
-		tokenId = capacityToken.tokenId;
-	}
-
-	if (!tokenId) {
-		throw new Error("Failed to get ID for capacity token");
-	}
-
 	// add payer in contract
 	const paymentDelegationContract = await getContractFromJsSdk(
 		config.network,
@@ -686,27 +657,38 @@ export async function addPaymentDelegationPayee({
 	);
 
 	try {
-		// Estimate gas first
-		const estimatedGas = await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
-			payeeAddresses
+		let gasLimit: ethers.BigNumber;
+		if (payeeAddresses.length > 1) {
+			// run gas estimation
+			const estimatedGas =
+				await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
+					payeeAddresses,
+				);
+
+			// Add 30% buffer using proper BigNumber math
+			gasLimit = estimatedGas
+				.mul(ethers.BigNumber.from(130))
+				.div(ethers.BigNumber.from(100));
+		} else {
+			// a single user only costs 300k gas, skip estimation.
+			gasLimit = ethers.BigNumber.from(500000);
+		}
+
+		// Use optimistic nonce management for parallel execution
+		const tx = await executeTransactionWithRetry(
+			wallet,
+			async (nonce: number) => {
+				return await paymentDelegationContract.functions.delegatePaymentsBatch(
+					payeeAddresses,
+					{ gasLimit, nonce },
+				);
+			},
 		);
-		
-		// Add 30% buffer using proper BigNumber math
-		const gasLimit = estimatedGas
-			.mul(ethers.BigNumber.from(130))
-			.div(ethers.BigNumber.from(100));
-		
-		console.log(`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`);
-		
-		const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-			payeeAddresses,
-			{ gasLimit }
-		);
+
 		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-		await tx.wait();
 		return tx;
 	} catch (err) {
-		console.error("Error while estimating or executing delegatePaymentsBatch:", err);
+		console.error("Error while executing delegatePaymentsBatch:", err);
 		throw err;
 	}
 }

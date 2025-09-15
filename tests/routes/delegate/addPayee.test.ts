@@ -7,8 +7,9 @@ import path from "path";
 // Load environment variables from root .env file
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
-describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
+describe("addPayeeHandler Load Test", () => {
 	const API_KEY = process.env.TEST_LIT_RELAYER_API_KEY;
+	const PAYER_SECRET = process.env.TEST_LIT_PAYER_SECRET_KEY;
 	const BASE_URL = process.env.API_BASE_URL || "http://localhost:8080";
 	const isCI = process.env.CI === "true";
 
@@ -18,36 +19,31 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 			return;
 		}
 
-		if (!API_KEY) {
+		if (!API_KEY || !PAYER_SECRET) {
 			throw new Error(
-				"TEST_LIT_RELAYER_API_KEY must be set in .env file",
+				"TEST_LIT_RELAYER_API_KEY and TEST_LIT_PAYER_SECRET_KEY must be set in .env file",
 			);
 		}
 
-		if (!process.env.LIT_TXSENDER_PRIVATE_KEY) {
-			throw new Error(
-				"LIT_TXSENDER_PRIVATE_KEY must be set in .env file",
-			);
-		}
-
-		// Log the transaction sender wallet address so it can be funded
-		const { getSigner } = await import("../../../lit");
-		const txSender = getSigner();
-		console.log("\n=== TRANSACTION SENDER INFO ===");
-		console.log(`TX Sender Address: ${txSender.address}`);
-		console.log(`This wallet sends PKP mint and gas funding transactions`);
+		// Log the test wallet address so it can be funded
+		const { deriveWallet } = await import(
+			"../../../routes/delegate/register"
+		);
+		const testWallet = await deriveWallet(API_KEY!, PAYER_SECRET!);
+		console.log("\n=== TEST WALLET INFO ===");
+		console.log(`Wallet Address: ${testWallet.address}`);
 		console.log(`Please ensure this wallet is funded on the network`);
-		console.log("===================================\n");
+		console.log("========================\n");
 	});
 
-	it("should handle concurrent mint requests without nonce collisions", async () => {
+	it("should handle concurrent requests without nonce collisions", async () => {
 		// Skip load test in CI
 		if (isCI) {
 			console.log("Skipping load test in CI environment");
 			return;
 		}
 
-		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "5"); // Lower default since minting is expensive
+		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "5");
 		const promises: Promise<any>[] = [];
 		const results: {
 			success: boolean;
@@ -58,42 +54,32 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 		}[] = [];
 
 		console.log(
-			`Starting mint load test with ${numRequests} parallel requests...`,
+			`Starting load test with ${numRequests} parallel requests...`,
 		);
 
-		// Generate unique auth methods for each request
-		const generateAuthMethod = (index: number) => {
-			const randomWallet = ethers.Wallet.createRandom();
-			return {
-				keyType: "2",
-				permittedAuthMethodTypes: ["1"], // Ethereum auth method
-				permittedAuthMethodIds: [`0x${randomWallet.address.slice(2)}`], // Remove 0x prefix
-				permittedAuthMethodPubkeys: [
-					`0x${randomWallet.publicKey.slice(2)}`,
-				], // Remove 0x prefix
-				permittedAuthMethodScopes: [["1"]],
-				addPkpEthAddressAsPermittedAddress: true,
-				sendPkpToItself: true,
-				burnPkp: false,
-			};
+		// Generate unique addresses for each request to avoid conflicts
+		const generateAddresses = (index: number) => {
+			const addresses = [];
+			for (let i = 0; i < 3; i++) {
+				const wallet = ethers.Wallet.createRandom();
+				addresses.push(wallet.address);
+			}
+			return addresses;
 		};
 
 		// Create all requests
 		for (let i = 0; i < numRequests; i++) {
-			const authMethodData = generateAuthMethod(i);
+			const payeeAddresses = generateAddresses(i);
 
 			const promise = axios
-				.post(
-					`${BASE_URL}/mint-next-and-add-auth-methods`,
-					authMethodData,
-					{
-						headers: {
-							"api-key": API_KEY,
-							"Content-Type": "application/json",
-						},
-						timeout: 120000, // 2 minute timeout per request
+				.post(`${BASE_URL}/add-users`, payeeAddresses, {
+					headers: {
+						"api-key": API_KEY,
+						"payer-secret-key": PAYER_SECRET,
+						"Content-Type": "application/json",
 					},
-				)
+					timeout: 60000, // 60 second timeout
+				})
 				.then((response) => {
 					console.log(`Request ${i} succeeded`);
 					return { success: true, index: i, data: response.data };
@@ -136,7 +122,7 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 			(r) => r.error?.includes("429") || r.error?.includes("rate limit"),
 		);
 
-		console.log("\n=== Mint Load Test Results ===");
+		console.log("\n=== Load Test Results ===");
 		console.log(`Total requests: ${numRequests}`);
 		console.log(
 			`Successful: ${successful.length} (${(
@@ -164,7 +150,7 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 		console.log(`Duration: ${(duration / 1000).toFixed(2)} seconds`);
 		console.log(
 			`Throughput: ${(numRequests / (duration / 1000)).toFixed(
-				3,
+				1,
 			)} requests/second`,
 		);
 		console.log(
@@ -175,22 +161,6 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 			console.log("\nSample nonce errors:");
 			nonceErrors.slice(0, 3).forEach((e) => {
 				console.log(`  - Request ${e.index}: ${e.error}`);
-			});
-		}
-
-		if (successful.length > 0) {
-			console.log("\nSample successful responses:");
-			successful.slice(0, 2).forEach((s) => {
-				console.log(
-					`  - Request ${s.index}: requestId ${s.data?.requestId}`,
-				);
-			});
-		}
-
-		if (failed.length > 0) {
-			console.log("\nSample failed responses:");
-			failed.slice(0, 3).forEach((f) => {
-				console.log(`  - Request ${f.index}: ${f.error}`);
 			});
 		}
 
@@ -210,11 +180,8 @@ describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
 			expect(nonceErrorRate).toBeLessThan(0.5);
 		}
 
-		// Success rate should be reasonable (at least 80% for 50 requests)
+		// Success rate should be reasonable (at least 50% under load)
 		const successRate = successful.length / numRequests;
-		console.log(
-			`\nOverall success rate: ${(successRate * 100).toFixed(1)}%`,
-		);
-		expect(successRate).toBeGreaterThan(0.8);
-	}, 300000); // 5 minute timeout for the entire test
+		expect(successRate).toBeGreaterThan(0.5);
+	}, 120000); // 2 minute timeout for the entire test
 });

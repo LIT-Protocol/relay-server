@@ -12,7 +12,6 @@ import {
 	getContractFromJsSdk,
 } from "../../../lit";
 import cors from "cors";
-import { Sequencer } from "../../../lib/sequencer";
 import { getTokenIdFromTransferEvent } from "../../../utils/receipt";
 import { LitNodeClientNodeJs } from "@lit-protocol/lit-node-client-nodejs";
 import { LIT_NETWORK_VALUES, LIT_ABILITY } from "@lit-protocol/constants";
@@ -54,8 +53,6 @@ describe("sendTxn Integration Tests", () => {
 		if (provider) {
 			provider.removeAllListeners();
 		}
-
-		Sequencer.Instance.stop();
 
 		litNodeClient.disconnect();
 	});

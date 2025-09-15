@@ -4,7 +4,7 @@ import { ParsedQs } from "qs";
 import { SendTxnRequest, SendTxnResponse } from "../../models";
 import { getSigner } from "../../lit";
 import { ethers } from "ethers";
-import { Sequencer } from "../../lib/sequencer";
+import { executeTransactionWithRetry } from "../../lib/optimisticNonceManager";
 import {
 	estimateGasWithBalanceOverride,
 	removeTxnSignature,
@@ -22,9 +22,7 @@ export async function sendTxnHandler(
 	res: Response<SendTxnResponse, Record<string, any>, number>,
 ) {
 	try {
-		const sequencer = Sequencer.Instance;
 		const signer = getSigner();
-		Sequencer.Wallet = signer;
 		const provider = signer.provider as ethers.providers.JsonRpcProvider;
 		const { from } = req.body.txn;
 
@@ -122,18 +120,17 @@ export async function sendTxnHandler(
 		const gasToFund =
 			ethers.BigNumber.from(gasLimitFromClient).mul(gasPriceFromClient);
 
-		// then, send gas to fund the wallet using the sequencer
-		const gasFundingTxn = await sequencer.wait({
-			action: (...args) => {
-				const paramsToFn = Object.assign(
-					{},
-					...args,
-				) as ethers.providers.TransactionRequest;
-				return signer.sendTransaction(paramsToFn);
-			},
-			params: [{ to: from, value: gasToFund }],
-			transactionData: {},
-		});
+		// then, send gas to fund the wallet using executeTransactionWithRetry
+		const gasFundingTxn = await executeTransactionWithRetry(
+			signer,
+			async (nonce: number) => {
+				return await signer.sendTransaction({
+					to: from,
+					value: gasToFund,
+					nonce
+				});
+			}
+		);
 		console.log("gasFundingTxn", gasFundingTxn);
 		// wait for confirmation
 		await gasFundingTxn.wait();
