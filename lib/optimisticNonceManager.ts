@@ -11,7 +11,8 @@ export class OptimisticNonceManager {
     private nextNonce: number = -1;
     private lastChainUpdate: number = 0;
     private pendingTransactions = new Set<number>();
-    private readonly CACHE_TTL = 5000; // 5 seconds
+    private readonly CACHE_TTL = 3000; // 3 seconds (shorter for high concurrency)
+    private refreshPromise: Promise<void> | null = null; // Prevent concurrent refreshes
     
     private constructor(private walletAddress: string) {}
     
@@ -50,6 +51,7 @@ export class OptimisticNonceManager {
     public async forceRefreshNonce(wallet: ethers.Wallet): Promise<void> {
         console.log(`[NonceManager] Force refreshing nonce for ${this.walletAddress}`);
         this.lastChainUpdate = 0; // Force refresh
+        this.refreshPromise = null; // Clear any existing refresh promise
         await this.refreshNonceIfNeeded(wallet);
     }
     
@@ -58,26 +60,40 @@ export class OptimisticNonceManager {
         
         // Only refresh if we don't have a nonce or it's stale
         if (this.baseNonce === -1 || (now - this.lastChainUpdate) > this.CACHE_TTL) {
-            try {
-                const chainNonce = await wallet.getTransactionCount('pending');
-                console.log(`[NonceManager] Chain nonce for ${this.walletAddress}: ${chainNonce} (base: ${this.baseNonce}, next: ${this.nextNonce})`);
-                
-                // If chain nonce is higher than our optimistic nonce, use chain nonce
-                if (chainNonce > this.nextNonce || this.baseNonce === -1) {
-                    this.baseNonce = chainNonce;
-                    this.nextNonce = chainNonce;
-                    console.log(`[NonceManager] Updated to chain nonce: ${chainNonce}`);
-                }
-                
-                this.lastChainUpdate = now;
-            } catch (error) {
-                console.error(`[NonceManager] Failed to fetch nonce from chain:`, error);
-                // If we don't have any nonce yet, this is a fatal error
-                if (this.baseNonce === -1) {
-                    throw error;
-                }
-                // Otherwise, continue with optimistic nonce
+            // If there's already a refresh in progress, wait for it
+            if (this.refreshPromise) {
+                console.log(`[NonceManager] Waiting for existing refresh to complete...`);
+                await this.refreshPromise;
+                return;
             }
+            
+            // Start a new refresh
+            this.refreshPromise = this.doRefreshNonce(wallet, now);
+            await this.refreshPromise;
+            this.refreshPromise = null;
+        }
+    }
+    
+    private async doRefreshNonce(wallet: ethers.Wallet, timestamp: number): Promise<void> {
+        try {
+            const chainNonce = await wallet.getTransactionCount('pending');
+            console.log(`[NonceManager] Chain nonce for ${this.walletAddress}: ${chainNonce} (base: ${this.baseNonce}, next: ${this.nextNonce})`);
+            
+            // If chain nonce is higher than our optimistic nonce, use chain nonce
+            if (chainNonce > this.nextNonce || this.baseNonce === -1) {
+                this.baseNonce = chainNonce;
+                this.nextNonce = chainNonce;
+                console.log(`[NonceManager] Updated to chain nonce: ${chainNonce}`);
+            }
+            
+            this.lastChainUpdate = timestamp;
+        } catch (error) {
+            console.error(`[NonceManager] Failed to fetch nonce from chain:`, error);
+            // If we don't have any nonce yet, this is a fatal error
+            if (this.baseNonce === -1) {
+                throw error;
+            }
+            // Otherwise, continue with optimistic nonce
         }
     }
     
@@ -105,7 +121,7 @@ export class OptimisticNonceManager {
 export async function executeTransactionWithRetry(
     wallet: ethers.Wallet,
     transactionFunction: (nonce: number) => Promise<ethers.providers.TransactionResponse>,
-    maxRetries: number = 3
+    maxRetries: number = 10 // Increased for high concurrency
 ): Promise<ethers.providers.TransactionResponse> {
     const nonceManager = OptimisticNonceManager.getInstance(wallet.address);
     let lastError: Error | null = null;
@@ -137,10 +153,24 @@ export async function executeTransactionWithRetry(
             
             console.error(`[TransactionRetry] Attempt ${attempt + 1} failed:`, errorMessage);
             
-            // If it's a nonce error, force refresh and retry
+            // If it's a nonce error, refresh and retry with backoff
             if (OptimisticNonceManager.isRetryableNonceError(errorMessage)) {
                 console.log(`[TransactionRetry] Nonce error detected, refreshing and retrying...`);
+                
+                // Force refresh nonce from chain
                 await nonceManager.forceRefreshNonce(wallet);
+                
+                // Exponential backoff with jitter to avoid thundering herd
+                // Base delay: 50ms, doubles each retry, max 2s
+                const baseDelay = 50;
+                const maxDelay = 2000;
+                const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+                const jitter = Math.random() * 0.3; // ±30% jitter
+                const finalDelay = delay * (1 + jitter);
+                
+                console.log(`[TransactionRetry] Waiting ${finalDelay.toFixed(0)}ms before retry ${attempt + 2}`);
+                await new Promise(resolve => setTimeout(resolve, finalDelay));
+                
                 continue;
             }
             

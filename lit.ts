@@ -258,7 +258,7 @@ export async function mintPKP({
 			);
 
 		// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
-		let gasLimit;
+		let gasLimit: ethers.BigNumber;
 
 		try {
 			gasLimit = await pkpNft.provider.estimateGas(mintTxData);
@@ -283,30 +283,31 @@ export async function mintPKP({
 		}
 
 		try {
-			const sequencer = Sequencer.Instance;
+			const signer = getSigner();
 
-			Sequencer.Wallet = getSigner();
+			// Use optimistic nonce management for parallel minting
+			const tx = await executeTransactionWithRetry(
+				signer,
+				async (nonce: number) => {
+					return await pkpHelper.mintNextAndAddAuthMethods(
+						{
+							keyType,
+							permittedAuthMethodTypes,
+							permittedAuthMethodIds,
+							permittedAuthMethodPubkeys,
+							permittedAuthMethodScopes,
+							addPkpEthAddressAsPermittedAddress,
+							pkpEthAddressScopes,
+							sendPkpToItself,
+							burnPkp,
+							sendToAddressAfterMinting,
+						},
+						{ value: mintCost, gasLimit, nonce }
+					);
+				}
+			);
 
-			const tx = await sequencer.wait({
-				action: pkpHelper.mintNextAndAddAuthMethods,
-				params: [
-					{
-						keyType,
-						permittedAuthMethodTypes,
-						permittedAuthMethodIds,
-						permittedAuthMethodPubkeys,
-						permittedAuthMethodScopes,
-						addPkpEthAddressAsPermittedAddress,
-						pkpEthAddressScopes,
-						sendPkpToItself,
-						burnPkp,
-						sendToAddressAfterMinting,
-					},
-				],
-				transactionData: { value: mintCost, gasLimit },
-			});
-
-			// console.log("tx", tx);
+			console.log("PKP mint tx hash:", tx.hash);
 			return tx;
 		} catch (e: any) {
 			console.log("❗️ Error while minting pkp:", e);
@@ -328,7 +329,7 @@ export async function mintPKP({
 			);
 
 		// on our new arb l3, the stylus gas estimation can be too low when interacting with stylus contracts.  manually estimate gas and add 5%.
-		let gasLimit;
+		let gasLimit: ethers.BigNumber;
 
 		try {
 			gasLimit = await pkpNft.provider.estimateGas(mintTxData);
@@ -351,25 +352,26 @@ export async function mintPKP({
 		}
 
 		try {
-			const sequencer = Sequencer.Instance;
+			const signer = getSigner();
 
-			Sequencer.Wallet = getSigner();
+			// Use optimistic nonce management for parallel minting
+			const tx = await executeTransactionWithRetry(
+				signer,
+				async (nonce: number) => {
+					return await pkpHelper.mintNextAndAddAuthMethods(
+						keyType,
+						permittedAuthMethodTypes,
+						permittedAuthMethodIds,
+						permittedAuthMethodPubkeys,
+						permittedAuthMethodScopes,
+						addPkpEthAddressAsPermittedAddress,
+						sendPkpToItself,
+						{ value: mintCost, gasLimit, nonce }
+					);
+				}
+			);
 
-			const tx = await sequencer.wait({
-				action: pkpHelper.mintNextAndAddAuthMethods,
-				params: [
-					keyType,
-					permittedAuthMethodTypes,
-					permittedAuthMethodIds,
-					permittedAuthMethodPubkeys,
-					permittedAuthMethodScopes,
-					addPkpEthAddressAsPermittedAddress,
-					sendPkpToItself,
-				],
-				transactionData: { value: mintCost, gasLimit },
-			});
-
-			console.log("tx", tx);
+			console.log("PKP mint tx hash:", tx.hash);
 			return tx;
 		} catch (e: any) {
 			console.log("❗️ Error while minting pkp:", e);

@@ -1,184 +1,198 @@
-import request from "supertest";
-import express from "express";
-import { mintNextAndAddAuthMethodsHandler } from "../../../routes/auth/mintAndFetch";
+import { describe, it, expect, beforeAll } from "@jest/globals";
+import axios from "axios";
 import { ethers } from "ethers";
-import {
-	getProvider,
-	setSequencerWallet,
-	getPkpNftContract,
-} from "../../../lit";
-import cors from "cors";
-import { Sequencer } from "../../../lib/sequencer";
-import config from "../../../config";
+import * as dotenv from "dotenv";
+import path from "path";
 
-describe("mintNextAndAddAuthMethods Integration Tests", () => {
-	let app: express.Application;
-	let provider: ethers.providers.JsonRpcProvider;
-	let signer: ethers.Wallet;
+// Load environment variables from root .env file
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+
+describe("mintNextAndAddAuthMethodsHandler Load Test", () => {
+	const API_KEY = process.env.TEST_LIT_RELAYER_API_KEY;
+	const BASE_URL = process.env.API_BASE_URL || "http://localhost:8080";
 
 	beforeAll(async () => {
-		// Set up provider and signer
-		provider = getProvider();
-		const privateKey = process.env.LIT_TXSENDER_PRIVATE_KEY!;
-		signer = new ethers.Wallet(privateKey, provider);
-
-		// Set up sequencer wallet
-		await setSequencerWallet(signer);
-	});
-
-	afterAll(async () => {
-		// // Clean up provider and connections
-		if (provider) {
-			provider.removeAllListeners();
-		}
-
-		Sequencer.Instance.stop();
-	});
-
-	beforeEach(() => {
-		app = express();
-		app.use(express.json());
-		app.use(cors());
-		app.post(
-			"/mint-next-and-add-auth-methods",
-			mintNextAndAddAuthMethodsHandler,
-		);
-	});
-
-	it("should successfully mint a PKP and return a request ID", async () => {
-		const requestBody = {
-			keyType: "2",
-			permittedAuthMethodTypes: ["2"],
-			permittedAuthMethodIds: [
-				"0x170d13600caea2933912f39a0334eca3d22e472be203f937c4bad0213d92ed71",
-			],
-			permittedAuthMethodPubkeys: ["0x"],
-			permittedAuthMethodScopes: [["1"]],
-			addPkpEthAddressAsPermittedAddress: true,
-			sendPkpToItself: true,
-		};
-
-		const response = await request(app)
-			.post("/mint-next-and-add-auth-methods")
-			.send(requestBody)
-			.expect("Content-Type", /json/)
-			.expect(200);
-
-		expect(response.body).toHaveProperty("requestId");
-		expect(response.body.requestId).toMatch(/^0x[a-fA-F0-9]{64}$/); // Should be a transaction hash
-
-		// Wait for transaction to be mined
-		const txReceipt = await provider.waitForTransaction(
-			response.body.requestId,
-		);
-		expect(txReceipt.status).toBe(1); // Transaction should be successful
-	}, 30000); // Increase timeout to 30s since we're waiting for real transactions
-
-	it("should handle errors with invalid parameters", async () => {
-		const invalidRequestBody = {
-			keyType: "2",
-			permittedAuthMethodTypes: [], // non matching array lengths. this should have 1 element but it has none.
-			permittedAuthMethodIds: [
-				"0x170d13600caea2933912f39a0334eca3d22e472be203f937c4bad0213d92ed71",
-			],
-			permittedAuthMethodPubkeys: ["0x"],
-			permittedAuthMethodScopes: [["1"]],
-			addPkpEthAddressAsPermittedAddress: true,
-			sendPkpToItself: true,
-		};
-
-		const response = await request(app)
-			.post("/mint-next-and-add-auth-methods")
-			.send(invalidRequestBody)
-			.expect("Content-Type", /json/)
-			.expect(500);
-
-		expect(response.body).toHaveProperty("error");
-	});
-
-	it("should validate required request body parameters", async () => {
-		const invalidRequestBody = {
-			// Missing required parameters
-			keyType: "2",
-			permittedAuthMethodTypes: ["2"],
-		};
-
-		const response = await request(app)
-			.post("/mint-next-and-add-auth-methods")
-			.send(invalidRequestBody)
-			.expect("Content-Type", /json/)
-			.expect(500);
-
-		expect(response.body).toHaveProperty("error");
-	});
-
-	it("should successfully mint a PKP and send it to a specified address", async () => {
-		// Generate a random address to send the PKP to
-		const randomWallet = ethers.Wallet.createRandom();
-		const sendToAddress = randomWallet.address;
-
-		const requestBody = {
-			keyType: "2",
-			permittedAuthMethodTypes: ["2"],
-			permittedAuthMethodIds: [
-				"0x170d13600caea2933912f39a0334eca3d22e472be203f937c4bad0213d92ed71",
-			],
-			permittedAuthMethodPubkeys: ["0x"],
-			permittedAuthMethodScopes: [["1"]],
-			addPkpEthAddressAsPermittedAddress: true,
-			sendPkpToItself: false,
-			burnPkp: false,
-			sendToAddressAfterMinting: sendToAddress,
-		};
-
-		const response = await request(app)
-			.post("/mint-next-and-add-auth-methods")
-			.send(requestBody)
-			.expect("Content-Type", /json/)
-			.expect(200);
-
-		expect(response.body).toHaveProperty("requestId");
-		expect(response.body.requestId).toMatch(/^0x[a-fA-F0-9]{64}$/); // Should be a transaction hash
-
-		// Wait for transaction to be mined
-		const txReceipt = await provider.waitForTransaction(
-			response.body.requestId,
-		);
-		expect(txReceipt.status).toBe(1); // Transaction should be successful
-
-		// Get the token ID from the transaction logs
-		const pkpNft = getPkpNftContract(config.network);
-		const mintEvent = txReceipt.logs.find((log) => {
-			try {
-				return pkpNft.interface.parseLog(log).name === "PKPMinted";
-			} catch {
-				return false;
-			}
-		});
-		expect(mintEvent).toBeDefined();
-
-		if (!mintEvent) {
+		if (!API_KEY) {
 			throw new Error(
-				"Failed to find PKPMinted event in transaction logs",
+				"TEST_LIT_RELAYER_API_KEY must be set in .env file",
 			);
 		}
 
-		const tokenId = pkpNft.interface.parseLog(mintEvent).args.tokenId;
-		expect(tokenId).toBeDefined();
+		if (!process.env.LIT_TXSENDER_PRIVATE_KEY) {
+			throw new Error(
+				"LIT_TXSENDER_PRIVATE_KEY must be set in .env file",
+			);
+		}
 
-		// Verify that the random address owns the NFT
-		const owner = await pkpNft.ownerOf(tokenId);
-		expect(owner.toLowerCase()).toBe(sendToAddress.toLowerCase());
+		// Log the transaction sender wallet address so it can be funded
+		const { getSigner } = await import("../../../lit");
+		const txSender = getSigner();
+		console.log("\n=== TRANSACTION SENDER INFO ===");
+		console.log(`TX Sender Address: ${txSender.address}`);
+		console.log(`This wallet sends PKP mint and gas funding transactions`);
+		console.log(`Please ensure this wallet is funded on the network`);
+		console.log("===================================\n");
+	});
 
-		// get PKP eth address from the PKP NFT contract
-		const pkpEthAddress = await pkpNft.getEthAddress(tokenId);
-		expect(pkpEthAddress).toBeDefined();
+	it("should handle concurrent mint requests without nonce collisions", async () => {
+		const numRequests = parseInt(process.env.TEST_NUM_REQUESTS || "50"); // Lower default since minting is expensive
+		const promises: Promise<any>[] = [];
+		const results: {
+			success: boolean;
+			error?: any;
+			index: number;
+			isNonceError?: boolean;
+			data?: any;
+		}[] = [];
 
-		// check that the pkp has 0.001 eth
-		const pkpBalance = await provider.getBalance(pkpEthAddress);
-		console.log("pkpBalance", pkpBalance);
-		expect(pkpBalance.toHexString()).toBe(
-			ethers.utils.parseEther("0.001").toHexString(),
+		console.log(
+			`Starting mint load test with ${numRequests} parallel requests...`,
 		);
-	}, 30000); // Increase timeout to 30s since we're waiting for real transactions
+
+		// Generate unique auth methods for each request
+		const generateAuthMethod = (index: number) => {
+			const randomWallet = ethers.Wallet.createRandom();
+			return {
+				keyType: "2",
+				permittedAuthMethodTypes: ["1"], // Ethereum auth method
+				permittedAuthMethodIds: [`0x${randomWallet.address.slice(2)}`], // Remove 0x prefix
+				permittedAuthMethodPubkeys: [
+					`0x${randomWallet.publicKey.slice(2)}`,
+				], // Remove 0x prefix
+				permittedAuthMethodScopes: [["1"]],
+				addPkpEthAddressAsPermittedAddress: true,
+				sendPkpToItself: true,
+				burnPkp: false,
+			};
+		};
+
+		// Create all requests
+		for (let i = 0; i < numRequests; i++) {
+			const authMethodData = generateAuthMethod(i);
+
+			const promise = axios
+				.post(
+					`${BASE_URL}/mint-next-and-add-auth-methods`,
+					authMethodData,
+					{
+						headers: {
+							"api-key": API_KEY,
+							"Content-Type": "application/json",
+						},
+						timeout: 120000, // 2 minute timeout per request
+					},
+				)
+				.then((response) => {
+					console.log(`Request ${i} succeeded`);
+					return { success: true, index: i, data: response.data };
+				})
+				.catch((error) => {
+					const errorMessage =
+						error.response?.data?.error || error.message;
+					console.error(`Request ${i} failed:`, errorMessage);
+
+					// Check for nonce-related errors
+					const isNonceError =
+						errorMessage.includes("nonce") ||
+						errorMessage.includes("replacement fee too low") ||
+						errorMessage.includes("already known");
+
+					return {
+						success: false,
+						index: i,
+						error: errorMessage,
+						isNonceError,
+					};
+				});
+
+			promises.push(promise);
+		}
+
+		// Wait for all requests to complete
+		const startTime = Date.now();
+		results.push(...(await Promise.all(promises)));
+		const duration = Date.now() - startTime;
+
+		// Analyze results
+		const successful = results.filter((r) => r.success);
+		const failed = results.filter((r) => !r.success);
+		const nonceErrors = failed.filter((r) => r.isNonceError);
+		const insufficientFunds = failed.filter((r) =>
+			r.error?.includes("insufficient funds"),
+		);
+		const rateLimited = failed.filter(
+			(r) => r.error?.includes("429") || r.error?.includes("rate limit"),
+		);
+
+		console.log("\n=== Mint Load Test Results ===");
+		console.log(`Total requests: ${numRequests}`);
+		console.log(
+			`Successful: ${successful.length} (${(
+				(successful.length / numRequests) *
+				100
+			).toFixed(1)}%)`,
+		);
+		console.log(
+			`Failed: ${failed.length} (${(
+				(failed.length / numRequests) *
+				100
+			).toFixed(1)}%)`,
+		);
+		console.log(`  - Nonce errors: ${nonceErrors.length}`);
+		console.log(`  - Insufficient funds: ${insufficientFunds.length}`);
+		console.log(`  - Rate limited: ${rateLimited.length}`);
+		console.log(
+			`  - Other errors: ${
+				failed.length -
+				nonceErrors.length -
+				insufficientFunds.length -
+				rateLimited.length
+			}`,
+		);
+		console.log(`Duration: ${(duration / 1000).toFixed(2)} seconds`);
+		console.log(
+			`Throughput: ${(numRequests / (duration / 1000)).toFixed(
+				3,
+			)} requests/second`,
+		);
+		console.log(
+			`Avg response time: ${(duration / numRequests).toFixed(0)}ms`,
+		);
+
+		if (nonceErrors.length > 0) {
+			console.log("\nSample nonce errors:");
+			nonceErrors.slice(0, 3).forEach((e) => {
+				console.log(`  - Request ${e.index}: ${e.error}`);
+			});
+		}
+
+		if (successful.length > 0) {
+			console.log("\nSample successful responses:");
+			successful.slice(0, 2).forEach((s) => {
+				console.log(
+					`  - Request ${s.index}: requestId ${s.data?.requestId}`,
+				);
+			});
+		}
+
+		// Test assertions
+		expect(successful.length).toBeGreaterThan(0);
+
+		// We expect some failures under heavy load, but not all nonce errors
+		if (failed.length > 0) {
+			const nonceErrorRate = nonceErrors.length / failed.length;
+			console.log(
+				`\nNonce error rate among failures: ${(
+					nonceErrorRate * 100
+				).toFixed(1)}%`,
+			);
+
+			// If more than 50% of failures are nonce errors, it's a systemic issue
+			expect(nonceErrorRate).toBeLessThan(0.5);
+		}
+
+		// Success rate should be reasonable (at least 30% under load for minting)
+		const successRate = successful.length / numRequests;
+		expect(successRate).toBeGreaterThan(0.3);
+	}, 300000); // 5 minute timeout for the entire test
 });

@@ -12,6 +12,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:addpayee": "jest --detectOpenHandles tests/routes/delegate/addPayee.test.ts",
+    "test:mint": "jest --detectOpenHandles tests/routes/auth/mintAndFetch.test.ts",
     "sentry:sourcemaps": "sentry-cli sourcemaps inject --org lit-protocol-lw --project relay-server ./dist && sentry-cli sourcemaps upload --org lit-protocol-lw --project relay-server ./dist"
   },
   "keywords": [],
