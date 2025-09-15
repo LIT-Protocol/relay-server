@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import * as Sentry from '@sentry/node';
 
 /**
  * Manages optimistic nonce assignment for parallel transactions
@@ -222,5 +223,21 @@ export async function executeTransactionWithRetry(
         }
     }
     
-    throw new Error(`Transaction failed after ${maxRetries} attempts. Last error: ${lastError?.message}`);
+    const finalError = new Error(`Transaction failed after ${maxRetries} attempts. Last error: ${lastError?.message}`);
+    
+    // Report to Sentry when we've exhausted all retries
+    Sentry.captureException(finalError, {
+        extra: {
+            walletAddress: wallet.address,
+            maxRetries,
+            lastError: lastError?.message,
+            consecutiveNonceErrors,
+        },
+        tags: {
+            component: 'optimisticNonceManager',
+            failure_type: 'exhausted_retries'
+        }
+    });
+    
+    throw finalError;
 }

@@ -2,6 +2,7 @@ import crypto from 'crypto';
 
 import { Request, Response } from 'express';
 import { ethers, utils, type Wallet } from 'ethers';
+import * as Sentry from '@sentry/node';
 import { getProvider, mintCapacityCredits, sendLitTokens } from '../../lit';
 
 // Takes an arbitrary string, and converts it deterministically to a number
@@ -95,6 +96,18 @@ export async function registerPayerHandler(req: Request, res: Response) {
         })
         .catch((err) => {
             console.error("Failed to register payer", err);
+            
+            // Report to Sentry for 500 errors
+            Sentry.captureException(err, {
+                extra: {
+                    apiKey,
+                },
+                tags: {
+                    component: 'registerPayerHandler',
+                    failure_type: 'registration_failed'
+                }
+            });
+            
             res.status(500).json({
                 success: false,
                 error: err.toString()

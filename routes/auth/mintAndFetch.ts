@@ -1,6 +1,7 @@
 import { Request } from "express";
 import { Response } from "express-serve-static-core";
 import { ParsedQs } from "qs";
+import * as Sentry from '@sentry/node';
 import {
 	getPkpEthAddress,
 	getPKPsForAuthMethod,
@@ -81,6 +82,20 @@ export async function mintNextAndAddAuthMethodsHandler(
 		console.error("[mintNextAndAddAuthMethodsHandler] Unable to mint PKP", {
 			err,
 		});
+		
+		// Report to Sentry for 500 errors
+		Sentry.captureException(err, {
+			extra: {
+				keyType: req.body.keyType,
+				permittedAuthMethodTypes: req.body.permittedAuthMethodTypes,
+				burnPkp: req.body.burnPkp,
+			},
+			tags: {
+				component: 'mintNextAndAddAuthMethodsHandler',
+				failure_type: 'mint_failed'
+			}
+		});
+		
 		return res.status(500).json({
 			error: `[mintNextAndAddAuthMethodsHandler] Unable to mint PKP: ${
 				(err as Error).message
@@ -121,6 +136,19 @@ export async function fetchPKPsHandler(
 				err,
 			},
 		);
+		
+		// Report to Sentry for 500 errors
+		Sentry.captureException(err, {
+			extra: {
+				authMethodType,
+				authMethodId,
+			},
+			tags: {
+				component: 'fetchPKPsHandler',
+				failure_type: 'fetch_failed'
+			}
+		});
+		
 		return res.status(500).json({
 			error: `Unable to fetch PKPs for given auth method type: ${authMethodType}`,
 		});

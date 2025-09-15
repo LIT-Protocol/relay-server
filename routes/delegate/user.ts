@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/node';
 import { deriveWallet } from './register';
 import { addPaymentDelegationPayee } from '../../lit';
 
@@ -40,6 +41,19 @@ export async function addPayeeHandler(req: Request, res: Response) {
     } catch (err) {
         console.error('Failed to add payee', err);
         error = (err as Error).toString();
+        
+        // Report to Sentry for 500 errors
+        Sentry.captureException(err, {
+            extra: {
+                apiKey,
+                payeeAddresses: payeeAddresses.length,
+                walletAddress: wallet.address,
+            },
+            tags: {
+                component: 'addPayeeHandler',
+                failure_type: 'transaction_failed'
+            }
+        });
     }
 
     if (error) {
