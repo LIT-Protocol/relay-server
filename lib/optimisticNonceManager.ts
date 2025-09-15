@@ -24,16 +24,18 @@ export class OptimisticNonceManager {
         return this.instances.get(normalizedAddress)!;
     }
     
+    
     /**
      * Get next available nonce immediately (optimistic)
      */
     public async getNextNonce(wallet: ethers.Wallet): Promise<number> {
         await this.refreshNonceIfNeeded(wallet);
         
-        const assignedNonce = this.nextNonce++;
+        const assignedNonce = this.nextNonce;
+        this.nextNonce++; // Increment for next request
         this.pendingTransactions.add(assignedNonce);
         
-        console.log(`[NonceManager] Assigned optimistic nonce ${assignedNonce} to transaction (${this.pendingTransactions.size} pending)`);
+        console.log(`[NonceManager] Assigned optimistic nonce ${assignedNonce} to transaction (${this.pendingTransactions.size} pending), next will be ${this.nextNonce}`);
         return assignedNonce;
     }
     
@@ -57,9 +59,11 @@ export class OptimisticNonceManager {
     
     private async refreshNonceIfNeeded(wallet: ethers.Wallet): Promise<void> {
         const now = Date.now();
+        const isStale = (now - this.lastChainUpdate) > this.CACHE_TTL;
+        const needsInit = this.baseNonce === -1;
         
-        // Only refresh if we don't have a nonce or it's stale
-        if (this.baseNonce === -1 || (now - this.lastChainUpdate) > this.CACHE_TTL) {
+        // Always refresh if we don't have a nonce, or if cache is stale
+        if (needsInit || isStale) {
             // If there's already a refresh in progress, wait for it
             if (this.refreshPromise) {
                 console.log(`[NonceManager] Waiting for existing refresh to complete...`);
@@ -67,25 +71,29 @@ export class OptimisticNonceManager {
                 return;
             }
             
+            console.log(`[NonceManager] Refreshing nonce (init: ${needsInit}, stale: ${isStale}, age: ${now - this.lastChainUpdate}ms)`);
+            
             // Start a new refresh
             this.refreshPromise = this.doRefreshNonce(wallet, now);
-            await this.refreshPromise;
-            this.refreshPromise = null;
+            try {
+                await this.refreshPromise;
+            } finally {
+                this.refreshPromise = null;
+            }
         }
     }
     
     private async doRefreshNonce(wallet: ethers.Wallet, timestamp: number): Promise<void> {
         try {
             const chainNonce = await wallet.getTransactionCount('pending');
-            console.log(`[NonceManager] Chain nonce for ${this.walletAddress}: ${chainNonce} (base: ${this.baseNonce}, next: ${this.nextNonce})`);
+            console.log(`[NonceManager] Chain nonce for ${this.walletAddress}: ${chainNonce} (current base: ${this.baseNonce}, next: ${this.nextNonce})`);
             
-            // If chain nonce is higher than our optimistic nonce, use chain nonce
-            if (chainNonce > this.nextNonce || this.baseNonce === -1) {
-                this.baseNonce = chainNonce;
-                this.nextNonce = chainNonce;
-                console.log(`[NonceManager] Updated to chain nonce: ${chainNonce}`);
-            }
+            // Always reset to chain nonce to avoid drift
+            // This is more conservative but prevents "nonce too high" errors
+            this.baseNonce = chainNonce;
+            this.nextNonce = chainNonce;
             
+            console.log(`[NonceManager] Reset to chain nonce: ${chainNonce} (pending: ${this.pendingTransactions.size})`);
             this.lastChainUpdate = timestamp;
         } catch (error) {
             console.error(`[NonceManager] Failed to fetch nonce from chain:`, error);
@@ -93,7 +101,8 @@ export class OptimisticNonceManager {
             if (this.baseNonce === -1) {
                 throw error;
             }
-            // Otherwise, continue with optimistic nonce
+            // Otherwise, continue with optimistic nonce but mark refresh as failed
+            console.warn(`[NonceManager] Continuing with cached nonce ${this.nextNonce} due to RPC error`);
         }
     }
     
