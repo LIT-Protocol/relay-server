@@ -8,7 +8,7 @@ import {
 	StoreConditionWithSigner,
 } from "./models";
 import { Sequencer } from "./lib/sequencer";
-import walletSequencerManager from "./lib/walletSequencer";
+import { executeTransactionWithRetry } from "./lib/optimisticNonceManager";
 import { parseEther } from "ethers/lib/utils";
 import { CapacityToken } from "lit";
 import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
@@ -651,37 +651,6 @@ export async function addPaymentDelegationPayee({
 	wallet: ethers.Wallet;
 	payeeAddresses: string[];
 }) {
-	// This used to handle ensureing capacity credits are added for the payer.
-	// Instead, we add important wallets to the lit-scheduled-tasks project
-	// which makes sure capacity credits are added for the payer.
-	// // get the first token that is not expired
-	// const capacityTokens: CapacityToken[] = await queryCapacityCredits(wallet);
-	// console.log("Got capacity tokens", JSON.stringify(capacityTokens, null, 2));
-	// const capacityToken = capacityTokens.find((token) => !token.isExpired);
-
-	// let tokenId: number | null = null;
-
-	// if (!capacityToken) {
-	// 	// mint a new token
-	// 	const minted = await mintCapacityCredits({ signer: wallet });
-
-	// 	if (!minted) {
-	// 		throw new Error("Failed to mint capacity credits");
-	// 	}
-
-	// 	console.log(
-	// 		"No capacity token found, minted a new one:",
-	// 		minted.capacityTokenId,
-	// 	);
-	// 	tokenId = minted.capacityTokenId;
-	// } else {
-	// 	tokenId = capacityToken.tokenId;
-	// }
-
-	// if (!tokenId) {
-	// 	throw new Error("Failed to get ID for capacity token");
-	// }
-
 	// add payer in contract
 	const paymentDelegationContract = await getContractFromJsSdk(
 		config.network,
@@ -690,39 +659,26 @@ export async function addPaymentDelegationPayee({
 	);
 
 	try {
-		// Estimate gas first
-		// const estimatedGas =
-		// 	await paymentDelegationContract.estimateGas.delegatePaymentsBatch(
-		// 		payeeAddresses,
-		// 	);
-
-		// // Add 30% buffer using proper BigNumber math
-		// const gasLimit = estimatedGas
-		// 	.mul(ethers.BigNumber.from(130))
-		// 	.div(ethers.BigNumber.from(100));
-
 		// We used to use gas estimation, but it was slow
 		// We use a fixed gas limit of 500,000 to avoid issues with gas estimation - it usually only costs 300k gas anyway.
 		const gasLimit = ethers.BigNumber.from(500000);
 
-		// console.log(
-		// 	`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`,
-		// );
-
-		// Use wallet-specific sequencer to prevent nonce collisions
-		const tx = await walletSequencerManager.executeTransaction(
+		// Use optimistic nonce management for parallel execution
+		const tx = await executeTransactionWithRetry(
 			wallet,
-			paymentDelegationContract.functions.delegatePaymentsBatch,
-			[payeeAddresses],
-			{ gasLimit },
+			async (nonce: number) => {
+				return await paymentDelegationContract.functions.delegatePaymentsBatch(
+					payeeAddresses,
+					{ gasLimit, nonce }
+				);
+			}
 		);
 
 		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
-		// Transaction confirmation is now handled in the sequencer
 		return tx;
 	} catch (err) {
 		console.error(
-			"Error while estimating or executing delegatePaymentsBatch:",
+			"Error while executing delegatePaymentsBatch:",
 			err,
 		);
 		throw err;

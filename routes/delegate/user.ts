@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { deriveWallet } from './register';
 import { addPaymentDelegationPayee } from '../../lit';
-import mutexManager from '../../lib/mutex';
 
 export async function addPayeeHandler(req: Request, res: Response) {
     const payeeAddresses = req.body as string[];
@@ -29,10 +28,6 @@ export async function addPayeeHandler(req: Request, res: Response) {
     let error: string | boolean = false;
     let tx: any = null;
 
-    // Use mutex to serialize transactions for the same wallet
-    const mutex = mutexManager.getMutex(wallet.address);
-    const release = await mutex.acquire();
-
     try {
         tx = await addPaymentDelegationPayee({
             wallet,
@@ -45,8 +40,6 @@ export async function addPayeeHandler(req: Request, res: Response) {
     } catch (err) {
         console.error('Failed to add payee', err);
         error = (err as Error).toString();
-    } finally {
-        release();
     }
 
     if (error) {
