@@ -8,6 +8,7 @@ import {
 	StoreConditionWithSigner,
 } from "./models";
 import { Sequencer } from "./lib/sequencer";
+import walletSequencerManager from "./lib/walletSequencer";
 import { parseEther } from "ethers/lib/utils";
 import { CapacityToken } from "lit";
 import { LIT_NETWORK_VALUES } from "@lit-protocol/constants";
@@ -698,11 +699,16 @@ export async function addPaymentDelegationPayee({
 		
 		console.log(`Estimated gas: ${estimatedGas.toString()}, Using gas limit: ${gasLimit.toString()}`);
 		
-		const tx = await paymentDelegationContract.functions.delegatePaymentsBatch(
-			payeeAddresses,
+		// Use wallet-specific sequencer to prevent nonce collisions
+		const tx = await walletSequencerManager.executeTransaction(
+			wallet,
+			paymentDelegationContract.functions.delegatePaymentsBatch,
+			[payeeAddresses],
 			{ gasLimit }
 		);
+		
 		console.log("tx hash for delegatePaymentsBatch()", tx.hash);
+		// IMPORTANT: Wait for transaction to be mined before returning
 		await tx.wait();
 		return tx;
 	} catch (err) {

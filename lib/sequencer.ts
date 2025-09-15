@@ -47,6 +47,7 @@ export class Sequencer {
 	private _nonce: number = -1;
 	private _pollingPromise: Promise<void> | undefined;
 	private _actionIndex: Record<string, Promise<any>> = {};
+	private _instanceWallet: Wallet | providers.JsonRpcProvider | undefined;
 
 	static get Instance(): Sequencer {
 		if (!Sequencer._instance) Sequencer._instance = new Sequencer();
@@ -56,6 +57,10 @@ export class Sequencer {
 
 	static set Wallet(value: Wallet | providers.JsonRpcProvider) {
 		Sequencer._wallet = value;
+	}
+
+	set wallet(value: Wallet | providers.JsonRpcProvider) {
+		this._instanceWallet = value;
 	}
 
 	constructor() {}
@@ -105,10 +110,14 @@ export class Sequencer {
 				const next: ActionWrapper =
 					this._queue.shift() as ActionWrapper;
 				try {
+					const wallet = this._instanceWallet || Sequencer._wallet;
+					if (!wallet) {
+						throw new Error('No wallet set for sequencer');
+					}
 					let nonce =
 						this._nonce === -1
 							? //@ts-ignore
-							  await Sequencer._wallet.getTransactionCount()
+							  await wallet.getTransactionCount()
 							: (this._nonce += 1);
 					// console.log("Nonce for tx: ", nonce);
 					let params = next.action.params;
