@@ -53,7 +53,6 @@ export async function mintNextAndAddAuthMethodsHandler(
 		console.info("PKP address extracted", { pkpEthAddress });
 
 		// Send gas funding transaction using optimistic nonce management
-		// This returns immediately after transaction submission
 		const gasFundingTxn = await executeTransactionWithRetry(
 			signer,
 			async (nonce: number) => {
@@ -71,7 +70,20 @@ export async function mintNextAndAddAuthMethodsHandler(
 			fundingAmount: gasToFund.toString(),
 		});
 
-		// Return immediately - confirmations happen in background
+		// Wait for gas funding transaction to complete before returning
+		console.info("Waiting for gas funding transaction to be mined...");
+		const gasFundingReceipt = await signer.provider.waitForTransaction(gasFundingTxn.hash!);
+		
+		if (gasFundingReceipt.status !== 1) {
+			throw new Error("Gas funding transaction failed");
+		}
+
+		console.info("Gas funding transaction completed successfully", {
+			gasFundingTxHash: gasFundingTxn.hash,
+			blockNumber: gasFundingReceipt.blockNumber,
+		});
+
+		// Return after both PKP mint and gas funding are complete
 		return res.status(200).json({
 			requestId: mintTxHash,
 		});
