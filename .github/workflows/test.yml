@@ -47,6 +47,7 @@ jobs:
                   # address is 0x1B672D38C063c443DDBFEB5769389c597621571e
                   echo "LIT_DELEGATION_ROOT_MNEMONIC=${{ secrets.LIT_DELEGATION_ROOT_MNEMONIC }}" >> .env
                   echo "NETWORK=${{ matrix.network }}" >> .env
+                  echo "LIT_VINCENT_RELAYER_API_KEY=${{ secrets.LIT_VINCENT_RELAYER_API_KEY }}" >> .env
 
             - name: Run tests
               run: yarn test
