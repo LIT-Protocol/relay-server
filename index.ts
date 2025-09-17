@@ -71,6 +71,7 @@ import { mintClaimedKeyId } from "./routes/auth/claim";
 import { registerPayerHandler } from "./routes/delegate/register";
 import { addPayeeHandler } from "./routes/delegate/user";
 import { sendTxnHandler } from "./routes/auth/sendTxn";
+import { fundPkpHandler } from "./routes/auth/fundPkp";
 
 const app = express();
 
@@ -228,6 +229,9 @@ app.post("/add-users", addPayeeHandler);
 
 // --- Send TXN
 app.post("/send-txn", sendTxnHandler);
+
+// --- Fund PKP
+app.post("/fund-pkp", fundPkpHandler);
 
 // *** Deprecated ***
 
